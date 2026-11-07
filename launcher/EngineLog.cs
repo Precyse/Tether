@@ -44,6 +44,17 @@ public static class NetLog
         (" players on ", GameNet.Hosting),
     ];
 
+    /// <summary>Why an engine that ended on its own ended, from the last thing its log said (it exits with code 3 on any netplay failure): the other
+    /// machines' game no longer matches, the host's build is not this one, or the other players stopped answering. Null when the log names no failure (the
+    /// engine ended in sync or after a player left: a normal end, the window closed, a crash).</summary>
+    public static RefusalKind? EndRefusal(GameNet last) => last switch
+    {
+        GameNet.Desync => RefusalKind.GameDesync,
+        GameNet.Refused => RefusalKind.BuildDiffers,
+        GameNet.Failed or GameNet.Stalled => RefusalKind.PeerGone,
+        _ => null,
+    };
+
     /// <summary>The state after one engine line; a line that is not a <c>[net]</c> line of a known kind returns the state as it was.</summary>
     public static GameState Apply(GameState state, string line)
     {

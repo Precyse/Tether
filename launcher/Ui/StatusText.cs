@@ -13,6 +13,8 @@ public static class StatusText
         RefusalKind.ModFiles => "Mod files differ",
         RefusalKind.ModNotInstalled => IsBuiltGame(refusal.GameId) ? "Game not built" : "Mod not installed",
         RefusalKind.BuildDiffers => "Game build differs from the host's",
+        RefusalKind.GameDesync => "The game stopped: the players' games no longer match",
+        RefusalKind.PeerGone => "The game stopped: the other players are gone",
         RefusalKind.BuildFailed => refusal.Detail.Length > 0 ? $"The game could not be built: {refusal.Detail}" : "The game could not be built",
         RefusalKind.GameUnsupported => GameUnsupported(refusal),
         RefusalKind.GameNotFound => "Game not found",

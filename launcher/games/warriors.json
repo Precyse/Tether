@@ -8,8 +8,11 @@
     "engine": "game/engine/ps2run.exe",
     "logsDir": "work/logs",
     "engineLog": "game/logs/warriors.log",
-    "sessionCard": "game/saves/session.ps2",
-    "sessionFile": "game/session.json" },
+    "card": "game/saves/card.ps2",
+    "sessionCard": "game/saves/session/card.ps2",
+    "sessionFile": "game/session.ini" },
+  "saveSync": { "steamRemoteFiles": [], "sessionDir": "game/saves/session", "hostSaveDir": "{launcherdata}/games/warriors/game/saves", "filePattern": "card.ps2" },
+  "saveBackup": { "dir": "{launcherdata}/games/warriors/game/saves", "into": "game/save_backups", "keep": 10 },
   "crashFiles": ["game/logs/crash-*.dmp"],
   "peerBudget": { "unreliableFramesPerSecond": 12000, "unreliableFrameCapacity": 24000, "unreliableBytesPerSecond": 16777216, "unreliableByteCapacity": 33554432 },
   "options": [

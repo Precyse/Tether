@@ -1,41 +1,61 @@
-using System.Text.Json;
+using System.Globalization;
+using System.Text;
 
 namespace CoopLauncher;
 
-/// <summary>One player of the session as the game reads it: the session slot (also its pad: the host is slot 0, pad 1), the display name, and who is who.</summary>
-public sealed record SessionPlayer(int Slot, string Name, bool Host, bool Local);
+/// <summary>One player of the session as the game reads it: the session slot (also its pad port: the host is slot 0, pad 1) and the display name.</summary>
+public sealed record SessionPlayer(int Slot, string Name);
 
 /// <summary>
-/// What the lobby decided, handed to the game when it starts so it can show who is in the session in its own menus: the file
-/// <c>game/session.json</c> (JSON, camelCase, written whole before each start and removed when the session ends).
+/// What the lobby decided, handed to the game when it starts so it can show who is in the session in its own menus: the INI file
+/// <c>game/session.ini</c>, written whole before each start and removed when the session ends. The format is the one the game's co-op
+/// front end design asks for (<c>--coop-session</c>, see <see cref="RecompProfile.SessionArg"/>):
 /// <code>
-/// { "version": 1, "sessionId": "109775240912345", "role": "host" | "guest", "localSlot": 0, "hostSlot": 0, "maxPlayers": 4,
-///   "roster": [ { "slot": 0, "name": "Amy", "host": true, "local": true }, ... ],
-///   "settings": { "max_players": "4" } }
+/// [session]
+/// epoch=1            ; the slot map's epoch
+/// session_id=1097752 ; the Steam lobby's id, the same on every machine
+/// role=host          ; host or guest
+/// local_slot=0       ; this machine's pad port
+/// max_players=4      ; the host's setting
+/// [roster]           ; slot = pad port, the same on every machine; an open slot has no name
+/// 0=Alex
+/// 1=Sam
+/// 2=
+/// 3=
+/// [host]
+/// profile_slot=-1    ; the lobby does not pick a profile
+/// memcard=C:\...\saves\card.ps2   ; this machine's card (a guest's: the copy of the host's the launcher sent)
 /// </code>
-/// <c>sessionId</c> is the Steam lobby's id, the same on every machine; <c>roster</c> lists the players in the slot map (host first);
-/// <c>settings</c> are the host's options as the lobby carries them. The refusals the launcher can show are
+/// Names are one line with no <c>=</c> or control characters; the game cuts them to what its font can draw. The refusals the launcher can show are
 /// <see cref="RefusalKind"/> names, stable and only ever appended, so the game may use them as reason codes.
 /// </summary>
 public static class RecompSessionFile
 {
-    public const int Version = 1;
-
-    private static readonly JsonSerializerOptions Json = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, WriteIndented = true };
+    private const char Replacement = ' ';
 
     /// <summary>The file's text for a session.</summary>
-    public static string Build(ulong sessionId, bool host, int localSlot, int maxPlayers, IEnumerable<SessionPlayer> roster, IReadOnlyDictionary<string, string> settings) =>
-        JsonSerializer.Serialize(new
-        {
-            version = Version,
-            sessionId = sessionId.ToString(System.Globalization.CultureInfo.InvariantCulture),
-            role = host ? "host" : "guest",
-            localSlot,
-            hostSlot = (int)SlotAssigner.HostSlot,
-            maxPlayers,
-            roster = roster.OrderBy(player => player.Slot).ToList(),
-            settings,
-        }, Json);
+    public static string Build(uint epoch, ulong sessionId, bool host, int localSlot, int maxPlayers, IEnumerable<SessionPlayer> roster, string memcard)
+    {
+        var names = roster.ToDictionary(player => player.Slot, player => player.Name);
+        var text = new StringBuilder();
+        text.AppendLine("[session]");
+        text.AppendLine(string.Create(CultureInfo.InvariantCulture, $"epoch={epoch}"));
+        text.AppendLine(string.Create(CultureInfo.InvariantCulture, $"session_id={sessionId}"));
+        text.AppendLine($"role={(host ? "host" : "guest")}");
+        text.AppendLine(string.Create(CultureInfo.InvariantCulture, $"local_slot={localSlot}"));
+        text.AppendLine(string.Create(CultureInfo.InvariantCulture, $"max_players={maxPlayers}"));
+        text.AppendLine("[roster]");
+        for (var slot = 0; slot < maxPlayers; slot++)
+            text.AppendLine(string.Create(CultureInfo.InvariantCulture, $"{slot}={(names.TryGetValue(slot, out var name) ? OneLine(name) : string.Empty)}"));
+        text.AppendLine("[host]");
+        text.AppendLine("profile_slot=-1");
+        text.AppendLine($"memcard={memcard}");
+        return text.ToString();
+    }
+
+    /// <summary>A name the INI can hold: control characters, '=' and ';' become spaces, the ends are trimmed.</summary>
+    public static string OneLine(string name) =>
+        new string(name.Select(c => char.IsControl(c) || c is '=' or ';' ? Replacement : c).ToArray()).Trim();
 
     /// <summary>Writes the file whole beside itself and moves it over the old one, so the game never reads half of it. False when it could not be written.</summary>
     public static bool Write(string path, string text)

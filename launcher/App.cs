@@ -502,7 +502,7 @@ public sealed partial class App
         }
         _launchPending = false;
         var options = AdapterOptions();
-        _saveSync?.EnableAdapter(options);
+        if (_profile.Recomp == null) _saveSync?.EnableAdapter(options);  // a built game has no adapter ini: its warriors.ini is the start stub's
         if (_options.NoLaunch) return true;
         BackupSavesBeforeLaunch();
         Log.Event($"Starting {_profile!.Name}");

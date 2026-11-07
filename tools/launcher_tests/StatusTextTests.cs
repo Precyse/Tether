@@ -41,6 +41,8 @@ public static class StatusTextTests
         [RefusalKind.ModNotStarted] = "The co-op mod could not start: Juiced",
         [RefusalKind.BuildDiffers] = "Game build differs from the host's",
         [RefusalKind.BuildFailed] = "The game could not be built: Juiced",
+        [RefusalKind.GameDesync] = "The game stopped: the players' games no longer match",
+        [RefusalKind.PeerGone] = "The game stopped: the other players are gone",
     };
 
     public static void Run()

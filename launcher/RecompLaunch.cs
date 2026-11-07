@@ -22,7 +22,7 @@ public static class RecompLaunch
     public static IReadOnlyList<string> HostArgs(int port, int players) =>
         ["--net-host", port.ToString(), "--net-bind", LoopbackHost, "--net-players", Math.Clamp(players, MinPlayers, MaxPlayers).ToString()];
 
-    /// <summary>A joiner's engine: joins the relay's port, on a memory card of its own for this session.</summary>
+    /// <summary>A joiner's engine: joins the relay's port, on the copy of the host's memory card for this session.</summary>
     public static IReadOnlyList<string> JoinArgs(int relayPort, string sessionCard) =>
         ["--net-join", $"{LoopbackHost}:{relayPort}", "--memcard", sessionCard];
 
@@ -59,19 +59,6 @@ public static class RecompLaunch
         {
             Log.Info($"Could not start {profile.Name}: {e.Message}");
             return LaunchResult.SteamStartFailed;
-        }
-    }
-
-    /// <summary>Deletes the guest's session card (a new one starts with the next session); a card the running game holds stays.</summary>
-    public static void DeleteSessionCard(string path)
-    {
-        try
-        {
-            File.Delete(path);
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            Log.Info($"Could not delete the session card: {e.Message}");
         }
     }
 }

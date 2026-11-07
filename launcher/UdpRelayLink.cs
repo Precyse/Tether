@@ -74,6 +74,9 @@ public sealed class UdpRelayLink : IAdapterLink
 
     public bool IsReady => _ready;
 
+    /// <summary>How the engine said it was getting on the last time its log changed it (<see cref="GameNet.Unknown"/> before it said anything).</summary>
+    public GameNet Net => _state.Net;
+
     /// <summary>Slots that have a socket to the host's engine (the host's relay only).</summary>
     public IReadOnlyCollection<byte> OpenSlots => _joiners.Keys;
 

@@ -34,27 +34,33 @@ public sealed partial class App
             : new UdpRelayLink(RelayRole.Joiner, 0, EngineRunning, log);
     }
 
-    /// <summary>Starts the engine as this session's host (waiting for the players that are here) or joiner (on a fresh memory card).</summary>
+    /// <summary>Starts the engine as this session's host (waiting for the players that are here) or joiner (on the copy of the host's memory card
+    /// the save sync delivered: the snapshot holds the card's read position, not its contents).</summary>
     private LaunchResult LaunchRecomp()
     {
         if (_bridge is not UdpRelayLink relay || _session is not { } session) return LaunchResult.SteamStartFailed;
         var args = session.IsHost
             ? RecompLaunch.HostArgs(relay.EnginePort, session.PeerIds.Count + 1)
-            : RecompLaunch.JoinArgs(relay.Port, FreshSessionCard());
-        WriteSessionFile(session);
-        return RecompLaunch.Start(_profile!, _gameDir!, args);
+            : RecompLaunch.JoinArgs(relay.Port, RecompInstall.SessionCardPath(_profile!, _gameDir!));
+        var sessionFile = WriteSessionFile(session);
+        if (_profile!.Recomp!.SessionArg is { } sessionArg) args = [.. args, sessionArg, sessionFile];
+        return RecompLaunch.Start(_profile, _gameDir!, args);
     }
 
-    /// <summary>Hands the game what the lobby decided (<see cref="RecompSessionFile"/>): its role and slot, who is in the session under which name, the host's settings.</summary>
-    private void WriteSessionFile(Session session)
+    /// <summary>Hands the game what the lobby decided (<see cref="RecompSessionFile"/>): its role and slot, who is in the session under which name, the host's
+    /// setting, its memory card. Returns the file's path.</summary>
+    private string WriteSessionFile(Session session)
     {
         var roster = _lobby!.Members
             .Select(member => (Member: member, Slot: session.SlotOf(member.Id)))
             .Where(entry => entry.Slot != null)
-            .Select(entry => new SessionPlayer(entry.Slot!.Value, entry.Member.Name, entry.Member.Id == session.HostId, entry.Member.Id == _transport!.LocalId))
-            .ToList();
-        var text = RecompSessionFile.Build(_lobby.Id, session.IsHost, session.SlotOf(_transport!.LocalId) ?? SlotAssigner.HostSlot, _profile!.MaxPlayers, roster, _lobby.HostOptions);
-        RecompSessionFile.Write(RecompInstall.SessionFilePath(_profile, _gameDir!), text);
+            .Select(entry => new SessionPlayer(entry.Slot!.Value, entry.Member.Name));
+        var card = session.IsHost ? RecompInstall.CardPath(_profile!, _gameDir!) : RecompInstall.SessionCardPath(_profile!, _gameDir!);
+        var text = RecompSessionFile.Build(session.Epoch, _lobby.Id, session.IsHost, session.SlotOf(_transport!.LocalId) ?? SlotAssigner.HostSlot,
+            GameOptions.Seats(_profile!, _lobby.HostOptions), roster, card);
+        var path = RecompInstall.SessionFilePath(_profile!, _gameDir!);
+        RecompSessionFile.Write(path, text);
+        return path;
     }
 
     /// <summary>The window's Relaunch: the game again with the same role (the loop thread runs it).</summary>
@@ -64,13 +70,6 @@ public sealed partial class App
         if (_profile.Recomp != null) LaunchRecomp();
         else GameLauncher.Launch(_profile, _gameDir);
     });
-
-    private string FreshSessionCard()
-    {
-        var card = RecompInstall.SessionCardPath(_profile!, _gameDir!);
-        RecompLaunch.DeleteSessionCard(card);
-        return card;
-    }
 
     /// <summary>Runs the setup tool once before the start (nothing to change takes about two seconds, so it decides) and checks that it left
     /// the build the session was opened with. Wait while it runs; a failure or another build is a refusal.</summary>
@@ -145,26 +144,28 @@ public sealed partial class App
     }
 
     /// <summary>Once the game runs it owns the session and shows who is in it: the window steps aside (<see cref="GameTookOver"/>) and comes back only when the
-    /// engine ends without being asked to (<see cref="AttentionNeeded"/>); a refusal does the same (<see cref="Refuse(Refusal)"/>).</summary>
+    /// engine ends without being asked to (<see cref="AttentionNeeded"/>); a refusal does the same (<see cref="Refuse(Refusal)"/>). Any netplay failure ends the
+    /// engine with exit code 3 and the start stub shows an error box; the engine's last [net] line says why, and becomes a refusal here
+    /// (<see cref="NetLog.EndRefusal"/>).</summary>
     private void WatchEngine()
     {
-        if (_profile is not { Recomp: not null } || _bridge is not { } link) return;
+        if (_profile is not { Recomp: not null } || _bridge is not UdpRelayLink link) return;
         if (link.IsReady) _engineSeen = true;
         else if (_engineSeen)
         {
             _engineSeen = false;
-            if (_closingEngine == null) AttentionNeeded?.Invoke();
+            if (_closingEngine != null) return;
+            if (NetLog.EndRefusal(link.Net) is { } kind) Refuse(kind);
+            else AttentionNeeded?.Invoke();
         }
     }
 
-    /// <summary>The guest's card of this session goes with the session, unless the engine still has it open (the next session starts a new one).</summary>
+    /// <summary>The session's files go with the session: the file the game was told, and (by the save sync's reset) a guest's copy of the card.</summary>
     private void DropRecompSession()
     {
         _recompCheck = null;
         _builtHash = null;
         _engineSeen = false;
         if (_profile is { Recomp: not null } built && _gameDir != null) RecompSessionFile.Delete(RecompInstall.SessionFilePath(built, _gameDir));
-        if (_profile is { Recomp: not null } profile && _gameDir != null && !GameLauncher.IsRunning(profile))
-            RecompLaunch.DeleteSessionCard(RecompInstall.SessionCardPath(profile, _gameDir));
     }
 }

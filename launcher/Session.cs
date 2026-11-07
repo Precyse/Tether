@@ -64,6 +64,9 @@ public sealed class Session : IDisposable
 
     public ulong HostId => _hostId;
 
+    /// <summary>The epoch of the slot map (CONTRACT.md): it grows every time the membership resets.</summary>
+    public uint Epoch => _epoch;
+
     public bool IsHost => _hostId == _transport.LocalId;
 
     public ulong LobbyId => _lobbyId;

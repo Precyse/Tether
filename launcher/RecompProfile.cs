@@ -17,10 +17,14 @@ namespace CoopLauncher;
 /// <param name="Engine">The engine the build made, whose hash the build info records.</param>
 /// <param name="LogsDir">The tool's own logs.</param>
 /// <param name="EngineLog">The engine's stderr, written by the game's start stub.</param>
-/// <param name="SessionCard">The memory card a guest plays on (a fresh one for each session).</param>
+/// <param name="Card">The host's memory card (the tool's default one). The netplay snapshot holds the card's read position, not its contents, so a
+/// guest plays on a copy of it: the profile's save sync sends this file to every guest.</param>
+/// <param name="SessionCard">Where that copy lands on a guest (the save sync's session folder); deleted with the session.</param>
 /// <param name="SessionFile">What the lobby decided, for the game to read at its start (<see cref="RecompSessionFile"/>).</param>
+/// <param name="SessionArg">The engine argument that takes the session file, once the engine has one; none: the file is written and not passed.</param>
 public sealed record RecompProfile(
-    string Setup, string DiscPrompt, string InstallDir, string BuildInfo, string Engine, string LogsDir, string EngineLog, string SessionCard, string SessionFile);
+    string Setup, string DiscPrompt, string InstallDir, string BuildInfo, string Engine, string LogsDir, string EngineLog, string Card, string SessionCard, string SessionFile,
+    string? SessionArg = null);
 
 /// <summary>The build a setup run made, from its <c>build.json</c>: the three parts of the fingerprint the engines compare when they meet
 /// (generated game code, runtime sources, memory patches) and the hash of the engine it installed. Two machines play together only when
@@ -83,6 +87,8 @@ public static class RecompInstall
     public static string LogsDir(GameProfile profile, string gameDir) => Path.Combine(gameDir, profile.Recomp!.LogsDir);
 
     public static string EngineLogPath(GameProfile profile, string gameDir) => Path.Combine(gameDir, profile.Recomp!.EngineLog);
+
+    public static string CardPath(GameProfile profile, string gameDir) => Path.Combine(gameDir, profile.Recomp!.Card);
 
     public static string SessionCardPath(GameProfile profile, string gameDir) => Path.Combine(gameDir, profile.Recomp!.SessionCard);
 

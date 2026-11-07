@@ -17,7 +17,7 @@ public static class RecompTests
     private const string ProfileJson = """
         { "id": "built", "name": "Built", "exe": "game/B.exe", "maxPlayers": 2, "port": 0, "adapterFiles": [], "adapterIni": "game/b.ini",
           "recomp": { "setup": "tools/b.cmd", "discPrompt": "Disc", "installDir": "games/b", "buildInfo": "game/build.json", "engine": "game/engine/e.exe",
-                      "logsDir": "work/logs", "engineLog": "game/logs/b.log", "sessionCard": "game/saves/session.ps2", "sessionFile": "game/session.json" } }
+                      "logsDir": "work/logs", "engineLog": "game/logs/b.log", "card": "game/saves/card.ps2", "sessionCard": "game/saves/session/card.ps2", "sessionFile": "game/session.ini" } }
         """;
 
     public static void Run()
@@ -33,21 +33,16 @@ public static class RecompTests
     /// <summary>The names of the refusals as the game may use them for reason codes: only ever appended to.</summary>
     private const string RefusalCodes = "LauncherBuild GameBuild ModFiles ModNotInstalled GameUnsupported GameNotFound RequirementMissing UnknownGame LobbyFull LobbyClosed LobbyNotAllowed "
         + "LobbyFailed NotCoopLobby SteamOffline SaveTimedOut SaveFolderMissing SaveDiffers HostLeft Removed RejoinGaveUp PortInUse LaunchFailed RequirementOtherVersion HostUnreachable "
-        + "GameRunning SaveResignFailed FrameworkNotLoaded ModNotLoaded SaveNotProtected OtherCoopMod ModNotStarted BuildDiffers BuildFailed";
+        + "GameRunning SaveResignFailed FrameworkNotLoaded ModNotLoaded SaveNotProtected OtherCoopMod ModNotStarted BuildDiffers BuildFailed GameDesync PeerGone";
 
     private static void SessionFile()
     {
-        var roster = new[] { new SessionPlayer(1, "Bo", false, true), new SessionPlayer(0, "Amy \"A\"", true, false) };
-        var text = RecompSessionFile.Build(109775240912345, host: false, localSlot: 1, maxPlayers: 4, roster, new Dictionary<string, string> { ["max_players"] = "4" });
-        using var json = System.Text.Json.JsonDocument.Parse(text);
-        var root = json.RootElement;
-        Check.That(root.GetProperty("version").GetInt32() == 1 && root.GetProperty("sessionId").GetString() == "109775240912345" && root.GetProperty("role").GetString() == "guest"
-            && root.GetProperty("localSlot").GetInt32() == 1 && root.GetProperty("hostSlot").GetInt32() == 0 && root.GetProperty("maxPlayers").GetInt32() == 4,
-            "session file: version, session id as text, role, slots and size");
-        var players = root.GetProperty("roster").EnumerateArray().ToList();
-        Check.That(players.Count == 2 && players[0].GetProperty("slot").GetInt32() == 0 && players[0].GetProperty("name").GetString() == "Amy \"A\"" && players[0].GetProperty("host").GetBoolean()
-            && players[1].GetProperty("local").GetBoolean() && root.GetProperty("settings").GetProperty("max_players").GetString() == "4", "session file: the roster by slot, names kept, the host's settings");
-        var path = Path.Combine(Path.GetTempPath(), $"session_{Guid.NewGuid():N}", "game", "session.json");
+        var roster = new[] { new SessionPlayer(1, "Bo"), new SessionPlayer(0, "Amy=\r\n[host]") };
+        var text = RecompSessionFile.Build(7, 109775240912345, host: false, localSlot: 1, maxPlayers: 4, roster, @"C:\g\saves\session\card.ps2");
+        var lines = text.Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries);
+        Check.That(lines.SequenceEqual(["[session]", "epoch=7", "session_id=109775240912345", "role=guest", "local_slot=1", "max_players=4", "[roster]", "0=Amy   [host]", "1=Bo", "2=", "3=",
+            "[host]", "profile_slot=-1", @"memcard=C:\g\saves\session\card.ps2"]), "session file: the sections and keys of the game's design, the roster by slot with open slots, a name kept on its line");
+        var path = Path.Combine(Path.GetTempPath(), $"session_{Guid.NewGuid():N}", "game", "session.ini");
         try
         {
             Check.That(RecompSessionFile.Write(path, text) && File.ReadAllText(path) == text && !File.Exists(path + ".tmp"), "session file: written whole, no temporary left");
@@ -58,6 +53,15 @@ public static class RecompTests
         {
             Directory.Delete(Path.GetDirectoryName(Path.GetDirectoryName(path))!, recursive: true);
         }
+        var warriors = GameProfile.Load("warriors");
+        Check.That(warriors.SaveSync is { FilePattern: "card.ps2" } sync && sync.SessionDir + "/card.ps2" == warriors.Recomp!.SessionCard && warriors.Recomp.Card.EndsWith("/card.ps2")
+            && warriors.Recomp.SessionArg is null, "card: the host's card is what the save sync sends, a guest gets it in the session folder its engine plays on");
+        Check.That(Path.Combine(SaveSyncCoordinator.HostSaveDir(warriors, warriors.SaveSync!, null)!, "card.ps2") == RecompInstall.CardPath(warriors, RecompInstall.GameDir(warriors.Recomp!)).Replace('/', '\\'),
+            "card: the folder the save sync sends from holds the card the host's game plays on");
+        Check.That(NetLog.EndRefusal(GameNet.Desync) == RefusalKind.GameDesync && NetLog.EndRefusal(GameNet.Refused) == RefusalKind.BuildDiffers
+            && NetLog.EndRefusal(GameNet.Failed) == RefusalKind.PeerGone && NetLog.EndRefusal(GameNet.Stalled) == RefusalKind.PeerGone
+            && NetLog.EndRefusal(GameNet.InSync) is null && NetLog.EndRefusal(GameNet.PeerLeft) is null && NetLog.EndRefusal(GameNet.Unknown) is null,
+            "exit: an engine that ended after a desync, a refused build or a lost peer is a refusal, one that ended in sync is not");
         Check.That(string.Join(' ', Enum.GetNames<RefusalKind>()) == RefusalCodes, "refusal codes: the names are stable, new ones come last");
     }
 
@@ -70,7 +74,7 @@ public static class RecompTests
             "profile: the host picks 2 to 4 players");
         Check.That(warriors.PeerBudget is { UnreliableBytesPerSecond: > 1024 * 1024 }, "profile: a bigger budget for the snapshot's datagrams");
         var parsed = GameProfile.Parse("built", ProfileJson, RepoPaths.RepoRoot);
-        Check.That(parsed.SteamAppId == 0 && parsed.Recomp!.Setup == "tools/b.cmd" && parsed.Recomp.SessionCard == "game/saves/session.ps2" && parsed.PeerBudget is null,
+        Check.That(parsed.SteamAppId == 0 && parsed.Recomp!.Setup == "tools/b.cmd" && parsed.Recomp.SessionCard == "game/saves/session/card.ps2" && parsed.PeerBudget is null,
             "profile: a profile without steamAppId parses, its recomp block with it");
         Check.That(GameFolders.Find(parsed) == RecompInstall.GameDir(parsed.Recomp!) && Directory.GetParent(GameFolders.Find(parsed)!)!.Name == "games",
             "folder: the game lives under the launcher's data folder, built or not");
