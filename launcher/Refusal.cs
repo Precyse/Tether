@@ -12,7 +12,7 @@ public enum RefusalKind
     UnknownGame, LobbyFull, LobbyClosed, LobbyNotAllowed, LobbyFailed, NotCoopLobby, SteamOffline, SaveTimedOut,
     SaveFolderMissing, SaveDiffers, HostLeft, Removed, RejoinGaveUp, PortInUse, LaunchFailed, RequirementOtherVersion,
     HostUnreachable, GameRunning, SaveResignFailed, FrameworkNotLoaded, ModNotLoaded, SaveNotProtected,
-    OtherCoopMod, ModNotStarted,
+    OtherCoopMod, ModNotStarted, BuildDiffers, BuildFailed,
 }
 
 /// <summary>A refused start: the kind, a detail for the words that carry one (build number, file name, port), the game it
@@ -57,11 +57,12 @@ public static class Refusals
     private const int ResultTimeout = 16;
     private const int ResultServiceUnavailable = 20;
 
-    public static RefusalKind FromBuildMismatch(BuildMismatch mismatch) => mismatch switch
+    /// <summary><paramref name="builtGame"/>: the game is built on each PC (<see cref="RecompProfile"/>), so differing files mean another build, not another mod.</summary>
+    public static RefusalKind FromBuildMismatch(BuildMismatch mismatch, bool builtGame = false) => mismatch switch
     {
         BuildMismatch.LauncherBuild => RefusalKind.LauncherBuild,
         BuildMismatch.GameBuild => RefusalKind.GameBuild,
-        BuildMismatch.ModFiles => RefusalKind.ModFiles,
+        BuildMismatch.ModFiles => builtGame ? RefusalKind.BuildDiffers : RefusalKind.ModFiles,
         BuildMismatch.ModNotInstalled => RefusalKind.ModNotInstalled,
         _ => throw new ArgumentOutOfRangeException(nameof(mismatch), mismatch, "No mismatch to refuse"),
     };

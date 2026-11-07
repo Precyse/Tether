@@ -1,0 +1,18 @@
+{ "id": "warriors", "name": "The Warriors", "exe": "game/Warriors.exe",
+  "maxPlayers": 4, "port": 0, "adapterFiles": [], "adapterIni": "game/warriors.ini",
+  "recomp": {
+    "setup": "tools/warriors-setup/warriors-setup.cmd",
+    "discPrompt": "Your The Warriors (USA) disc image",
+    "installDir": "games/warriors",
+    "buildInfo": "game/build.json",
+    "engine": "game/engine/ps2run.exe",
+    "logsDir": "work/logs",
+    "engineLog": "game/logs/warriors.log",
+    "sessionCard": "game/saves/session.ps2",
+    "sessionFile": "game/session.json" },
+  "crashFiles": ["game/logs/crash-*.dmp"],
+  "peerBudget": { "unreliableFramesPerSecond": 12000, "unreliableFrameCapacity": 24000, "unreliableBytesPerSecond": 16777216, "unreliableByteCapacity": 33554432 },
+  "options": [
+    { "key": "max_players", "label": "Players", "host": true, "values": [
+      { "value": "4", "label": "4" }, { "value": "3", "label": "3" }, { "value": "2", "label": "2" } ] }
+  ] }

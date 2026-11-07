@@ -32,5 +32,5 @@ public static class GameCloser
 
     public static bool IsGone(GameProfile profile) => !GameLauncher.IsRunning(profile);
 
-    private static Process[] ProcessesOf(GameProfile profile) => Process.GetProcessesByName(Path.GetFileNameWithoutExtension(profile.Exe));
+    private static Process[] ProcessesOf(GameProfile profile) => GameProcesses.Of(profile);
 }

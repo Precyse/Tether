@@ -31,8 +31,11 @@ public static class CardStates
         if (player.Held || player.Silent) return CardState.Problem;
         if (player.Connecting) return CardState.Progress;
         if (player.Step == SessionStep.None && player.RttMs != null) return CardState.InGame;
-        return player.Step == SessionStep.InGame && GameProblem(player, host) != null ? CardState.Problem : OfStep(player.Step);
+        return player.Step == SessionStep.InGame && (GameProblem(player, host) != null || NetProblem(player)) ? CardState.Problem : OfStep(player.Step);
     }
+
+    /// <summary>The engines stopped agreeing, refused each other's build or could not reach one another.</summary>
+    private static bool NetProblem(PlayerSlot player) => player.Game?.Net is GameNet.Desync or GameNet.Refused or GameNet.Failed;
 
     /// <summary>The player has everything it needs for the game to start: its step is Ready and it is neither held nor silent.</summary>
     public static bool IsReady(PlayerSlot player) => player.Step == SessionStep.Ready && !player.Held && !player.Silent;
@@ -79,13 +82,29 @@ public static class CardStates
     private static string RefusalWords(PlayerSlot player, Refusal refusal) => player.IsLocal ? StatusText.Refusal(refusal) : StatusText.RefusalOf(refusal, player.Name);
 
     private static string InGameWords(PlayerSlot player, PlayerSlot? host) =>
-        GameProblem(player, host) ?? player.Game?.Place switch
+        GameProblem(player, host) ?? NetWords(player.Game?.Net) ?? player.Game?.Place switch
         {
             GamePlace.Title => "At title",
             GamePlace.Loading => "Loading",
             GamePlace.World => "In world",
             _ => "In game",
         };
+
+    /// <summary>Where a game with its own netplay is with the other machines (<see cref="GameNet"/>), in words; null when it says nothing.</summary>
+    internal static string? NetWords(GameNet? net) => net switch
+    {
+        GameNet.Hosting => "Waiting for players",
+        GameNet.Connecting => "Connecting to the host",
+        GameNet.Sending => "Sending the game to a player",
+        GameNet.Receiving => "Loading the host's game",
+        GameNet.InSync => "In sync",
+        GameNet.Stalled => "Waiting for a player's input",
+        GameNet.Desync => "Out of sync, the game stopped",
+        GameNet.PeerLeft => "A player left",
+        GameNet.Refused => "Game build differs from the host's",
+        GameNet.Failed => "Could not reach the other players",
+        _ => null,
+    };
 
     /// <summary>What is wrong in the game the adapter reports, in words, or null: a save folder that is not protected, a game that booted
     /// without co-op, a save that did not load, a mod that differs

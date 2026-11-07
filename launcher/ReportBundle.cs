@@ -71,9 +71,9 @@ public static class ReportBundle
         var build = GameBuilds.Installed(game, gameDir);
         lines.Add($"  game build: {(build == GameBuilds.Unknown ? "unknown" : build.ToString())}");
         lines.Add($"  mod: {mod.State}{(mod.Build == 0 ? "" : $", build {mod.Build}")}");
-        if (game.AdapterLog != null)
+        if ((game.AdapterLog ?? game.Recomp?.EngineLog) is { } log)
         {
-            var coopDir = Path.GetDirectoryName(Path.Combine(gameDir, game.AdapterLog))!;
+            var coopDir = Path.GetDirectoryName(Path.Combine(gameDir, log))!;
             foreach (var pattern in GameFilePatterns)
                 foreach (var file in entries.Files(coopDir, pattern).Where(file => !IsJoinFile(game, file)))
                     entries.Add(file, $"{game.Id}/{Path.GetFileName(file)}");

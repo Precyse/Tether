@@ -27,6 +27,8 @@ public static class UiCommandsTests
         [Cmd.OptionSet] = """{"type":"option.set","gameId":"sr2","key":"transport","value":"steam"}""",
         [Cmd.ModInstall] = """{"type":"mod.install","gameId":"re0"}""",
         [Cmd.ModRetry] = """{"type":"mod.retry","gameId":"re0"}""",
+        [Cmd.ModCancel] = """{"type":"mod.cancel","gameId":"warriors"}""",
+        [Cmd.ModOpenLog] = """{"type":"mod.openLog","gameId":"warriors"}""",
         [Cmd.DependenciesInstall] = """{"type":"dependencies.install"}""",
         [Cmd.NoticeFix] = """{"type":"notice.fix"}""",
         [Cmd.ReportCreate] = """{"type":"report.create"}""",

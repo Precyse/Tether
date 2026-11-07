@@ -32,6 +32,7 @@ public static class ModInstaller
     public static ModStatus Status(GameProfile profile, string? gameDir)
     {
         if (gameDir == null) return new ModStatus(ModState.NotInstalled, 0);
+        if (profile.Recomp != null) return RecompInstall.Status(profile, gameDir);
         try
         {
             var files = Files(profile, gameDir);
@@ -47,11 +48,13 @@ public static class ModInstaller
         }
     }
 
-    /// <summary>SHA-256 over the profile's adapter files as installed in the game folder (what runs), in profile order (a folder
+    /// <summary>For a game the launcher builds, the SHA-256 of its build's fingerprint (<see cref="RecompBuildInfo.Hash"/>); null when there is no complete build.
+    /// Otherwise SHA-256 over the profile's adapter files as installed in the game folder (what runs), in profile order (a folder
     /// entry is already expanded to its files): per file the lowercase destination name with '/' separators, a 0x00 byte, the u64
     /// little-endian length and the bytes. Null when a file is missing or unreadable (an unreadable one is logged once).</summary>
     public static byte[]? ContentHash(GameProfile profile, string gameDir)
     {
+        if (profile.Recomp != null) return RecompInstall.ContentHash(profile, gameDir);
         try
         {
             using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);

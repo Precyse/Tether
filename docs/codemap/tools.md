@@ -7,6 +7,7 @@ Repo-level test, release and research tools. Index and "where to look for X": `C
 | file | owns |
 |---|---|
 | tools/launcher_tests/ | C# console unit tests of the launcher's pure rules and file/process rules (mod install, updater, save sync, UI snapshot, release manifest, component update); `dotnet run --project tools/launcher_tests`, subsets with `LAUNCHER_TESTS_ONLY=web|mod|files`; tests that touch settings or logs set `COOP_LAUNCHER_DATA` |
+| tools/warriors/relay_rig/ | The Warriors over the launcher's relay on one PC: a host engine and N joiner engines (the existing recomp build, run only) connected through `UdpRelayLink` and the profile's peer budget, with an optional one-way delay; reports the join time and whether the digests agree; only its own processes are stopped. `--build` instead runs the launcher's build step against the real setup tool (`COOP_LAUNCHER_DATA` names the data folder, `--cancel-after N` cancels). `dotnet run -c Release --project tools/warriors/relay_rig -- --out <dir> [--frames N] [--joiners N] [--delay ms]` |
 | tools/save_sync_test.py | two local launchers: the save transfer and the reset |
 | tools/diagnostics_test.py | guest log lines and a crash dump reach the host |
 | tools/build_check_test.py | mismatched builds, game builds and mod files refuse; matching ones carry on |

@@ -19,6 +19,7 @@ internal sealed partial class UiController : IDisposable
     private readonly UpdateFlow _update = new();
     private readonly List<string> _events = new();
     private readonly Dictionary<string, ModRunView> _modRuns = new();
+    private readonly Dictionary<string, BuildJob> _builds = new();
     private List<GameEntry> _games = new();
 
     private string? _selectedId;
@@ -65,6 +66,8 @@ internal sealed partial class UiController : IDisposable
         _app.AvatarLoaded += OnAvatarLoaded;
         _app.StatusChanged += OnStatusChanged;
         _app.InviteAccepted += OnInviteAccepted;
+        _app.AttentionNeeded += OnInviteAccepted;
+        _app.GameTookOver += OnGameTookOver;
         _app.ResendAvatars();
     }
 
@@ -74,8 +77,11 @@ internal sealed partial class UiController : IDisposable
     /// <summary>The player asked for a page event (the code field shakes, the copy icon swaps).</summary>
     public event Action<string>? PageEvent;
 
-    /// <summary>An invite was accepted: the window comes forward and, behind other windows, flashes.</summary>
+    /// <summary>An invite was accepted, or a game that owns its session needs the launcher again (its engine ended, a refusal): the window comes forward and, behind other windows, flashes.</summary>
     public event Action? InviteAccepted;
+
+    /// <summary>A game that owns its session started: the window steps aside (minimises).</summary>
+    public event Action? GameTookOver;
 
     /// <summary>The Restart button: the staged build starts once the window has closed.</summary>
     public event Action? RestartRequested;
@@ -148,6 +154,8 @@ internal sealed partial class UiController : IDisposable
         _app.StatusChanged -= OnStatusChanged;
         _app.AvatarLoaded -= OnAvatarLoaded;
         _app.InviteAccepted -= OnInviteAccepted;
+        _app.AttentionNeeded -= OnInviteAccepted;
+        _app.GameTookOver -= OnGameTookOver;
     }
 
     internal SnapshotInput Input()
@@ -363,4 +371,6 @@ internal sealed partial class UiController : IDisposable
     });
 
     private void OnInviteAccepted() => _post(() => InviteAccepted?.Invoke());
+
+    private void OnGameTookOver() => _post(() => GameTookOver?.Invoke());
 }

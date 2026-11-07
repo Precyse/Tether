@@ -10,7 +10,7 @@ namespace CoopLauncher;
 /// first loses unreliable frames, and its link drops when the queue backs up past <see cref="MaxQueuedBytes"/>. A new local
 /// connection (a port scanner, a second game copy) replaces the linked adapter only once its HELLO is valid.
 /// </summary>
-public sealed class LoopbackBridge : IDisposable
+public sealed class LoopbackBridge : IAdapterLink
 {
     /// <summary>Queued bytes above which unreliable frames are dropped instead of queued.</summary>
     public const int UnreliableDropBytes = 256 * 1024;

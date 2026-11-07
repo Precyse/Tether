@@ -9,10 +9,12 @@ namespace CoopLauncher.Gui;
 internal static class LauncherActions
 {
     private const string SteamOpenUri = "steam://open/main";
+    private const string DiscFilter = "Disc images (*.iso)|*.iso|All files (*.*)|*.*";
 
     /// <summary>Asks for a game's folder; true when the player chose one that holds the game and it was saved.</summary>
     public static bool BrowseFor(GameProfile game)
     {
+        if (game.Recomp != null) return BrowseForDisc(game);
         using var dialog = new FolderBrowserDialog { InitialDirectory = GameFolders.Find(game) ?? string.Empty };
         if (dialog.ShowDialog() != DialogResult.OK) return false;
         if (!File.Exists(Path.Combine(dialog.SelectedPath, game.Exe)))
@@ -24,6 +26,20 @@ internal static class LauncherActions
         Log.Info($"{game.Name} folder set to {dialog.SelectedPath}");
         return true;
     }
+
+    /// <summary>Asks for the disc image a game the launcher builds is made from (read, never changed); true when the player chose one and it was saved.</summary>
+    public static bool BrowseForDisc(GameProfile game)
+    {
+        using var dialog = new OpenFileDialog { Title = game.Recomp!.DiscPrompt, Filter = DiscFilter, CheckFileExists = true };
+        if (dialog.ShowDialog() != DialogResult.OK) return false;
+        AppSettings.Update(settings => settings.WithOption(game.Id, RecompInstall.DiscOption, dialog.FileName));
+        Log.Info($"{game.Name} disc image set to {dialog.FileName}");
+        return true;
+    }
+
+    /// <summary>Shows a file in Explorer, or opens a folder.</summary>
+    public static void OpenPath(string path) =>
+        StartExplorer(File.Exists(path) ? $"/select,\"{path}\"" : $"\"{path}\"");
 
     /// <summary>A game's folder goes back to the one Steam knows.</summary>
     public static void ResetFolder(GameProfile game)

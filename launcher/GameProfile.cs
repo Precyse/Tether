@@ -113,8 +113,12 @@ public sealed record GameProfile(
     string? JoinFile = null, string? StatusFile = null, BridgeCondition? BridgeWhen = null,
     List<string>? FreshTypes = null, ArtSource? OutfitArt = null, List<string>? CrashFiles = null, SaveIndexProfile? SaveIndex = null, UiArtSource? UiArt = null,
     SaveBackupProfile? SaveBackup = null, CampaignsProfile? Campaigns = null, List<ConflictProfile>? Conflicts = null,
-    List<string>? BootKeys = null, long LinkTimeoutMs = GameWatch.UnlinkedAfterMs, string? FrameworkLog = null, string? InGameStep = null)
+    List<string>? BootKeys = null, long LinkTimeoutMs = GameWatch.UnlinkedAfterMs, string? FrameworkLog = null, string? InGameStep = null,
+    RecompProfile? Recomp = null, PeerBudgetLimits? PeerBudget = null)
 {
+    // Recomp: a game with no Steam app that the launcher builds from the player's own disc image (SteamAppId 0, see RecompProfile); the game
+    // folder is the build's install folder, Exe is relative to it and a lobby game's frames travel as the engine's UDP datagrams (UdpRelayLink).
+    // PeerBudget: the budget of a peer's game frames when the defaults are too small (PeerBudgetLimits).
     // UiArt: the game art the in-game overlay draws, taken from the player's own install at launch.
     // CrashFiles: where the game and its adapter leave crash files, relative to the game folder, as folder and pattern ("coop/dumps/*.dmp").
     // BootKeys: the adapter ini keys the adapter reads only at the game's start; a game that already runs started with other values of them cannot be given a session (<see cref="BootSettings"/>).

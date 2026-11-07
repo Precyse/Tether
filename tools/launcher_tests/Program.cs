@@ -42,6 +42,10 @@ public static class Program
         PartnerPresenceTests.Run();
         BootSettingsTests.Run();
         PeerBudgetTests.Run();
+        UdpRelayTests.Run();
+        SetupProgressTests.Run();
+        NetLogTests.Run();
+        RecompTests.Run();
         FreshQueueTests.Run();
         GameOptionsTests.Run();
         BlowfishTests.Run();

@@ -39,6 +39,8 @@ public static class StatusTextTests
         [RefusalKind.SaveNotProtected] = "The mod could not protect your save: quit to the title",
         [RefusalKind.OtherCoopMod] = "Another co-op mod (Juiced) is installed",
         [RefusalKind.ModNotStarted] = "The co-op mod could not start: Juiced",
+        [RefusalKind.BuildDiffers] = "Game build differs from the host's",
+        [RefusalKind.BuildFailed] = "The game could not be built: Juiced",
     };
 
     public static void Run()

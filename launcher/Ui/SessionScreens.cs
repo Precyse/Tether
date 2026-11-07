@@ -67,7 +67,7 @@ internal static partial class SessionScreens
     }
 
     /// <summary>Installing or updating the mod needs the game closed; every other fix is always usable.</summary>
-    private static bool FixEnabled(NoticeFix fix, GameStatus mod) => !(fix is NoticeFix.InstallMod or NoticeFix.UpdateMod && mod.GameRunning);
+    private static bool FixEnabled(NoticeFix fix, GameStatus mod) => !(fix is NoticeFix.InstallMod or NoticeFix.UpdateMod or NoticeFix.Rebuild && mod.GameRunning);
 
     private static IReadOnlyList<StepRow> JoiningSteps(AppStatus s, GameProfile g, string? gameDir, string hostName, long nowMs)
     {

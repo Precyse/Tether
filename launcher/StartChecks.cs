@@ -12,6 +12,7 @@ public static class StartChecks
     {
         Refusal Refused(RefusalKind kind, string detail = "") => new(kind, detail, profile.Id, lobbyId);
         if (gameDir == null) return Refused(RefusalKind.GameNotFound);
+        if (profile.Recomp != null) return RecompInstall.Status(profile, gameDir).State == ModState.Installed ? null : Refused(RefusalKind.ModNotInstalled);
         if (BootSettings.Blocks(profile, gameDir, options)) return Refused(RefusalKind.GameRunning, profile.Name);
         var build = GameBuilds.Installed(profile, gameDir);
         if (!GameBuilds.IsSupported(profile, build)) return Refused(RefusalKind.GameUnsupported, build.ToString());

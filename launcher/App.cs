@@ -29,7 +29,7 @@ public sealed partial class App
     private LobbyDirectory? _directory;
     private ITransport? _transport;
     private ILobby? _lobby;
-    private LoopbackBridge? _bridge;
+    private IAdapterLink? _bridge;
     private Session? _session;
     private SaveSyncCoordinator? _saveSync;
     private LogForwarder? _logForwarder;
@@ -103,7 +103,7 @@ public sealed partial class App
     public void Leave() => _commands.Enqueue(() =>
     {
         CancelReconnect();
-        EndSession();
+        if (!AskEngineToLeave()) EndSession();
     });
 
     /// <summary>Leaves the current lobby and joins the one the pending invite names.</summary>
@@ -290,6 +290,7 @@ public sealed partial class App
             _launcherLogForwarder?.Pump();
             _crashSender?.Pump();
             _nativeJoin?.Pump();
+            PumpEngine();
             PumpAbortedCapture();
             RetryLaunchWhenNoProcess();
             WatchModLoad();
@@ -395,7 +396,9 @@ public sealed partial class App
         var port = _options.BridgePort != 0 ? _options.BridgePort : _profile!.Port;
         try
         {
-            _bridge = new LoopbackBridge(_profile!, port);
+            _bridge = _profile!.Recomp != null
+                ? OpenUdpRelay(_lobby!.OwnerId == _transport!.LocalId)
+                : new LoopbackBridge(_profile!, port);
         }
         catch (SocketException e)
         {
@@ -455,7 +458,7 @@ public sealed partial class App
     {
         if (_buildCheck is { Mismatch: not null } refused)
         {
-            Refuse(Refusals.FromBuildMismatch(refused.Reason), MismatchDetail(refused));
+            Refuse(Refusals.FromBuildMismatch(refused.Reason, _profile!.Recomp != null), MismatchDetail(refused));
             return false;
         }
         if (_buildCheck is { Unreachable: true })
@@ -478,6 +481,11 @@ public sealed partial class App
             return false;
         }
         if (_saveSync?.Ready == false || CharacterNotReady() || StartGateClosed()) return true;
+        if (_profile!.Recomp != null)
+        {
+            var gate = CheckRecompBuild();
+            if (gate != LaunchGate.Go) return gate == LaunchGate.Wait;
+        }
         var matches = SaveMatchesHost();
         if (!matches && _saveSync?.SinceLastFrameMs is < SetArrivingWaitMs) return true;  // the host's set is still arriving (another world)
         if (!matches)
@@ -498,10 +506,15 @@ public sealed partial class App
         if (_options.NoLaunch) return true;
         BackupSavesBeforeLaunch();
         Log.Event($"Starting {_profile!.Name}");
-        var result = _profile.RendezvousSession
-            ? _gameDir != null ? GameLauncher.LaunchWithOptions(_profile, _gameDir, options) : LaunchResult.SteamStartFailed
-            : GameLauncher.Launch(_profile, _gameDir);
-        if (result == LaunchResult.Started) MarkLaunched();
+        var result = _profile.Recomp != null ? LaunchRecomp()
+            : _profile.RendezvousSession
+                ? _gameDir != null ? GameLauncher.LaunchWithOptions(_profile, _gameDir, options) : LaunchResult.SteamStartFailed
+                : GameLauncher.Launch(_profile, _gameDir);
+        if (result == LaunchResult.Started)
+        {
+            MarkLaunched();
+            if (_profile.Recomp != null) GameTookOver?.Invoke();
+        }
         return result is LaunchResult.Started or LaunchResult.AlreadyRunning || RefuseLaunch(result);
     }
 
@@ -564,7 +577,7 @@ public sealed partial class App
     /// <summary>Steam sometimes starts no game process: once, <see cref="NoProcessRetryMs"/> after the start, the game is started again.</summary>
     private void RetryLaunchWhenNoProcess()
     {
-        if (_launchedAtMs is not { } launchedAt || _launchRetried || _profile == null || Environment.TickCount64 - launchedAt < NoProcessRetryMs) return;
+        if (_launchedAtMs is not { } launchedAt || _launchRetried || _profile is not { Recomp: null } || Environment.TickCount64 - launchedAt < NoProcessRetryMs) return;
         _launchRetried = true;
         if (GameLauncher.IsRunning(_profile)) return;
         Log.Info($"No {_profile.Name} process {NoProcessRetryMs / MillisPerSecond} s after the start, starting it once more");
@@ -663,6 +676,7 @@ public sealed partial class App
         _refusal = refusal;
         Log.Event(StatusText.Refusal(refusal));
         PublishStep(LocalProgress());
+        if (_profile is { Recomp: not null } && _launchedAtMs != null) AttentionNeeded?.Invoke();
     }
 
     /// <summary>The window's session ended: when the host ended it on purpose the player is told why, then the app goes idle.</summary>
@@ -677,6 +691,7 @@ public sealed partial class App
     private void EndSession()
     {
         _session?.AnnounceLeaving();
+        ReleaseEngine();
         DropSession();
         DisposeLobby();
         _view = null;
@@ -721,6 +736,7 @@ public sealed partial class App
         _session = null;
         _bridge?.Dispose();
         _bridge = null;
+        DropRecompSession();
         _profile = null;
         _gameDir = null;
         _hostId = 0;

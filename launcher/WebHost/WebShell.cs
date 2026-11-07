@@ -67,6 +67,7 @@ public sealed class WebShell : ChromelessForm
             Raise();
             if (ActiveForm != this) WindowFlash.Start(this);
         };
+        _controller.GameTookOver += () => WindowState = FormWindowState.Minimized;
         _controller.RestartRequested += Close;
         _clock.Tick += (_, _) => _controller.Tick();
         Shown += (_, _) => _controller.Shown();

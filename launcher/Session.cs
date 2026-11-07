@@ -14,10 +14,10 @@ public sealed class Session : IDisposable
 
     private readonly GameProfile _profile;
     private readonly ITransport _transport;
-    private readonly LoopbackBridge _bridge;
+    private readonly IAdapterLink _bridge;
     private readonly PeerStats _stats = new();
     private readonly MemberGrace _grace = new();
-    private readonly PeerBudget _budget = new();
+    private readonly PeerBudget _budget;
     private readonly PartnerPresence _presence = new();
     private readonly FreshQueue? _fresh;
     private readonly Dictionary<ulong, string> _names = new();
@@ -35,9 +35,10 @@ public sealed class Session : IDisposable
     private long _lastBudgetReportMs;
     private long _lastFreshReplaced;
 
-    public Session(GameProfile profile, ILobby lobby, ITransport transport, LoopbackBridge bridge)
+    public Session(GameProfile profile, ILobby lobby, ITransport transport, IAdapterLink bridge)
     {
         _profile = profile;
+        _budget = new PeerBudget(profile.PeerBudget);
         _lobby = lobby;
         _lobbyId = lobby.Id;
         _hostId = lobby.OwnerId;

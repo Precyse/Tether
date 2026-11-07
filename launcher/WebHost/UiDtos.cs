@@ -26,8 +26,9 @@ internal sealed record ImgDto(string? Src, string Initial);
 
 internal sealed record BtnDto(string Label, bool Enabled);
 
-/// <summary>A mod action on show: the step row (text, percent and bar, check or cross) and, once it failed, the Retry button.</summary>
-internal sealed record ModRunDto(StepDto Step, bool Failed, BtnDto? Retry);
+/// <summary>A mod action on show: the step row (text, percent and bar, check or cross) and, once it failed, the Retry button. A game the
+/// launcher builds also has Cancel while it builds and Log (open the build's log) after it failed.</summary>
+internal sealed record ModRunDto(StepDto Step, bool Failed, BtnDto? Retry, BtnDto? Cancel = null, BtnDto? Log = null);
 
 internal sealed record ArtDto(string? Hero, string? Logo, string? Capsule);
 

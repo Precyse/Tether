@@ -20,14 +20,21 @@ public enum GameCopy { Unknown, Ok, Refused, Off }
 /// <summary>Whether the game loaded the save it was told to: ok, failed, or there was none to load.</summary>
 public enum GameLoad { Unknown, Ok, Failed, None }
 
+/// <summary>How a game with its own lockstep netplay is getting on with the other machines (The Warriors; the launcher reads it from the
+/// engine's log): hosting and waiting for players, connecting to the host, sending or loading the host's game, in sync, waiting for a
+/// player's input, out of sync (the engines stopped), a player left, refused for another game build, or could not connect.</summary>
+public enum GameNet { Unknown, Hosting, Connecting, Sending, Receiving, InSync, Stalled, Desync, PeerLeft, Refused, Failed }
+
 /// <summary>What the adapter says about the game it runs in, from its GAME_STATE message (docs/CONTRACT.md 0x0063): the text
 /// <c>place=world;char=ok;save=ok;slot=2;copy=refused:silent;peers=1234:2</c>, sent when the adapter links and whenever a part changes.
 /// A key left out stays unknown; <see cref="Slot"/> is the save slot the game plays (-1: not known); <see cref="ModDiffers"/> is
 /// set when a peer's adapter is not this adapter (<c>peers</c> state 2); <see cref="Coop"/> is <c>coop=0|1</c> (null: not said: 0 is a game that
-/// booted without co-op) and <see cref="Load"/> is <c>load=ok|failed|none</c>. The same pairs travel in the player's published step.</summary>
+/// booted without co-op), <see cref="Load"/> is <c>load=ok|failed|none</c> and <see cref="Net"/> is <c>net=insync|stalled|...</c>
+/// (<see cref="GameNet"/>). The same pairs travel in the player's published step.</summary>
 public sealed record GameState(
     GamePlace Place = GamePlace.Unknown, GameCharacter Character = GameCharacter.Unknown, GameSave Save = GameSave.Unknown, int Slot = GameState.UnknownSlot,
-    GameCopy Copy = GameCopy.Unknown, string CopyWhy = "", bool ModDiffers = false, bool? Coop = null, GameLoad Load = GameLoad.Unknown)
+    GameCopy Copy = GameCopy.Unknown, string CopyWhy = "", bool ModDiffers = false, bool? Coop = null, GameLoad Load = GameLoad.Unknown,
+    GameNet Net = GameNet.Unknown)
 {
     public const int UnknownSlot = -1;
 
@@ -39,6 +46,7 @@ public sealed record GameState(
     internal const string DiffersKey = "differs";
     internal const string CoopKey = "coop";
     internal const string LoadKey = "load";
+    internal const string NetKey = "net";
 
     private const string PeersKey = "peers";
     private const char PairSeparator = ';';
@@ -63,7 +71,7 @@ public sealed record GameState(
         Name(pairs, PlaceKey, GamePlace.Unknown), Name(pairs, CharKey, GameCharacter.Unknown), Name(pairs, SaveKey, GameSave.Unknown),
         pairs.TryGetValue(SlotKey, out var slot) && int.TryParse(slot, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var number) ? number : UnknownSlot,
         CopyOf(pairs, out var why), why, pairs.GetValueOrDefault(DiffersKey) == Set || AnyPeerDiffers(pairs.GetValueOrDefault(PeersKey, string.Empty)),
-        pairs.GetValueOrDefault(CoopKey) switch { Set => true, Unset => false, _ => null }, Name(pairs, LoadKey, GameLoad.Unknown));
+        pairs.GetValueOrDefault(CoopKey) switch { Set => true, Unset => false, _ => null }, Name(pairs, LoadKey, GameLoad.Unknown), Name(pairs, NetKey, GameNet.Unknown));
 
     /// <summary>The known parts as <c>key=value</c> pairs, in a fixed order.</summary>
     internal IEnumerable<string> EncodePairs()
@@ -76,6 +84,7 @@ public sealed record GameState(
         if (ModDiffers) yield return $"{DiffersKey}{KeyValueSeparator}{Set}";
         if (Coop is { } coop) yield return $"{CoopKey}{KeyValueSeparator}{(coop ? Set : Unset)}";
         if (Load != GameLoad.Unknown) yield return $"{LoadKey}{KeyValueSeparator}{Load.ToString().ToLowerInvariant()}";
+        if (Net != GameNet.Unknown) yield return $"{NetKey}{KeyValueSeparator}{Net.ToString().ToLowerInvariant()}";
     }
 
     /// <summary>The copy part <c>refused:silent</c>: the state, and after the colon the adapter's short code.</summary>

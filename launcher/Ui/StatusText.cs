@@ -11,7 +11,9 @@ public static class StatusText
         RefusalKind.LauncherBuild => LauncherBuild(refusal.Detail),
         RefusalKind.GameBuild => GameBuild(refusal.Detail, host),
         RefusalKind.ModFiles => "Mod files differ",
-        RefusalKind.ModNotInstalled => "Mod not installed",
+        RefusalKind.ModNotInstalled => IsBuiltGame(refusal.GameId) ? "Game not built" : "Mod not installed",
+        RefusalKind.BuildDiffers => "Game build differs from the host's",
+        RefusalKind.BuildFailed => refusal.Detail.Length > 0 ? $"The game could not be built: {refusal.Detail}" : "The game could not be built",
         RefusalKind.GameUnsupported => GameUnsupported(refusal),
         RefusalKind.GameNotFound => "Game not found",
         RefusalKind.RequirementMissing => refusal.Detail.Length > 0 ? Requirement(refusal.Detail, otherVersion: false) : "Required file not found",
@@ -78,6 +80,9 @@ public static class StatusText
         var installed = refusal.Detail.Length > 0 ? $" (build {refusal.Detail})" : string.Empty;
         return supported.Length > 0 ? $"{profile.Name} was updated by Steam{installed}; this mod supports {supported}" : "Game build unsupported";
     }
+
+    /// <summary>The game is one the launcher builds from the player's disc (<see cref="RecompProfile"/>), so there is no mod to install.</summary>
+    private static bool IsBuiltGame(string? gameId) => gameId != null && GameProfile.ListIds().Contains(gameId) && GameProfile.Load(gameId).Recomp != null;
 
     /// <summary>The words for a required file the game folder does not satisfy: absent, or another version than the accepted ones.</summary>
     public static string Requirement(string name, bool otherVersion) => otherVersion ? $"{name} is another version" : $"{name} not found";

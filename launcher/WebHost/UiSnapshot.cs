@@ -192,7 +192,7 @@ internal static partial class UiSnapshot
     {
         var idle = i.Free && !i.ModRunning;
         var games = i.Games.Select(game => new SettingsGameDto(
-            game.Profile.Id, game.Profile.Name, i.FolderOf(game.Profile) ?? string.Empty, SettingsModel.BrowseEnabled(idle),
+            game.Profile.Id, game.Profile.Name, SettingsModel.Folder(game.Profile, i.FolderOf(game.Profile)), SettingsModel.BrowseEnabled(idle),
             SettingsModel.ResetEnabled(game.Profile, idle), SettingsModel.UninstallEnabled(game.Status, idle, i.Update.Staged),
             game.Status.SettingsMod, game.Status.SettingsGame, OptionRows(i, game.Profile, settingsOptions: true, hostValues: null), SettingsModel.ArchiveShown(game.Profile),
             Dd2getherImport.Available(game.Profile, i.FolderOf(game.Profile)), i.ModRunOf(game.Profile.Id))).ToArray();

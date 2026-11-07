@@ -19,6 +19,8 @@ export const COMMANDS = [
   'option.set',
   'mod.install',
   'mod.retry',
+  'mod.cancel',
+  'mod.openLog',
   'dependencies.install',
   'notice.fix',
   'report.create',

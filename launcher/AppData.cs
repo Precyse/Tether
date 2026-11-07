@@ -32,6 +32,9 @@ public static class AppData
     /// <summary>The log of the run before this one.</summary>
     public static string PreviousLogFile => Path.Combine(LogsDir, PreviousLogFileName);
 
+    /// <summary>A path relative to the launcher's data folder (where games the launcher builds live).</summary>
+    public static string Resolve(string relative) => Path.GetFullPath(Path.Combine(Root, relative));
+
     private static string Root =>
         Environment.GetEnvironmentVariable(DataRootVariable) is { Length: > 0 } custom
             ? custom

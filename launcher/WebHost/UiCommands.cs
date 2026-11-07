@@ -25,6 +25,8 @@ internal static class Cmd
     public const string OptionSet = "option.set";
     public const string ModInstall = "mod.install";
     public const string ModRetry = "mod.retry";
+    public const string ModCancel = "mod.cancel";
+    public const string ModOpenLog = "mod.openLog";
     public const string DependenciesInstall = "dependencies.install";
     public const string NoticeFix = "notice.fix";
     public const string ReportCreate = "report.create";
@@ -120,6 +122,8 @@ internal static class UiCommands
         [Cmd.OptionSet] = [GameId, new("key", FieldKind.Text, Min: 1), new("value", FieldKind.Text, Min: 1)],
         [Cmd.ModInstall] = [GameId],
         [Cmd.ModRetry] = [GameId],
+        [Cmd.ModCancel] = [GameId],
+        [Cmd.ModOpenLog] = [GameId],
         [Cmd.DependenciesInstall] = [],
         [Cmd.NoticeFix] = [],
         [Cmd.ReportCreate] = [],

@@ -65,6 +65,11 @@ internal sealed partial class UiController
             case Cmd.ModRetry when !ModRunning:
                 return GameFor(command) is { } retry && _modRuns.GetValueOrDefault(retry.Profile.Id) is { Failed: true } failed
                     ? Do(() => StartMod(retry.Profile, failed.Kind)) : UnknownTarget;
+            case Cmd.ModCancel:
+                return GameFor(command) is { } building && _modRuns.GetValueOrDefault(building.Profile.Id) is { Cancellable: true } && _builds.TryGetValue(building.Profile.Id, out var job)
+                    ? Do(job.Cancel.Cancel) : UnknownTarget;
+            case Cmd.ModOpenLog:
+                return GameFor(command) is { } logged && _modRuns.GetValueOrDefault(logged.Profile.Id) is { LogPath: { } path } ? Do(() => LauncherActions.OpenPath(path)) : UnknownTarget;
             case Cmd.NoticeFix when NoticeFixAllowed():
                 RunNoticeFix();
                 return null;
@@ -230,7 +235,7 @@ internal sealed partial class UiController
     /// <summary>Starts the game again for the open session; the session folder is kept, so it catches up as it joins.</summary>
     private void RelaunchGame()
     {
-        if (GameOf(_app.Status)?.Profile is { } game) GameLauncher.Launch(game, GameFolders.Find(game));
+        _app.Relaunch();
     }
 
     /// <summary>Moves a conflicting mod out of the game folder before an install (the game is closed then); always goes on.</summary>
@@ -244,6 +249,7 @@ internal sealed partial class UiController
     /// popup, whose Install or Replace runs the same install with the dependencies first); otherwise the install starts.</summary>
     private void InstallOrAsk(GameProfile game)
     {
+        if (game.Recomp != null && RecompInstall.DiscPath(game) == null && !LauncherActions.BrowseForDisc(game)) return;
         if (GameFolders.Find(game) is { } gameDir && game.UnmetRequirements(gameDir).Count > 0)
         {
             _popup = PopupKind.Dependencies;
@@ -259,17 +265,38 @@ internal sealed partial class UiController
     private void StartMod(GameProfile game, ModRunKind kind, Action? afterInstalled = null)
     {
         if (ModRunning || GameFolders.Find(game) is not { } gameDir) return;
-        ShowModProgress(game.Id, kind, new ModProgress(ModStep.Checking, 0, 0, 0));
+        var job = new BuildJob();
+        if (game.Recomp != null && kind == ModRunKind.Install) _builds[game.Id] = job;
+        ShowModProgress(game.Id, kind, new ModProgress(game.Recomp != null && kind == ModRunKind.Install ? ModStep.Building : ModStep.Checking, 0, 0, 0));
         var progress = new ThrottledProgress(new Progress<ModProgress>(report => ShowModProgress(game.Id, kind, report)), () => Environment.TickCount64);
-        Task.Run(() => kind == ModRunKind.Install
-                ? ArchiveConflicts(game, gameDir) && DependencyInstaller.Install(game, gameDir, progress) && ModInstaller.Install(game, gameDir, progress)
-                : ModInstaller.Uninstall(game, gameDir, progress))
+        Task.Run(() => game.Recomp != null ? RunRecomp(game, kind, job, gameDir, progress)
+                : kind == ModRunKind.Install
+                    ? ArchiveConflicts(game, gameDir) && DependencyInstaller.Install(game, gameDir, progress) && ModInstaller.Install(game, gameDir, progress)
+                    : ModInstaller.Uninstall(game, gameDir, progress))
             .ContinueWith(task => FinishMod(game.Id, kind, task, afterInstalled), _ui);
+    }
+
+    /// <summary>A game the launcher builds: Install runs the setup tool (the bar follows its steps, Cancel ends it), Uninstall removes the build. The
+    /// end is reported here, a failure with the log the tool names.</summary>
+    private static bool RunRecomp(GameProfile game, ModRunKind kind, BuildJob job, string gameDir, IProgress<ModProgress> progress)
+    {
+        var failure = kind == ModRunKind.Install ? RecompBuild.Run(game, progress, job.Cancel.Token).Failure
+            : RecompInstall.Remove(game, gameDir) ? null : new SetupFailure(SetupFailureKind.Other, $"Could not remove the {game.Name} build");
+        if (failure == null)
+        {
+            progress.Report(new ModProgress(ModStep.Done, ProgressMath.Complete, 0, 0));
+            return true;
+        }
+        job.LogPath = failure.LogPath ?? (failure.Kind is SetupFailureKind.CompilerFailed or SetupFailureKind.Other ? RecompInstall.LogsDir(game, gameDir) : null);
+        progress.Report(new ModProgress(ModStep.Failed, 0, 0, 0, failure.Message));
+        return false;
     }
 
     private void ShowModProgress(string gameId, ModRunKind kind, ModProgress progress)
     {
-        _modRuns[gameId] = new ModRunView(kind, progress);
+        var job = kind == ModRunKind.Install ? _builds.GetValueOrDefault(gameId) : null;
+        var running = progress.Step is not (ModStep.Done or ModStep.Failed);
+        _modRuns[gameId] = new ModRunView(kind, progress, Cancellable: running && job != null, LogPath: progress.Step == ModStep.Failed ? job?.LogPath : null);
         _update.SetFree(Free && !ModRunning);
         Changed?.Invoke();
     }
@@ -324,7 +351,7 @@ internal sealed partial class UiController
         var game = _games.FirstOrDefault(g => g.Profile.Id == status.Refusal?.GameId)?.Profile ?? SelectedGame?.Profile;
         switch (SessionCards.FixFor(status, _update.NewerBuild))
         {
-            case NoticeFix.InstallMod or NoticeFix.UpdateMod when game != null:
+            case NoticeFix.InstallMod or NoticeFix.UpdateMod or NoticeFix.Rebuild when game != null:
                 StartMod(game, ModRunKind.Install, _app.ClearRefusal);
                 break;
             case NoticeFix.UpdateLauncher:
