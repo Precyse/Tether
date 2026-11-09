@@ -1,6 +1,6 @@
 # CODEMAP: launcher
 
-The C# launcher: core, view models, the WebView2 host and the page. Index and "where to look for X": `CODEMAP.md`.
+The C# launcher: core, view models, the WebView2 host and the page. Index: `CODEMAP.md`; "where to look for X": `docs/codemap/where.md`.
 
 ## launcher/ (C# .NET 8, namespace Tether)
 

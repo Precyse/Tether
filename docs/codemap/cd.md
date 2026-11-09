@@ -2,7 +2,7 @@
 
 Crimson Desert: the x64 adapter. Built: phase 1 of the design (`coop-scratch\cd\design\phases.md`), the world gate, the
 phase 3 presence recipes (copies of the other player) and the phase 4 pure rules. Index and
-"where to look for X": `CODEMAP.md`.
+"where to look for X": `docs/codemap/where.md`.
 
 ## adapters/cd/ (C++20, x64, winmm.dll proxy in `bin64`)
 

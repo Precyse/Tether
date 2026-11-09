@@ -1,6 +1,6 @@
 # CODEMAP: sr2
 
-Saints Row 2: the x86 adapter. Index and "where to look for X": `CODEMAP.md`.
+Saints Row 2: the x86 adapter. Index: `CODEMAP.md`; "where to look for X": `docs/codemap/where.md`.
 
 ## adapters/sr2/ (C++20, x86, dinput8.dll proxy, Saints Row 2)
 

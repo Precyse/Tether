@@ -2,7 +2,7 @@
 
 Dragon's Dogma 2: the REFramework C++ plugin. Built: phase 1 of the design (`coop-scratch\dd2\design\phases.md`), the
 world gate, the owner half of the body streams, the shared world clock, forced offline play, the look card, peer puppets,
-the guest's save redirect, the co-op profile (capture in solo play, splice at a co-op load) and the enemy sync (host enemies mirrored on the guest, guest hits replayed on the host) (built, not live-tested). Index and "where to look for X": `CODEMAP.md`.
+the guest's save redirect, the co-op profile (capture in solo play, splice at a co-op load) and the enemy sync (host enemies mirrored on the guest, guest hits replayed on the host) (built, not live-tested). Index: `CODEMAP.md`; "where to look for X": `docs/codemap/where.md`.
 
 ## adapters/dd2/ (C++20, x64, `reframework\plugins\dd2coop.dll`)
 

@@ -1,11 +1,15 @@
 # CODEMAP: tools
 
-Repo-level test, release and research tools. Index and "where to look for X": `CODEMAP.md`.
+Repo-level test, release and research tools. Index: `CODEMAP.md`; "where to look for X": `docs/codemap/where.md`.
 
 ## Tests and release
 
 | file | owns |
 |---|---|
+| .github/workflows/release.yml | push to `main` (channel `latest`) or `next` (prerelease): parallel jobs `re0`, `sr2` (x86 build + unit tests), `dd2`, `cd` (x64 build + unit tests; each DLL cached by a source hash, uploaded as an artifact) and `launcher`; then `package`: `publish_check.py`, assemble (DS2 left out; `launcher/app/coop-launcher.exe` is a copy of `tether.exe` for installs made before the rename, `launcher/FormerInstall.cs`), `tools/release_manifest.py` (unchanged components ship the previous zip), update the channel's release in place, manifest last, move the tag |
+| README.md | the GitHub front page: what Tether is, supported games and their status, install, playing, repository layout |
+| launcher/package/README.txt | player README shipped in the package |
+| launcher/update.json | `{ "repo": "Precyse/Tether", "channel": "preview" }` copied next to the exe; a missing file or the `OWNER/REPO` placeholder disables updating (the release build writes the real repo and channel into the package) |
 | tools/launcher_tests/ | C# console unit tests of the launcher's pure rules and file/process rules (mod install, updater, save sync, UI snapshot, release manifest, component update); `dotnet run --project tools/launcher_tests`, subsets with `LAUNCHER_TESTS_ONLY=web|mod|files`; tests that touch settings or logs set `COOP_LAUNCHER_DATA` |
 | tools/warriors/fake_status.py | a fake Warriors engine for the status channel: writes the status file and `[net]` lines of a join, a host, a crash or a session end in real steps, to see the launcher's cards without a game (spec `coop-scratch\warriors\design\STATUS_CONTRACT.md`) |
 | tools/warriors/relay_rig/ | The Warriors over the launcher's relay on one PC: a host engine and N joiner engines (the existing recomp build, run only) connected through `UdpRelayLink` and the profile's peer budget, with an optional one-way delay; reports the join time and whether the digests agree; only its own processes are stopped. `--build` instead runs the launcher's build step against the real setup tool (`COOP_LAUNCHER_DATA` names the data folder, `--cancel-after N` cancels). `dotnet run -c Release --project tools/warriors/relay_rig -- --out <dir> [--frames N] [--joiners N] [--delay ms]` |

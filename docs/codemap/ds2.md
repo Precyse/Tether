@@ -1,6 +1,6 @@
 # CODEMAP: ds2
 
-Death Stranding 2: the x64 adapter. Index and "where to look for X": `CODEMAP.md`.
+Death Stranding 2: the x64 adapter. Index: `CODEMAP.md`; "where to look for X": `docs/codemap/where.md`.
 
 ## adapters/ds2/ (C++20, x64, version.dll proxy, DEATH STRANDING 2)
 

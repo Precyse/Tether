@@ -1,6 +1,6 @@
 # CODEMAP: re0
 
-Resident Evil 0 HD: the x86 adapter. Index and "where to look for X": `CODEMAP.md`.
+Resident Evil 0 HD: the x86 adapter. Index: `CODEMAP.md`; "where to look for X": `docs/codemap/where.md`.
 
 ## adapters/re0/ (C++20, x86, dinput8.dll proxy)
 
