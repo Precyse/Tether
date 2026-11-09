@@ -77,6 +77,12 @@ def game_ids(package):
     return ids
 
 
+def builds_on_player_pc(package, game):
+    """A recompiled game (profile key "recomp") is built from the player's own disc, so its mod is the profile alone."""
+    profile = json.loads((package / GAMES_DIR / f"{game}.json").read_text(encoding="utf-8"))
+    return "recomp" in profile
+
+
 def components(package):
     """{component id: relative paths}: the launcher, then one mod per game profile."""
     if not (package / LAUNCHER_EXE).is_file():
@@ -84,7 +90,7 @@ def components(package):
     parts = {LAUNCHER_ID: package_files(package, APP_DIR)}
     for game in game_ids(package):
         parts[game] = [f"{GAMES_DIR}/{game}.json", *package_files(package, f"{ADAPTERS_DIR}/{game}")]
-        if len(parts[game]) < 2:
+        if len(parts[game]) < 2 and not builds_on_player_pc(package, game):
             raise PackageError(f"profile {game} has no files in {ADAPTERS_DIR}/{game}")
     return parts
 

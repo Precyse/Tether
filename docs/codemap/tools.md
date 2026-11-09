@@ -15,7 +15,7 @@ Repo-level test, release and research tools. Index and "where to look for X": `C
 | tools/peer_link_test.py | `--gap S` (held vs PEER_DOWN) and `--flood N` (peer budget) against a host launcher with `fake_adapter.py` |
 | tools/fake_adapter.py, tools/echo_peer.py, tools/spoof_peer.py | stand-in adapter; echo of 0x0100/0x0101 and the puppet frames; a wrong slot byte over local transport |
 | tools/publish_check.py | gates pushes and releases (no game files, keys or stray binaries) |
-| tools/release_manifest.py, tools/release_manifest_test.py | the package into `Tether.zip`, `launcher.zip`, `mod-<id>.zip`, `manifest.json`; unchanged components ship the previous zip |
+| tools/release_manifest.py, tools/release_manifest_test.py | the package into `Tether.zip`, `launcher.zip`, `mod-<id>.zip`, `manifest.json`; unchanged components ship the previous zip; a recompiled game (profile key `recomp`) ships its profile alone (`builds_on_player_pc`) |
 | tools/sr2/tunnel_launcher_test.py, tools/sr2/session_test, tools/sr2/player_name_test | SR2 Steam tunnel on local transport; `Session` with a scripted lobby; `PlayerName` |
 
 ## RE0 research (`tools/re0/`)
