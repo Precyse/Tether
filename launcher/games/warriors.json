@@ -25,6 +25,7 @@
     { "key": "max_players", "label": "Players", "host": true, "values": [
       { "value": "4", "label": "4" }, { "value": "3", "label": "3" }, { "value": "2", "label": "2" } ] },
     { "key": "friendly_fire", "label": "Friendly fire", "host": true, "values": [ { "value": "0", "label": "Off" }, { "value": "1", "label": "On" } ] },
+    { "key": "input_delay", "label": "Input delay", "host": true, "values": [ { "value": "0", "label": "Auto" }, { "value": "2", "label": "2 frames" }, { "value": "3", "label": "3 frames" }, { "value": "4", "label": "4 frames" }, { "value": "6", "label": "6 frames" }, { "value": "8", "label": "8 frames" } ] },
     { "key": "scale", "label": "Resolution", "values": [ { "value": "4", "label": "4x" }, { "value": "3", "label": "3x" }, { "value": "2", "label": "2x" }, { "value": "1", "label": "1x" } ] },
     { "key": "msaa", "label": "Anti-aliasing", "values": [ { "value": "0", "label": "Off" }, { "value": "1", "label": "On" } ] },
     { "key": "aniso", "label": "Texture filtering", "values": [ { "value": "0", "label": "Off" }, { "value": "2", "label": "2x" }, { "value": "4", "label": "4x" }, { "value": "8", "label": "8x" }, { "value": "16", "label": "16x" } ] },
