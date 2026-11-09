@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>The rule for an option the game's own co-op page asks to change (OPTION_SET): only an option the profile has, that
 /// is not worked out by the launcher, that this player may set (a host option only for the host) to a value offered here.</summary>

@@ -23,6 +23,7 @@
 .step-circle { width: var(--s-circle); height: var(--s-circle); border: 1px solid var(--dim); border-radius: 50%; }
 .steps-small .ic-check { stroke-width: 2.6; }
 .step-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.step[data-mark="failed"] .step-text { white-space: normal; overflow: visible; overflow-wrap: anywhere; }
 .step-trailing { font-size: 13px; font-weight: 400; }
 .steps-small .step-trailing { font-size: 12px; }
 .step-bar, .step-lines, .step-pairs { margin-left: calc(var(--s-glyph) + var(--s-gap)); }

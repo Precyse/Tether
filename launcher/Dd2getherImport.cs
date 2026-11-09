@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>Brings DD2gether's saves into the launcher's campaigns (<see cref="CampaignStore"/>), once each, for a profile with
 /// <c>campaigns.importDd2gether</c>: its data folder (<see cref="DataFolder"/>) where DD2gether runs from, or any copy of it under

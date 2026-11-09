@@ -1,4 +1,4 @@
-namespace CoopLauncher.Gui;
+namespace Tether.Gui;
 
 /// <summary>The screens under the top bar. Home and Lobbies are the two tabs; Joining, Hosting and Lobby are the session
 /// screens; Settings and Select are the views that cover the whole area.</summary>
@@ -61,7 +61,7 @@ internal static class Screens
     /// <summary>A guest that has not been refused and is through its join steps (build check, save): it waits for the host and
     /// stays through the launch on the hosting screen.</summary>
     private static bool JoinedWaiting(AppStatus status) =>
-        status.Refusal == null && status.Step is SessionStep.Ready or SessionStep.ReadingCharacter or SessionStep.StartingGame;
+        status.Refusal == null && status.Step is SessionStep.Ready or SessionStep.ReadingCharacter or SessionStep.StartingGame or SessionStep.BuildingGame;
 
     private static bool RefusedJoin(AppStatus status, Intent intent, JoinTarget? target) =>
         intent == Intent.Join && target != null && status.Refusal is { LobbyId: not 0 } refusal && refusal.LobbyId == target.LobbyId;

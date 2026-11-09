@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
-using CoopLauncher;
+using Tether;
 
 namespace LauncherTests;
 

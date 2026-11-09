@@ -1,6 +1,6 @@
 using Steamworks;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>The host's open lobby as Steam rich presence (visible to friends running the launcher): a guest whose host
 /// crashed and relaunched finds the new lobby here.</summary>

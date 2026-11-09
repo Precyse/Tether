@@ -1,6 +1,7 @@
 .topbar { height: var(--bar-h); flex: none; display: flex; align-items: center; gap: 16px; padding-left: var(--bar-pad-x); background: var(--bg); border-bottom: 1px solid var(--hairline); position: relative; z-index: 3; }
 .topbar[data-mode="view"] { padding-left: 12px; }
 .top-brand { font-family: var(--font-display); font-weight: 700; font-size: var(--fs-brand); letter-spacing: var(--ls-logo); }
+.top-logo { display: block; height: 22px; width: auto; }
 .topbar .seg-tabs { --seg-h: var(--tab-h); --seg-pad: var(--tab-pad-x); --seg-underline: calc((var(--bar-h) - var(--tab-h)) / -2); margin-left: 16px; }
 .topbar .seg-item { font-family: var(--font-display); font-weight: 500; font-size: var(--fs-nav); letter-spacing: var(--ls-brand); }
 .top-spacer { flex: 1; }
@@ -28,6 +29,7 @@
 .rail-row:hover:not(.selected):not(:disabled) { background: var(--card); }
 .rail-row.selected { color: var(--text); }
 .rail-art { position: relative; width: var(--rail-art-w); height: var(--rail-art-h); flex: none; background: var(--card); overflow: hidden; }
+.rail-art:has(.rail-art-img[hidden]) { display: none; }
 .rail-art-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .rail-row:not(.selected) .rail-art-img { opacity: var(--rail-art-idle); }
 .rail-row.locked .rail-art-img { opacity: var(--locked-art-opacity); }
@@ -200,8 +202,9 @@
 .settings-line { display: flex; align-items: center; gap: var(--section-pad-x); font-size: var(--fs-small); }
 .settings-game { color: var(--muted); }
 .mod-run { display: flex; flex-direction: column; gap: var(--gap); min-width: 0; width: var(--mod-run-w); }
+.hero-dock .mod-run { width: auto; margin-bottom: var(--gap); }
 .mod-run-hero { padding: var(--gap) 12px; background: var(--over-art-fill); border: 1px solid var(--line); }
 .mod-run-buttons { display: flex; justify-content: flex-end; gap: var(--gap); }
 .mod-run-buttons[hidden] { display: none; }
 .mod-run-button { height: 24px; padding: 0 12px; font-size: var(--fs-small); }
-.mod-run[data-failed] .step-text { white-space: normal; overflow: visible; }
+.mod-run .step-text { white-space: normal; overflow: visible; overflow-wrap: anywhere; }

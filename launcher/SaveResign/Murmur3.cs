@@ -1,7 +1,7 @@
 // Ported from MandarinJuice (https://github.com/mi5hmash/MandarinJuice), MIT License, Copyright (c) 2026 Michał Gębicki.
 // The full licence text is in THIRD_PARTY.md.
 
-namespace CoopLauncher.SaveResign;
+namespace Tether.SaveResign;
 
 /// <summary>MurmurHash3 (32 bit) over 32-bit words, the signature in the last word of a Mandarin save file. Pure.</summary>
 internal static class Murmur3

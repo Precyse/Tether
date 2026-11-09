@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>Locates the repo by walking up from the build output to the folder holding launcher/games.</summary>
 public static class RepoPaths

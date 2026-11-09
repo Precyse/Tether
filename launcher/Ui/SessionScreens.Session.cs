@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace CoopLauncher.Gui;
+namespace Tether.Gui;
 
 internal static partial class SessionScreens
 {
@@ -30,7 +30,8 @@ internal static partial class SessionScreens
             preGame && (isHost ? StartEnabled(s, local!) : ReadyEnabled(s, g)), state,
             preGame ? [] : HostOptions(s, g), preGame ? [] : events.TakeLast(RecentEvents).ToList(),
             preGame ? !isHost && LaunchStalled(s, c, nowMs) : state?.Kind == LobbyStateKind.GameClosed, preGame ? $"{s.Players.Count}/{seats.Count}" : string.Empty,
-            seats, seats.Count <= TwoSeats ? CardLayout.Wide : CardLayout.Tall, SessionCards.NoticeFor(s, 0), preGame && !isHost ? GuestButtonWords(s, ReadyEnabled(s, g)) : string.Empty);
+            seats, seats.Count <= TwoSeats ? CardLayout.Wide : CardLayout.Tall, SessionCards.NoticeFor(s, 0), preGame && !isHost ? GuestButtonWords(s, ReadyEnabled(s, g)) : string.Empty,
+            preGame && isHost ? StartHint(s, local!) : null);
     }
 
     /// <summary>One card per seat: the host first, then the other members, then open seats up to the seat count.</summary>
@@ -78,7 +79,7 @@ internal static partial class SessionScreens
         return new PlayerCard(
             player.Id, player.Name, hostCorner ? HostWord : corner, character.Length == 0 ? player.Label : DetailOf(character, outfit, g), CardStates.Words(player, host),
             player.IsHost && !hostCorner ? HostWord : string.Empty, CardStates.Of(player, host), player.IsLocal, FigureOf(character, outfit, g),
-            withSteps ? JoinerSteps(player, g) : [], player.Step == SessionStep.ReceivingSave ? player.Percent / PercentScale : null,
+            withSteps ? JoinerSteps(player, g) : [], player.Step == SessionStep.ReceivingSave || player is { Step: SessionStep.BuildingGame, Percent: >= 0 } ? player.Percent / PercentScale : null,
             player.Held ? MinutesSeconds(player.HoldSecondsLeft) : string.Empty,
             entry?.Unit ?? string.Empty, entry?.FullName ?? string.Empty, OutfitLabel(character, outfit, g) ?? string.Empty, CardStates.IsReady(player), kickable);
     }
@@ -140,6 +141,15 @@ internal static partial class SessionScreens
     private static bool StartEnabled(AppStatus s, PlayerSlot local) =>
         s.Step == SessionStep.Ready && s.StartBlocked.Length == 0 && s.Players.Where(player => player != local).All(CardStates.IsPrepared);
 
+    /// <summary>Why START GAME waits, in a line under it: the first guest that is not prepared, named, with what it has to do when it was refused; null when nothing waits.</summary>
+    private static string? StartHint(AppStatus s, PlayerSlot local)
+    {
+        if (s.Step != SessionStep.Ready || s.StartBlocked.Length > 0) return null;
+        var waiting = s.Players.Where(player => player != local && !CardStates.IsPrepared(player)).FirstOrDefault();
+        if (waiting == null) return null;
+        return waiting.Step == SessionStep.Refused && waiting.Refusal == RefusalKind.BuildDiffers ? $"Waiting for {waiting.Name} to update" : $"Waiting for {waiting.Name}";
+    }
+
     /// <summary>The guest's button follows its step: READY while it can be pressed, else what the guest is waiting for (WAITING FOR HOST only
     /// once everything is prepared).</summary>
     private static string GuestButtonWords(AppStatus s, bool readyEnabled)
@@ -153,6 +163,7 @@ internal static partial class SessionScreens
             SessionStep.ReceivingSave => "RECEIVING SAVE",
             SessionStep.ReadingCharacter => "READING CHARACTER",
             SessionStep.StartingGame => "STARTING GAME",
+            SessionStep.BuildingGame => "BUILDING GAME",
             _ => "WAITING FOR HOST",
         };
     }
@@ -163,6 +174,7 @@ internal static partial class SessionScreens
         var sending = s.Players.FirstOrDefault(player => !player.IsLocal && player.Step == SessionStep.ReceivingSave);
         var third = s.StartBlocked.Length > 0 ? new StepRow(s.StartBlocked, StepMark.Failed)
             : s.Refusal is { } refusal && RefusalStep(refusal.Kind) == JoinStep.Starting ? FailedRow(refusal, string.Empty, LogLines(refusal.Kind, g, gameDir))
+            : s.Step == SessionStep.BuildingGame && s.Players.FirstOrDefault(player => player.IsLocal) is { } building ? BuildRow(building, StepMark.Active)
             : s.Step == SessionStep.StartingGame ? new StepRow(s.GameWaitingForTitle ? WaitingForTitleWords : "Starting game", StepMark.Active, SinceTimer(s.StepSinceMs, nowMs))
             : sending != null ? new StepRow($"Sending save to {sending.Name}", StepMark.Active)
             : new StepRow("Waiting for players", opening ? StepMark.Pending : StepMark.Active, opening ? string.Empty : SinceTimer(s.LobbyOpenedAtMs, nowMs));
@@ -178,12 +190,23 @@ internal static partial class SessionScreens
     private static LobbyState LobbyStateOf(AppStatus s, GameCondition c, long unixNow)
     {
         if (c == GameCondition.Exited || s.Step == SessionStep.GameClosed) return new LobbyState(LobbyStateKind.GameClosed, "Game closed", string.Empty);
+        var timer = s.SessionStartedUnix > 0 ? HoursMinutesSeconds(unixNow - s.SessionStartedUnix) : string.Empty;
+        if (s.State is not (AppState.Rejoining or AppState.WaitingForHost) && PhaseWords(s) is { } phase) return new LobbyState(LobbyStateKind.InGame, phase, timer);
         return s.State switch
         {
             AppState.Rejoining => new LobbyState(LobbyStateKind.Reconnecting, "Reconnecting", MinutesSeconds(s.SecondsLeft)),
             AppState.WaitingForHost => new LobbyState(LobbyStateKind.WaitingForHost, "Waiting for host", MinutesSeconds(s.SecondsLeft)),
-            _ => new LobbyState(LobbyStateKind.InGame, "In game", s.SessionStartedUnix > 0 ? HoursMinutesSeconds(unixNow - s.SessionStartedUnix) : string.Empty),
+            _ => new LobbyState(LobbyStateKind.InGame, "In game", timer),
         };
+    }
+
+    /// <summary>What the session is doing while a game with its own front end is not yet playing for everyone: a mission loading, or players still getting in; null once all play.</summary>
+    private static string? PhaseWords(AppStatus s)
+    {
+        var stages = s.Players.Select(player => player.Game?.Stage ?? GameStage.Unknown).ToList();
+        if (s.Players.FirstOrDefault(player => player.Game?.Stage == GameStage.Loading)?.Game is { } loading)
+            return loading.Mission.Length > 0 ? $"Loading mission {loading.Mission}" : "Loading";
+        return stages.Any(stage => stage is GameStage.Booting or GameStage.Lobby or GameStage.Connecting or GameStage.Receiving or GameStage.Sending) ? "Getting everyone in" : null;
     }
 
     /// <summary>The host's options as label and value, as the lobby carries them (the character choice is the select view's, not

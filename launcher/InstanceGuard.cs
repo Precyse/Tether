@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>
 /// Clears out launcher processes that are not the running window (SingleInstance calls it when this start becomes the window
@@ -10,7 +10,7 @@ namespace CoopLauncher;
 /// </summary>
 public static class InstanceGuard
 {
-    public const string CliMutexPrefix = @"Local\CoopLauncher.Cli.";
+    public const string CliMutexPrefix = @"Local\Tether.Cli.";
     private const int ExitWaitMs = 3000;
 
     /// <summary>The mutex a command-line run holds for its whole life, so no start closes it.</summary>

@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using CoopLauncher;
+using Tether;
 
 namespace RelayRig;
 

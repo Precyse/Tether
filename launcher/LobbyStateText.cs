@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>The LOBBY_STATE payload: the lobby as text for the adapter's own co-op page. Lines are separated by LF and fields by
 /// TAB (tabs and line breaks inside a field become spaces): <c>member</c> (slot, host, local, character value and label, outfit label,

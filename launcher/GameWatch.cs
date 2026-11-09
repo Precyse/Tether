@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>What is wrong with the game process of an open session, if anything.</summary>
 public enum GameCondition { Fine, Exited, Unlinked, NotStarted }

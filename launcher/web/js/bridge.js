@@ -21,6 +21,7 @@ export const COMMANDS = [
   'mod.retry',
   'mod.cancel',
   'mod.openLog',
+  'mod.installTools',
   'dependencies.install',
   'notice.fix',
   'report.create',

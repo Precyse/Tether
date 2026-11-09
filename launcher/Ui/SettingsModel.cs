@@ -1,4 +1,4 @@
-namespace CoopLauncher.Gui;
+namespace Tether.Gui;
 
 /// <summary>The pure rules of a game's section in the settings view, used by the web window's snapshot.
 /// <c>free</c> is whether no session is open.</summary>

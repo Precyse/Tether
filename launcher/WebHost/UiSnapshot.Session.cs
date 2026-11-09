@@ -1,6 +1,6 @@
-using CoopLauncher.Gui;
+using Tether.Gui;
 
-namespace CoopLauncher.Web;
+namespace Tether.Web;
 
 /// <summary>The wire names of the few enums whose page spelling is not their camelCase name.</summary>
 internal static class Names
@@ -28,7 +28,7 @@ internal static partial class UiSnapshot
             model.State is { } state ? new LobbyStateDto(state.Kind, state.Words, state.Timer) : null,
             model.Options.Select(option => new[] { option.Label, option.Value }).ToArray(), model.Events.ToArray(), model.Relaunch, model.Counter,
             model.Layout, Cards(i, game.Profile.Id, model.Seats), model.Seats.Any(card => card.Local && card.Figure != null),
-            model.Notice == null ? null : Notice(model.Notice), Pickers(i, game.Profile, model), model.Primary);
+            model.Notice == null ? null : Notice(model.Notice), Pickers(i, game.Profile, model), model.Primary, model.StartHint);
     }
 
     /// <summary>The hosting screen's pickers (<see cref="OptionsModel.SessionPickers"/>): the host's campaign and save slot, a guest's

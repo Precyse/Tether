@@ -1,4 +1,4 @@
-namespace CoopLauncher.Web;
+namespace Tether.Web;
 
 /// <summary>Which of the two pages a surface shows.</summary>
 internal enum PageKind { Main, Mini }

@@ -1,6 +1,6 @@
-using CoopLauncher.Gui;
+using Tether.Gui;
 
-namespace CoopLauncher.Web;
+namespace Tether.Web;
 
 /// <summary>The state and the actions of the launcher window without any controls: the games and their mod states, the selected game, the tab, what the player asked for, the
 /// open view and popup, the lobby filter, the player events, the update path, the game watch and the mini mode. It raises

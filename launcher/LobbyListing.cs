@@ -1,12 +1,12 @@
 using System.Globalization;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>The Steam lobby data keys of a co-op lobby (<c>cf_*</c>). The host writes them when it creates the lobby, apart from
 /// the roster and the start time, which it keeps up to date; every member and every searcher reads them.</summary>
 public static class LobbyKeys
 {
-    /// <summary>The marker that tells a co-op launcher's lobby from every other app's: AppID 480 is shared by every Steamworks tester.</summary>
+    /// <summary>The marker that tells a Tether lobby from every other app's: AppID 480 is shared by every Steamworks tester.</summary>
     public const string App = "cf_app";
     public const string AppMarker = "coop-launcher";
     public const string Game = "cf_game";

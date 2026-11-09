@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>The running processes of a game. A Steam game is its executable's name. A game the launcher builds starts through a stub whose
 /// child is the engine: the engine of that install counts (by its path, so another copy of the engine on the PC does not), and the stub,

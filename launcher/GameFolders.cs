@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>Where a game is installed: the folder chosen in the settings, else the one Steam knows; a game the launcher builds
 /// (<see cref="RecompProfile"/>) lives in its own folder, built or not. A found folder is remembered

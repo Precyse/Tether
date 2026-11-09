@@ -8,8 +8,9 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <PlatformTarget>x64</PlatformTarget>
-    <AssemblyName>coop-launcher</AssemblyName>
-    <RootNamespace>CoopLauncher</RootNamespace>
+    <AssemblyName>tether</AssemblyName>
+    <RootNamespace>Tether</RootNamespace>
+    <Product>Tether</Product>
     <RollForward>LatestMajor</RollForward>
     <UseWindowsForms>true</UseWindowsForms>
     <PublishReferencesDocumentationFiles>false</PublishReferencesDocumentationFiles>

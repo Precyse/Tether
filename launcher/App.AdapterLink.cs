@@ -1,6 +1,6 @@
-using CoopLauncher.Gui;
+using Tether.Gui;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>What the loop and the game's own co-op page tell each other over the adapter link: the player's option changes made
 /// there (OPTION_SET) are checked and saved, and the lobby (LOBBY_STATE) is sent to the adapter when it changed.</summary>

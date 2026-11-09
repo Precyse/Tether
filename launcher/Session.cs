@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>
 /// Turns lobby membership into slots and epochs, and routes frames between adapter and peers. A member that vanishes from

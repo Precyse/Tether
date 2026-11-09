@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>The session's save backups (<see cref="SaveBackup"/>) for a game whose profile has <c>saveBackup</c>: the "before"
 /// copy once per session, just before this machine starts the game, and the "after" copy when the session is dropped. A host that plays

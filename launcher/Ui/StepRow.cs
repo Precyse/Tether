@@ -1,4 +1,4 @@
-namespace CoopLauncher.Gui;
+namespace Tether.Gui;
 
 internal enum StepMark { Pending, Active, Done, Failed }
 

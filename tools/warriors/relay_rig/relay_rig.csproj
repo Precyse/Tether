@@ -13,7 +13,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../../launcher/CoopLauncher.csproj" />
+    <ProjectReference Include="../../../launcher/Tether.csproj" />
   </ItemGroup>
 
   <!-- The WebView2 package (through the launcher) also references its WPF control, which clashes on WindowsBase and is never used. -->

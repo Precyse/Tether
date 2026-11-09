@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>
 /// Newest-wins holding queue for a game's fresh frame types (profile <c>freshTypes</c>): an unreliable frame of such a

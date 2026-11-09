@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>The carrier's message lanes; the numbers are the Steam channels. Fresh carries a game's newest-wins state types.</summary>
 public enum TransportChannel

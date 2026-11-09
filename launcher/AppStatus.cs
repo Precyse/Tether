@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>Rejoining: the lobby connection was lost and is being rebuilt; WaitingForHost: a guest's host left and its new
 /// lobby is awaited; Offline: the main loop could not start (see <see cref="OfflineReason"/>) and is retrying.</summary>
@@ -12,12 +12,13 @@ public enum OfflineReason { None, SteamNotRunning }
 /// Options is the encoded option values its launcher published (<see cref="GameOptions.Decode"/>); HoldSecondsLeft is the
 /// whole seconds before a held member is given up (0 when it is not held); Refusal is the reason a refused member published.
 /// Connecting: nothing has come from it yet; Detail is the refusal's detail or the reason its character was not read; Label is the
-/// campaign the host plays or the character the guest brings; Game is what its adapter says about its game.</summary>
+/// campaign the host plays or the character the guest brings; Game is what its adapter says about its game; Ended: its refusal is the end
+/// of a session that was going.</summary>
 public sealed record PlayerSlot(
     ulong Id, string Name, bool IsHost, bool IsLocal, string Status = "",
     SessionStep Step = SessionStep.None, int Percent = 0, int? RttMs = null, bool Held = false, bool Silent = false,
     string Options = "", int HoldSecondsLeft = 0, RefusalKind? Refusal = null,
-    bool Connecting = false, string Detail = "", string Label = "", GameState? Game = null);
+    bool Connecting = false, string Detail = "", string Label = "", GameState? Game = null, bool Ended = false);
 
 /// <summary>A friend hosting a lobby of a game this launcher knows, with the lobby's data once Steam delivered it.</summary>
 public sealed record FriendLobby(ulong FriendId, string Name, ulong LobbyId, string GameId, LobbyListing? Listing = null);

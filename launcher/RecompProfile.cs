@@ -3,7 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>
 /// A game with no Steam app that the launcher builds on the player's PC from their own disc image (The Warriors' native build, made by
@@ -21,18 +21,38 @@ namespace CoopLauncher;
 /// guest plays on a copy of it: the profile's save sync sends this file to every guest.</param>
 /// <param name="SessionCard">Where that copy lands on a guest (the save sync's session folder); deleted with the session.</param>
 /// <param name="SessionFile">What the lobby decided, for the game to read at its start (<see cref="RecompSessionFile"/>).</param>
+/// <param name="StatusFile">What the game is doing, written by the game for the launcher to read while it runs (<see cref="EngineStatusFile"/>).</param>
 /// <param name="SessionArg">The engine argument that takes the session file, once the engine has one; none: the file is written and not passed.</param>
 public sealed record RecompProfile(
     string Setup, string DiscPrompt, string InstallDir, string BuildInfo, string Engine, string LogsDir, string EngineLog, string Card, string SessionCard, string SessionFile,
-    string? SessionArg = null);
+    string StatusFile, string? SessionArg = null);
 
 /// <summary>The build a setup run made, from its <c>build.json</c>: the three parts of the fingerprint the engines compare when they meet
 /// (generated game code, runtime sources, memory patches) and the hash of the engine it installed. Two machines play together only when
 /// the fingerprints are equal.</summary>
 public sealed record RecompBuildInfo(string Game, string Runtime, string Patches, string? EngineSha256)
 {
+    private const char PartSeparator = ':';
+    private const int ShortHashChars = 6;
+
+    /// <summary>The names the players know the parts of the fingerprint by, in the order of <see cref="Fingerprint"/>.</summary>
+    private static readonly string[] PartNames = ["game code", "engine", "patches"];
+
     /// <summary>The fingerprint as one text, the parts in the order the engine names them.</summary>
-    public string Fingerprint => $"{Game}:{Runtime}:{Patches}";
+    public string Fingerprint => $"{Game}{PartSeparator}{Runtime}{PartSeparator}{Patches}";
+
+    /// <summary>The parts that differ between the host's fingerprint and this machine's, each with both short hashes (<c>engine 18e437 vs 8b7c74</c>), host first;
+    /// empty when the texts are not fingerprints.</summary>
+    public static string Differences(string host, string local)
+    {
+        var hostParts = host.Split(PartSeparator);
+        var localParts = local.Split(PartSeparator);
+        if (hostParts.Length != PartNames.Length || localParts.Length != PartNames.Length) return string.Empty;
+        return string.Join(", ", PartNames.Select((name, i) => (name, host: hostParts[i], local: localParts[i])).Where(part => part.host != part.local)
+            .Select(part => $"{part.name} {Short(part.host)} vs {Short(part.local)}"));
+    }
+
+    private static string Short(string hash) => hash.Length > ShortHashChars ? hash[..ShortHashChars] : hash;
 
     /// <summary>SHA-256 of the fingerprint text: what BUILD_INFO carries in the place of a mod hash.</summary>
     public byte[] Hash => SHA256.HashData(Encoding.UTF8.GetBytes(Fingerprint));
@@ -94,6 +114,8 @@ public static class RecompInstall
 
     public static string SessionFilePath(GameProfile profile, string gameDir) => Path.Combine(gameDir, profile.Recomp!.SessionFile);
 
+    public static string StatusFilePath(GameProfile profile, string gameDir) => Path.Combine(gameDir, profile.Recomp!.StatusFile);
+
     /// <summary>The build in the game folder: Installed when the build info, the start stub and the engine are there and the engine is the
     /// one the build info names, Modified when the engine differs (a half-copied or edited install: building again repairs it),
     /// NotInstalled otherwise.</summary>
@@ -105,6 +127,10 @@ public static class RecompInstall
         var engineMatches = info.EngineSha256 is null || string.Equals(EngineHash(engine), info.EngineSha256, StringComparison.OrdinalIgnoreCase);
         return new ModStatus(engineMatches ? ModState.Installed : ModState.Modified, 0);
     }
+
+    /// <summary>The fingerprint text of the complete build in the game folder, null when there is none.</summary>
+    public static string? Fingerprint(GameProfile profile, string gameDir) =>
+        Status(profile, gameDir).State == ModState.Installed ? RecompBuildInfo.Read(BuildInfoPath(profile, gameDir))?.Fingerprint : null;
 
     /// <summary>The hash BUILD_INFO carries for this build; null when there is no complete build.</summary>
     public static byte[]? ContentHash(GameProfile profile, string gameDir) =>

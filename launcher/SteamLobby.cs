@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using Steamworks;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>Steam matchmaking lobby carrying the <see cref="LobbyKeys"/> data (game, protocol, builds, host options, roster).</summary>
 public sealed class SteamLobby : ILobby

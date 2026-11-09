@@ -2,7 +2,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-namespace CoopLauncher.Gui;
+namespace Tether.Gui;
 
 /// <summary>The launcher's own actions that touch Windows (a folder dialog, the clipboard, Explorer) and the settings that go with
 /// them, used by the web window's controller. All run on the UI thread.</summary>
@@ -83,6 +83,24 @@ internal static class LauncherActions
     {
         AppSettings.Update(settings => settings with { CheckForUpdates = on });
         Log.Info(on ? "Checking for updates at start" : "Not checking for updates at start");
+    }
+
+    /// <summary>Microsoft's own installer for the C++ build tools the game build needs, run in a console the player sees (the setup tool prints the same command).</summary>
+    private const string BuildToolsInstall =
+        "winget install --id Microsoft.VisualStudio.BuildTools --override \"--passive --wait --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended\"";
+
+    /// <summary>The guided install of the build tools, started by the player's click: winget in a visible console, which asks Windows for permission itself.</summary>
+    public static void InstallBuildTools()
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo("cmd.exe", $"/k {BuildToolsInstall}") { UseShellExecute = true })?.Dispose();
+            Log.Info("Started the Visual Studio Build Tools install");
+        }
+        catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException)
+        {
+            Log.Info($"Could not start the build tools install: {e.Message}");
+        }
     }
 
     public static void OpenLogsFolder()

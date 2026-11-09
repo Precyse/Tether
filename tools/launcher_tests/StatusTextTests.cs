@@ -1,5 +1,5 @@
-using CoopLauncher;
-using CoopLauncher.Gui;
+using Tether;
+using Tether.Gui;
 
 namespace LauncherTests;
 
@@ -39,10 +39,12 @@ public static class StatusTextTests
         [RefusalKind.SaveNotProtected] = "The mod could not protect your save: quit to the title",
         [RefusalKind.OtherCoopMod] = "Another co-op mod (Juiced) is installed",
         [RefusalKind.ModNotStarted] = "The co-op mod could not start: Juiced",
-        [RefusalKind.BuildDiffers] = "Game build differs from the host's",
+        [RefusalKind.BuildDiffers] = "Your build differs from the host's (Juiced): update Tether, then press Rebuild",
         [RefusalKind.BuildFailed] = "The game could not be built: Juiced",
         [RefusalKind.GameDesync] = "The game stopped: the players' games no longer match",
         [RefusalKind.PeerGone] = "The game stopped: the other players are gone",
+        [RefusalKind.GameCrashed] = "The game stopped unexpectedly Juiced: start it again from Tether",
+        [RefusalKind.LoadFailed] = "Juiced",
     };
 
     public static void Run()

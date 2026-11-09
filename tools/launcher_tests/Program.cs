@@ -45,6 +45,7 @@ public static class Program
         UdpRelayTests.Run();
         SetupProgressTests.Run();
         NetLogTests.Run();
+        StatusChannelTests.Run();
         RecompTests.Run();
         FreshQueueTests.Run();
         GameOptionsTests.Run();

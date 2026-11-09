@@ -1,7 +1,7 @@
 using System.Text;
 using System.Text.Json;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>
 /// Reads the release channel's manifest (repo and channel from update.json): the file
@@ -15,7 +15,7 @@ public static class ReleaseFeed
     private const string PlaceholderRepo = "OWNER/REPO";
     private const string DefaultChannel = "latest";
     private const string DownloadUrlFormat = "https://github.com/{0}/releases/download/{1}/{2}";
-    private const string UserAgent = "coop-launcher-updater";
+    private const string UserAgent = "tether-updater";
     private const int MetadataTimeoutSeconds = 5;
     private const int DownloadChunkBytes = 81920;
     private const int StallTimeoutSeconds = 30;

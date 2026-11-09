@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace CoopLauncher.Gui;
+namespace Tether.Gui;
 
 /// <summary>Flashes a window's taskbar button until the window comes to the front (an invite arrived while it was behind).</summary>
 internal static class WindowFlash

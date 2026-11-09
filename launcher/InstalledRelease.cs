@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>
 /// Which release a package on disk came from: <c>installed.json</c> ({build, channel, commit, components}), written into the package by

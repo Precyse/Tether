@@ -1,9 +1,9 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using CoopLauncher.SaveResign;
+using Tether.SaveResign;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>A file the game folder gets: Src in the package, Dst in the game folder. With Folder set both name a folder; the profile
 /// load replaces it by one entry per file (see <see cref="ModFiles.Expand"/>), each with the folder's Dst in FolderDst. With Generate

@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>The initial state of Blowfish: the P-array (18 words) and the four S-boxes (256 words each), which are the fractional hex digits of pi
 /// in order. The first words are 0x243F6A88 and 0x85A308D3; <c>BlowfishTests</c> checks the cipher against the standard test vectors.</summary>

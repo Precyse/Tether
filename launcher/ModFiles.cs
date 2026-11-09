@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>What the status of one mod file shows: both the file and its ownership marker are there, the file differs from its
 /// marker (another mod or damage), the package copy differs from the file, and for a missing file whether it is new in the

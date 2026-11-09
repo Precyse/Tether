@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>
 /// Starts the built game with the netplay role of this session. The engine keeps its own UDP netplay; the launcher gives it a loopback

@@ -1,18 +1,30 @@
 import { h, setText } from './dom.js';
+import { createImage, setImage } from './image.js';
 import { createSegments } from './segments.js';
 
-const BRAND = 'CO-OP';
+const BRAND = 'TETHER';
+const BRAND_LOGO = 'brand/logo-title.svg';
 const BACK_LABEL = 'Back';
 const SETTINGS_LABEL = 'Settings';
 const TABS = [{ id: 'play', label: 'Play' }, { id: 'lobbies', label: 'Lobbies' }];
 const ARROW_WIDTH = 12;
 const GLYPH_WIDTH = 12;
 
+/** The brand: the logo the branding files provide (web/brand/logo-title.svg) when it loads, else the name in text. */
+function createBrand() {
+  const logo = createImage('top-logo');
+  logo.alt = BRAND;
+  const brand = h('div', { class: 'top-brand', text: BRAND });
+  logo.addEventListener('load', () => brand.replaceChildren(logo));
+  setImage(logo, BRAND_LOGO);
+  return brand;
+}
+
 /** The top bar: brand, Play / Lobbies tabs, update button, Settings (browse); Back and the brand (view); the brand alone (session). */
 export function create(ctx) {
   const { send, icons } = ctx;
   const back = h('button', { class: 'btn top-back no-drag', type: 'button', on: { click: () => send('view.close') } }, icons.icon('arrowLeft', ARROW_WIDTH), BACK_LABEL);
-  const brand = h('div', { class: 'top-brand', text: BRAND });
+  const brand = createBrand();
   const tabs = createSegments({ items: TABS, variant: 'tabs', label: 'Section', onSelect: (tab) => send('tab.select', { tab }) });
   const updateButton = h('button', { class: 'btn top-button no-drag', type: 'button', on: { click: () => send('update.click') } });
   const settings = h('button', { class: 'btn top-button no-drag', type: 'button', text: SETTINGS_LABEL, on: { click: () => send('view.open', { view: 'settings' }) } });

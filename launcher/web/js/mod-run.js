@@ -10,13 +10,15 @@ export function createModRun({ send }, variant) {
   const steps = createSteps('small');
   const cancel = h('button', { class: 'btn btn-ghost mod-run-button', type: 'button', hidden: true });
   const log = h('button', { class: 'btn btn-ghost mod-run-button', type: 'button', hidden: true });
+  const fix = h('button', { class: 'btn btn-ghost mod-run-button', type: 'button', hidden: true });
   const retry = h('button', { class: 'btn btn-ghost mod-run-button', type: 'button', hidden: true });
-  const buttons = h('div', { class: 'mod-run-buttons' }, cancel, log, retry);
+  const buttons = h('div', { class: 'mod-run-buttons' }, cancel, fix, log, retry);
   const el = h('div', { class: `mod-run mod-run-${variant}`, hidden: true }, steps.el, buttons);
   let gameId = null;
   retry.addEventListener('click', () => send('mod.retry', { gameId }));
   cancel.addEventListener('click', () => send('mod.cancel', { gameId }));
   log.addEventListener('click', () => send('mod.openLog', { gameId }));
+  fix.addEventListener('click', () => send('mod.installTools', { gameId }));
 
   function show(button, state) {
     button.hidden = !state;
@@ -32,9 +34,10 @@ export function createModRun({ send }, variant) {
     gameId = id;
     el.toggleAttribute('data-failed', run.failed);
     show(cancel, run.cancel);
+    show(fix, run.fix);
     show(log, run.log);
     show(retry, run.retry);
-    buttons.hidden = cancel.hidden && log.hidden && retry.hidden;
+    buttons.hidden = cancel.hidden && fix.hidden && log.hidden && retry.hidden;
   }
 
   return { el, update };

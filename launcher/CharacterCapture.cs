@@ -1,7 +1,7 @@
 using System.Globalization;
-using CoopLauncher.Gui;
+using Tether.Gui;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>What the joining screen shows of a capture: running, closing the game (the outcome is known), done, or failed with the
 /// reason in words; LogPath is the mod's log the failed row names. Closing is appended: older values keep their numbers.</summary>

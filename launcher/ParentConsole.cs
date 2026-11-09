@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>The launcher is a windowed program, so no console window flashes up at start. A command-line start attaches
 /// to the console it was started from so its log lines show there; redirected output is unaffected.</summary>

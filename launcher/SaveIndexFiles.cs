@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>Reads a game's save slots from this machine: the host's own save (where the save sync reads it) or the copy a guest received.
 /// The key comes from the installed game's executable, read only. A result is kept until one of the files changes, so asking again

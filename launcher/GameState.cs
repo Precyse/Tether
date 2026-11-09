@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>Where the game is: at its title screen, loading, or in the world.</summary>
 public enum GamePlace { Unknown, Title, Loading, World }
@@ -25,16 +25,27 @@ public enum GameLoad { Unknown, Ok, Failed, None }
 /// player's input, out of sync (the engines stopped), a player left, refused for another game build, or could not connect.</summary>
 public enum GameNet { Unknown, Hosting, Connecting, Sending, Receiving, InSync, Stalled, Desync, PeerLeft, Refused, Failed }
 
+/// <summary>What a game with its own front end is doing now (The Warriors; the game writes it to its status file, see <c>docs/CONTRACT.md</c> "Games the launcher
+/// builds"): starting up, in its co-op lobby, connecting to the host, receiving or sending the host's game, loading a mission, playing it, or closed on purpose.</summary>
+public enum GameStage { Unknown, Booting, Lobby, Connecting, Receiving, Sending, Loading, Playing, Closed }
+
+/// <summary>What <see cref="GameState.Done"/> and <see cref="GameState.Total"/> count: bytes read or sent, items (files, steps), or players.</summary>
+public enum GameUnit { None, Bytes, Items, Players }
+
 /// <summary>What the adapter says about the game it runs in, from its GAME_STATE message (docs/CONTRACT.md 0x0063): the text
 /// <c>place=world;char=ok;save=ok;slot=2;copy=refused:silent;peers=1234:2</c>, sent when the adapter links and whenever a part changes.
 /// A key left out stays unknown; <see cref="Slot"/> is the save slot the game plays (-1: not known); <see cref="ModDiffers"/> is
 /// set when a peer's adapter is not this adapter (<c>peers</c> state 2); <see cref="Coop"/> is <c>coop=0|1</c> (null: not said: 0 is a game that
 /// booted without co-op), <see cref="Load"/> is <c>load=ok|failed|none</c> and <see cref="Net"/> is <c>net=insync|stalled|...</c>
-/// (<see cref="GameNet"/>). The same pairs travel in the player's published step.</summary>
+/// (<see cref="GameNet"/>). <see cref="Stage"/> is what a game with its own front end is doing, with real counts: <see cref="Done"/> of
+/// <see cref="Total"/> in <see cref="Unit"/> (no total: no percent), the <see cref="Mission"/> it concerns and a short <see cref="Text"/> (the player a snapshot is sent to).
+/// <see cref="Error"/> is the <see cref="RefusalKind"/> a game that failed names, with its plain <see cref="Reason"/>.
+/// The same pairs travel in the player's published step.</summary>
 public sealed record GameState(
     GamePlace Place = GamePlace.Unknown, GameCharacter Character = GameCharacter.Unknown, GameSave Save = GameSave.Unknown, int Slot = GameState.UnknownSlot,
     GameCopy Copy = GameCopy.Unknown, string CopyWhy = "", bool ModDiffers = false, bool? Coop = null, GameLoad Load = GameLoad.Unknown,
-    GameNet Net = GameNet.Unknown)
+    GameNet Net = GameNet.Unknown, GameStage Stage = GameStage.Unknown, long Done = 0, long Total = 0, GameUnit Unit = GameUnit.None, string Mission = "", string Text = "",
+    RefusalKind? Error = null, string Reason = "")
 {
     public const int UnknownSlot = -1;
 
@@ -47,6 +58,14 @@ public sealed record GameState(
     internal const string CoopKey = "coop";
     internal const string LoadKey = "load";
     internal const string NetKey = "net";
+    internal const string StageKey = "stage";
+    internal const string DoneKey = "done";
+    internal const string TotalKey = "total";
+    internal const string UnitKey = "unit";
+    internal const string MissionKey = "mission";
+    internal const string TextKey = "text";
+    internal const string ErrorKey = "error";
+    internal const string ReasonKey = "reason";
 
     private const string PeersKey = "peers";
     private const char PairSeparator = ';';
@@ -56,8 +75,12 @@ public sealed record GameState(
     private const string DifferingPeerState = "2";
     private const string Set = "1";
     private const string Unset = "0";
+    private const int PercentScale = 100;
 
     public bool IsEmpty => this == new GameState();
+
+    /// <summary>How far the stage is, 0 to 100, from the counts the game reported; null when it reported no total.</summary>
+    public int? Percent => Total > 0 ? (int)Math.Min(PercentScale, Done * PercentScale / Total) : null;
 
     /// <summary>The state in a GAME_STATE payload; a pair that is malformed or unknown is skipped.</summary>
     public static GameState Parse(byte[] payload) => FromPairs(Pairs(Encoding.ASCII.GetString(payload)));
@@ -71,7 +94,10 @@ public sealed record GameState(
         Name(pairs, PlaceKey, GamePlace.Unknown), Name(pairs, CharKey, GameCharacter.Unknown), Name(pairs, SaveKey, GameSave.Unknown),
         pairs.TryGetValue(SlotKey, out var slot) && int.TryParse(slot, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var number) ? number : UnknownSlot,
         CopyOf(pairs, out var why), why, pairs.GetValueOrDefault(DiffersKey) == Set || AnyPeerDiffers(pairs.GetValueOrDefault(PeersKey, string.Empty)),
-        pairs.GetValueOrDefault(CoopKey) switch { Set => true, Unset => false, _ => null }, Name(pairs, LoadKey, GameLoad.Unknown), Name(pairs, NetKey, GameNet.Unknown));
+        pairs.GetValueOrDefault(CoopKey) switch { Set => true, Unset => false, _ => null }, Name(pairs, LoadKey, GameLoad.Unknown), Name(pairs, NetKey, GameNet.Unknown),
+        Name(pairs, StageKey, GameStage.Unknown), Count(pairs, DoneKey), Count(pairs, TotalKey), Name(pairs, UnitKey, GameUnit.None),
+        pairs.GetValueOrDefault(MissionKey, string.Empty), pairs.GetValueOrDefault(TextKey, string.Empty),
+        ErrorOf(pairs), pairs.GetValueOrDefault(ReasonKey, string.Empty));
 
     /// <summary>The known parts as <c>key=value</c> pairs, in a fixed order.</summary>
     internal IEnumerable<string> EncodePairs()
@@ -85,6 +111,14 @@ public sealed record GameState(
         if (Coop is { } coop) yield return $"{CoopKey}{KeyValueSeparator}{(coop ? Set : Unset)}";
         if (Load != GameLoad.Unknown) yield return $"{LoadKey}{KeyValueSeparator}{Load.ToString().ToLowerInvariant()}";
         if (Net != GameNet.Unknown) yield return $"{NetKey}{KeyValueSeparator}{Net.ToString().ToLowerInvariant()}";
+        if (Stage != GameStage.Unknown) yield return $"{StageKey}{KeyValueSeparator}{Stage.ToString().ToLowerInvariant()}";
+        if (Done != 0) yield return string.Create(CultureInfo.InvariantCulture, $"{DoneKey}{KeyValueSeparator}{Done}");
+        if (Total != 0) yield return string.Create(CultureInfo.InvariantCulture, $"{TotalKey}{KeyValueSeparator}{Total}");
+        if (Unit != GameUnit.None) yield return $"{UnitKey}{KeyValueSeparator}{Unit.ToString().ToLowerInvariant()}";
+        if (Mission.Length > 0) yield return $"{MissionKey}{KeyValueSeparator}{Clean(Mission)}";
+        if (Text.Length > 0) yield return $"{TextKey}{KeyValueSeparator}{Clean(Text)}";
+        if (Error is { } error) yield return $"{ErrorKey}{KeyValueSeparator}{error}";
+        if (Reason.Length > 0) yield return $"{ReasonKey}{KeyValueSeparator}{Clean(Reason)}";
     }
 
     /// <summary>The copy part <c>refused:silent</c>: the state, and after the colon the adapter's short code.</summary>
@@ -101,8 +135,17 @@ public sealed record GameState(
     private static bool AnyPeerDiffers(string peers) =>
         peers.Split(PeerListSeparator, StringSplitOptions.RemoveEmptyEntries).Any(peer => peer.Split(ReasonSeparator).LastOrDefault() == DifferingPeerState);
 
+    private static long Count(IReadOnlyDictionary<string, string> pairs, string key) =>
+        pairs.TryGetValue(key, out var text) && long.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out var count) ? count : 0;
+
+    /// <summary>Free text must not hold the pair separators.</summary>
+    private static string Clean(string text) => text.Replace(PairSeparator, ',').Replace(KeyValueSeparator, ':');
+
     private static T Name<T>(IReadOnlyDictionary<string, string> pairs, string key, T unknown) where T : struct, Enum =>
         pairs.TryGetValue(key, out var text) ? Name(text, unknown) : unknown;
+
+    private static RefusalKind? ErrorOf(IReadOnlyDictionary<string, string> pairs) =>
+        pairs.TryGetValue(ErrorKey, out var text) && Name(text, (RefusalKind)(-1)) is var kind && kind != (RefusalKind)(-1) ? kind : null;
 
     private static T Name<T>(string text, T unknown) where T : struct, Enum =>
         text.Length > 0 && Enum.TryParse<T>(text, ignoreCase: true, out var value) && Enum.IsDefined(value) && !char.IsDigit(text[0]) ? value : unknown;

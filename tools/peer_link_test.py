@@ -22,7 +22,7 @@ from pathlib import Path
 
 from save_sync_test import EXIT_TIMEOUT_S, ROOT, TRANSFER_TIMEOUT_S, launcher, wait_for
 
-EXE = Path(os.environ.get("COOP_LAUNCHER", ROOT / "launcher" / "bin" / "Check" / "coop-launcher.exe"))
+EXE = Path(os.environ.get("COOP_LAUNCHER", ROOT / "launcher" / "bin" / "Check" / "tether.exe"))
 LAUNCHER_PORT = 27971
 PEER_PORT = 27972
 BRIDGE_PORT = 27973

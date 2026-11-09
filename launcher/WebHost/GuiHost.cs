@@ -1,7 +1,7 @@
-using CoopLauncher.Web;
+using Tether.Web;
 using Steamworks;
 
-namespace CoopLauncher.Gui;
+namespace Tether.Gui;
 
 /// <summary>Runs the App loop on a background thread and the window on the calling (STA) thread. A loop that cannot
 /// start (Steam not running) is retried while the window stays open.</summary>

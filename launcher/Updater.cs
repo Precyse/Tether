@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>
 /// Installs a newer release of the channel (the manifest read through ReleaseFeed) into the packaged layout. Each component has its own
@@ -11,16 +11,16 @@ namespace CoopLauncher;
 /// replaced in one transaction; a mods-only update therefore costs the adapter, not the launcher, and needs no restart. A command-line
 /// run relaunches at start-up when the launcher changed; the window stages in the background and relaunches when the player asks
 /// (<see cref="RestartRequested"/>). A replace that fails, or is cut short, puts every original back, and the versions in
-/// installed.json are written last. Only runs from a packaged layout (root\launcher\app\coop-launcher.exe) and only ever writes below
+/// installed.json are written last. Only runs from a packaged layout (root\launcher\app\tether.exe) and only ever writes below
 /// that root. Any failure means "no update".
 /// </summary>
 public static class Updater
 {
     private const string OldSuffix = ".old";
     private const string PendingMarkerName = "update.pending";
-    private const string WorkDirPrefix = "coop-launcher-update-";
+    private const string WorkDirPrefix = "tether-update-";
     private const int DownloadTimeoutSeconds = 300;
-    private const string LockNamePrefix = @"Local\CoopLauncherUpdate-";
+    private const string LockNamePrefix = @"Local\TetherUpdate-";
     private const int LockNameHashChars = 16;
 
     /// <summary>True after an update that changes the running launcher was installed in this process: the files on disk are newer

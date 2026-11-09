@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
 using Microsoft.Win32;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>What the launcher reads from a game's appmanifest: its folder name under steamapps\common and its Steam build id.</summary>
 public sealed record ManifestInfo(string? InstallDir, int? BuildId);

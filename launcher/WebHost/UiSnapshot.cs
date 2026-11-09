@@ -1,6 +1,6 @@
-using CoopLauncher.Gui;
+using Tether.Gui;
 
-namespace CoopLauncher.Web;
+namespace Tether.Web;
 
 /// <summary>One game of the rail: its profile, what its mod state says and the art routes it has (null where a picture is missing).</summary>
 internal sealed record GameEntry(GameProfile Profile, GameStatus Status, ArtDto Art);

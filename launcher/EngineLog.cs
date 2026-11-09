@@ -1,6 +1,10 @@
 using System.Text;
 
-namespace CoopLauncher;
+namespace Tether;
+
+/// <summary>Why the engine's session ended, from its <c>[net] session ended (&lt;code&gt;): &lt;reason&gt;</c> line: the code is a <see cref="RefusalKind"/> name,
+/// the reason the engine's plain sentence.</summary>
+public sealed record SessionEnd(RefusalKind Kind, string Reason);
 
 /// <summary>
 /// Turns the <c>[net]</c> lines of The Warriors' engine into what the cards say. The engine reports no GAME_STATE; everything a player
@@ -10,6 +14,8 @@ namespace CoopLauncher;
 public static class NetLog
 {
     private const string Prefix = "[net] ";
+    private const string EndedMark = "session ended (";
+    private const string EndedClose = "):";
 
     private static readonly (string Contains, GameNet Net)[] Phases =
     [
@@ -54,6 +60,29 @@ public static class NetLog
         GameNet.Failed or GameNet.Stalled => RefusalKind.PeerGone,
         _ => null,
     };
+
+    /// <summary>Why an engine that is gone without having said its session ended was not a normal end: it stopped before it said it closed (a crash, said with where it
+    /// was), or an older engine's last netplay state names a failure (<see cref="EndRefusal"/>). Null for a normal end.</summary>
+    public static (RefusalKind Kind, string Detail)? Gone(GameState state)
+    {
+        if (state.Stage is not (GameStage.Unknown or GameStage.Closed)) return (RefusalKind.GameCrashed, $"while {StageWords.Of(state)!.ToLowerInvariant()}");
+        return EndRefusal(state.Net) is { } kind ? (kind, string.Empty) : null;
+    }
+
+    /// <summary>The end the engine reports in a line (<c>[net] session ended (HostLeft): the host left the game</c>); null for any other line or a code that is not a
+    /// <see cref="RefusalKind"/>.</summary>
+    public static SessionEnd? EndOf(string line)
+    {
+        if (!line.StartsWith(Prefix, StringComparison.Ordinal)) return null;
+        var open = line.IndexOf(EndedMark, Prefix.Length, StringComparison.Ordinal);
+        if (open != Prefix.Length) return null;
+        var close = line.IndexOf(EndedClose, open, StringComparison.Ordinal);
+        if (close < 0) return null;
+        var code = line[(open + EndedMark.Length)..close];
+        return !char.IsDigit(code.FirstOrDefault()) && Enum.TryParse<RefusalKind>(code, out var kind) && Enum.IsDefined(kind)
+            ? new SessionEnd(kind, line[(close + EndedClose.Length)..].Trim())
+            : null;
+    }
 
     /// <summary>The state after one engine line; a line that is not a <c>[net]</c> line of a known kind returns the state as it was.</summary>
     public static GameState Apply(GameState state, string line)

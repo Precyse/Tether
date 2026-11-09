@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>Keys of the adapter ini that the adapter reads only when the game starts (the profile's <c>bootKeys</c>): a game that
 /// already runs can be given a session only when it started with the values this session would write. The ini on disk is what the game

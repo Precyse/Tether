@@ -1,4 +1,4 @@
-namespace CoopLauncher.Gui;
+namespace Tether.Gui;
 
 /// <summary>The lobby the player is joining: the id, the host's name and its Steam id (the avatar).</summary>
 internal sealed record JoinTarget(ulong LobbyId, string HostName, ulong HostId);
@@ -18,11 +18,11 @@ internal sealed record LobbyState(LobbyStateKind Kind, string Words, string Time
 /// <summary>What the hosting and lobby screen shows. Hosting is the screen before the game starts, for every member (the step
 /// list, and START GAME for the host, Waiting for host for a guest), else the lobby (the state line, the host's options and the
 /// last events); IsHost says the local player is the host. Counter is the n/max seat count the hosting screen shows after its
-/// PLAYERS caption. Seats are the cards, Layout the layout they use. Primary is a guest's button words while it waits (empty for the host).</summary>
+/// PLAYERS caption. Seats are the cards, Layout the layout they use. Primary is a guest's button words while it waits (empty for the host). StartHint is why the host's START GAME is disabled, under it (null when it is not).</summary>
 internal sealed record SessionModel(
     bool Hosting, bool IsHost, string Code, IReadOnlyList<StepRow> Steps, bool StartEnabled, LobbyState? State,
     IReadOnlyList<(string Label, string Value)> Options, IReadOnlyList<string> Events, bool Relaunch, string Counter,
-    IReadOnlyList<PlayerCard> Seats, CardLayout Layout, Notice? Notice, string Primary = "");
+    IReadOnlyList<PlayerCard> Seats, CardLayout Layout, Notice? Notice, string Primary = "", string? StartHint = null);
 
 /// <summary>The mini window's header state: the highest partner ping, a partner joining, or a partner lost.</summary>
 internal enum MiniHeaderKind { Ping, Joining, Lost }

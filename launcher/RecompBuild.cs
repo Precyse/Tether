@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Text;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>How a setup run ended: it made a complete build, or <see cref="Failure"/> says why not.</summary>
 public sealed record RecompBuildResult(SetupFailure? Failure)
@@ -23,7 +23,6 @@ public static class RecompBuild
 {
     private const int PollMs = 250;
     private const string CacheFolder = "cache";
-    private const string BuildLogName = "game.build.log";
     private const int BuildLogTailBytes = 4096;
     private const string CancelledWords = "Cancelled. Press Retry to continue where it stopped.";
 
@@ -51,10 +50,10 @@ public static class RecompBuild
         };
         foreach (var argument in new[] { "--iso", disc, "--home", gameDir, "--cache", Path.Combine(gameDir, CacheFolder) }) start.ArgumentList.Add(argument);
         Log.Info($"Building {profile.Name}: {tool} --iso \"{disc}\" --home \"{gameDir}\"");
-        return Execute(profile, start, Path.Combine(RecompInstall.LogsDir(profile, gameDir), BuildLogName), progress, cancel);
+        return Execute(profile, start, RecompInstall.LogsDir(profile, gameDir), progress, cancel);
     }
 
-    private static RecompBuildResult Execute(GameProfile profile, ProcessStartInfo start, string buildLog, IProgress<ModProgress>? progress, CancellationToken cancel)
+    private static RecompBuildResult Execute(GameProfile profile, ProcessStartInfo start, string logsDir, IProgress<ModProgress>? progress, CancellationToken cancel)
     {
         var tracker = new SetupProgress();
         var error = new StringBuilder();
@@ -87,7 +86,8 @@ public static class RecompBuild
             }
             lock (gate)
             {
-                if (ReadBuildLog(buildLog, startedUtc) is { } text && tracker.FeedBuildLog(text) is { } report) progress?.Report(report);
+                if (SetupProgress.LogName(tracker.Step) is { } logName && ReadBuildLog(Path.Combine(logsDir, logName), startedUtc) is { } text
+                    && tracker.FeedBuildLog(text) is { } report) progress?.Report(report);
             }
         }
         process.WaitForExit();
@@ -100,7 +100,7 @@ public static class RecompBuild
         }
     }
 
-    /// <summary>The tail of ninja's log while the game builds; null when it is not there yet.</summary>
+    /// <summary>The tail of ninja's log while a compiling step runs; null when it is not there yet.</summary>
     private static string? ReadBuildLog(string path, DateTime startedUtc)
     {
         try

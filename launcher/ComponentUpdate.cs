@@ -1,7 +1,7 @@
 using System.IO.Compression;
 using System.Security.Cryptography;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>What a release changes in a package on disk: the components with at least one different file, and those files. The
 /// launcher itself, or a game profile it reads at start, changing means the running copy is out of date (<see cref="RestartNeeded"/>).</summary>

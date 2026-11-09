@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>Options whose values this machine supplies at run time (a profile option with a <c>source</c>): the save slot a host forces
 /// the game to load at launch (read from an encrypted save index, <see cref="SaveSlots"/>, or from one file per slot,

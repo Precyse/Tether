@@ -1,4 +1,4 @@
-namespace CoopLauncher.Gui;
+namespace Tether.Gui;
 
 /// <summary>Remembers the window's size, position and maximized state between runs (AppSettings).</summary>
 internal static class WindowMemory

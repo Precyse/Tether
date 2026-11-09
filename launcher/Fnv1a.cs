@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>FNV-1a, 32 bit: the one hash of the launcher for cache keys and for a save slot's identity (the adapter computes the same
 /// over the same bytes).</summary>

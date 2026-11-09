@@ -10,12 +10,21 @@
     "engineLog": "game/logs/warriors.log",
     "card": "game/saves/card.ps2",
     "sessionCard": "game/saves/session/card.ps2",
-    "sessionFile": "game/session.ini" },
+    "sessionFile": "game/session.ini",
+    "statusFile": "game/status.txt",
+    "sessionArg": "--coop-session" },
   "saveSync": { "steamRemoteFiles": [], "sessionDir": "game/saves/session", "hostSaveDir": "{launcherdata}/games/warriors/game/saves", "filePattern": "card.ps2" },
   "saveBackup": { "dir": "{launcherdata}/games/warriors/game/saves", "into": "game/save_backups", "keep": 10 },
   "crashFiles": ["game/logs/crash-*.dmp"],
   "peerBudget": { "unreliableFramesPerSecond": 12000, "unreliableFrameCapacity": 24000, "unreliableBytesPerSecond": 16777216, "unreliableByteCapacity": 33554432 },
   "options": [
     { "key": "max_players", "label": "Players", "host": true, "values": [
-      { "value": "4", "label": "4" }, { "value": "3", "label": "3" }, { "value": "2", "label": "2" } ] }
+      { "value": "4", "label": "4" }, { "value": "3", "label": "3" }, { "value": "2", "label": "2" } ] },
+    { "key": "friendly_fire", "label": "Friendly fire", "host": true, "values": [ { "value": "0", "label": "Off" }, { "value": "1", "label": "On" } ] },
+    { "key": "scale", "label": "Resolution", "values": [ { "value": "4", "label": "4x" }, { "value": "3", "label": "3x" }, { "value": "2", "label": "2x" }, { "value": "1", "label": "1x" } ] },
+    { "key": "msaa", "label": "Anti-aliasing", "values": [ { "value": "0", "label": "Off" }, { "value": "1", "label": "On" } ] },
+    { "key": "aniso", "label": "Texture filtering", "values": [ { "value": "0", "label": "Off" }, { "value": "2", "label": "2x" }, { "value": "4", "label": "4x" }, { "value": "8", "label": "8x" }, { "value": "16", "label": "16x" } ] },
+    { "key": "sharpen", "label": "Sharpen", "values": [ { "value": "0", "label": "Off" }, { "value": "1", "label": "On" } ] },
+    { "key": "volume", "label": "Volume", "values": [ { "value": "100", "label": "100%" }, { "value": "75", "label": "75%" }, { "value": "50", "label": "50%" }, { "value": "25", "label": "25%" }, { "value": "0", "label": "Muted" } ] },
+    { "key": "pad_user", "label": "Controller", "values": [ { "value": "0", "label": "Controller 1" }, { "value": "1", "label": "Controller 2" }, { "value": "2", "label": "Controller 3" }, { "value": "3", "label": "Controller 4" } ] }
   ] }

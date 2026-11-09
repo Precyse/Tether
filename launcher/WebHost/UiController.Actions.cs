@@ -1,6 +1,6 @@
-using CoopLauncher.Gui;
+using Tether.Gui;
 
-namespace CoopLauncher.Web;
+namespace Tether.Web;
 
 /// <summary>The actions of <see cref="UiController"/>: what the page's commands do, with the rules of the launcher window. A command
 /// the current state does not allow, or that names something that is not on show, is refused with a reason (the caller logs it).</summary>
@@ -70,6 +70,8 @@ internal sealed partial class UiController
                     ? Do(job.Cancel.Cancel) : UnknownTarget;
             case Cmd.ModOpenLog:
                 return GameFor(command) is { } logged && _modRuns.GetValueOrDefault(logged.Profile.Id) is { LogPath: { } path } ? Do(() => LauncherActions.OpenPath(path)) : UnknownTarget;
+            case Cmd.ModInstallTools:
+                return GameFor(command) is { } tools && _modRuns.GetValueOrDefault(tools.Profile.Id) is { BuildToolsMissing: true } ? Do(LauncherActions.InstallBuildTools) : UnknownTarget;
             case Cmd.NoticeFix when NoticeFixAllowed():
                 RunNoticeFix();
                 return null;
@@ -267,7 +269,8 @@ internal sealed partial class UiController
         if (ModRunning || GameFolders.Find(game) is not { } gameDir) return;
         var job = new BuildJob();
         if (game.Recomp != null && kind == ModRunKind.Install) _builds[game.Id] = job;
-        ShowModProgress(game.Id, kind, new ModProgress(game.Recomp != null && kind == ModRunKind.Install ? ModStep.Building : ModStep.Checking, 0, 0, 0));
+        ShowModProgress(game.Id, kind, game.Recomp != null && kind == ModRunKind.Install
+            ? new ModProgress(ModStep.Building, ProgressMath.NoPercent, 0, 0) : new ModProgress(ModStep.Checking, 0, 0, 0));
         var progress = new ThrottledProgress(new Progress<ModProgress>(report => ShowModProgress(game.Id, kind, report)), () => Environment.TickCount64);
         Task.Run(() => game.Recomp != null ? RunRecomp(game, kind, job, gameDir, progress)
                 : kind == ModRunKind.Install
@@ -287,6 +290,7 @@ internal sealed partial class UiController
             progress.Report(new ModProgress(ModStep.Done, ProgressMath.Complete, 0, 0));
             return true;
         }
+        job.BuildToolsMissing = failure.Kind == SetupFailureKind.NoBuildTools;
         job.LogPath = failure.LogPath ?? (failure.Kind is SetupFailureKind.CompilerFailed or SetupFailureKind.Other ? RecompInstall.LogsDir(game, gameDir) : null);
         progress.Report(new ModProgress(ModStep.Failed, 0, 0, 0, failure.Message));
         return false;
@@ -296,7 +300,8 @@ internal sealed partial class UiController
     {
         var job = kind == ModRunKind.Install ? _builds.GetValueOrDefault(gameId) : null;
         var running = progress.Step is not (ModStep.Done or ModStep.Failed);
-        _modRuns[gameId] = new ModRunView(kind, progress, Cancellable: running && job != null, LogPath: progress.Step == ModStep.Failed ? job?.LogPath : null);
+        _modRuns[gameId] = new ModRunView(kind, progress, Cancellable: running && job != null, LogPath: progress.Step == ModStep.Failed ? job?.LogPath : null,
+            BuildToolsMissing: progress.Step == ModStep.Failed && job?.BuildToolsMissing == true);
         _update.SetFree(Free && !ModRunning);
         Changed?.Invoke();
     }

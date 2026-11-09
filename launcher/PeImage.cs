@@ -1,6 +1,6 @@
 using System.Buffers.Binary;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>Reads bytes of a Windows executable by the virtual address they have once loaded (read only: the section table maps the
 /// address to the file offset).</summary>

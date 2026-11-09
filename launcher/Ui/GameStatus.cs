@@ -1,4 +1,4 @@
-namespace CoopLauncher.Gui;
+namespace Tether.Gui;
 
 /// <summary>The mod button the Session row offers: what it does and whether it can be used now.</summary>
 internal readonly record struct ModAction(string Label, bool Enabled);

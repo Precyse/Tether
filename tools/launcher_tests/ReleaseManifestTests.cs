@@ -1,6 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using CoopLauncher;
+using Tether;
 
 namespace LauncherTests;
 
@@ -19,10 +19,10 @@ public static class ReleaseManifestTests
 
     private static JsonObject Valid() => JsonNode.Parse($$"""
         { "build": 7, "channel": "next", "commit": "abc",
-          "full": { "asset": "Coop.zip", "sha256": "{{Hash}}", "size": 100 },
+          "full": { "asset": "Tether.zip", "sha256": "{{Hash}}", "size": 100 },
           "components": [
             { "id": "launcher", "version": 8, "asset": "launcher.zip", "sha256": "{{Hash}}", "size": 60,
-              "files": [ { "path": "launcher/app/coop-launcher.exe", "sha256": "{{Hash}}", "size": 60 } ] },
+              "files": [ { "path": "launcher/app/tether.exe", "sha256": "{{Hash}}", "size": 60 } ] },
             { "id": "re0", "version": 3, "asset": "mod-re0.zip", "sha256": "{{Hash}}", "size": 4,
               "files": [ { "path": "adapters/re0/dinput8.dll", "sha256": "{{Hash}}", "size": 4 } ] } ] }
         """)!.AsObject();
@@ -53,7 +53,7 @@ public static class ReleaseManifestTests
     {
         var manifest = ReleaseManifest.Parse(Valid().ToJsonString());
         Check.That(manifest.Build == 7 && manifest.Channel == "next" && manifest.Commit == "abc", "the build, channel and commit are read");
-        Check.That(manifest.Full.Asset == "Coop.zip" && manifest.Components.Count == 2, "the full package and the components are read");
+        Check.That(manifest.Full.Asset == "Tether.zip" && manifest.Components.Count == 2, "the full package and the components are read");
         Check.That(manifest.Component("re0") is { Asset: "mod-re0.zip", Files: [{ Path: "adapters/re0/dinput8.dll", Size: 4 }] }, "a component carries its files");
         Check.That(manifest.Component("launcher")!.Version == 8 && manifest.Component("re0")!.Version == 3, "and its own version");
         Check.That(manifest.Component("sr2") == null, "an absent component is null");

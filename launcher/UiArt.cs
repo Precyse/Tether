@@ -1,6 +1,6 @@
 using System.Drawing.Imaging;
 
-namespace CoopLauncher.Gui;
+namespace Tether.Gui;
 
 /// <summary>The game art the in-game overlay draws, taken from the player's own install into <c>coop\ui</c> when the game is
 /// launched (nothing of the game is kept in the launcher's repository): the message font's atlas and layout, the three parts of

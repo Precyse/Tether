@@ -1,17 +1,18 @@
 using System.Globalization;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>Where one player is in getting a session going; published to the lobby so everyone can show it. Ready: everything
 /// is prepared and the launch waits for the start gate (<see cref="StartGate"/>). PickingCharacter: a guest that brings its
-/// character has to pick it and press READY; CharacterNotRead: the capture launch could not read it (the reason is published).</summary>
-public enum SessionStep { None, Lobby, CheckingBuild, ReceivingSave, StartingGame, InGame, GameClosed, Refused, Ready, ReadingCharacter, PickingCharacter, CharacterNotRead }
+/// character has to pick it and press READY; CharacterNotRead: the capture launch could not read it (the reason is published). BuildingGame: the game
+/// is being built on this PC before it starts (the setup tool's step and count are published).</summary>
+public enum SessionStep { None, Lobby, CheckingBuild, ReceivingSave, StartingGame, InGame, GameClosed, Refused, Ready, ReadingCharacter, PickingCharacter, CharacterNotRead, BuildingGame }
 
 /// <summary>What the step depends on, read from the loop's state.</summary>
 public sealed record StepInputs(
     bool LobbyReady, bool SessionStarted, bool Refused, bool BuildCheckPending, bool SaveSyncPending, bool LaunchPending,
     bool Bridged, bool BridgeReady, bool BridgeWasReady, bool StartHeld = false, bool ReadingCharacter = false,
-    bool PickingCharacter = false, bool CharacterFailed = false);
+    bool PickingCharacter = false, bool CharacterFailed = false, bool BuildingGame = false);
 
 public static class SessionProgress
 {
@@ -32,6 +33,7 @@ public static class SessionProgress
         if (!inputs.SessionStarted) return SessionStep.Lobby;
         if (inputs.BuildCheckPending) return SessionStep.CheckingBuild;
         if (inputs.SaveSyncPending) return SessionStep.ReceivingSave;
+        if (inputs.LaunchPending && inputs.BuildingGame) return SessionStep.BuildingGame;
         if (inputs.LaunchPending && inputs.ReadingCharacter) return SessionStep.ReadingCharacter;
         if (inputs.LaunchPending && inputs.CharacterFailed) return SessionStep.CharacterNotRead;
         if (inputs.LaunchPending && inputs.PickingCharacter) return SessionStep.PickingCharacter;
@@ -56,14 +58,15 @@ public static class StartGate
         return isHost ? requested : (requested || !guestConfirms) && (latched || HostStarted(hostStep));
     }
 
-    public static bool HostStarted(SessionStep hostStep) => hostStep is SessionStep.StartingGame or SessionStep.InGame;
+    public static bool HostStarted(SessionStep hostStep) => hostStep is SessionStep.StartingGame or SessionStep.BuildingGame or SessionStep.InGame;
 }
 
-/// <summary>What a player publishes about itself: its step with the percent of the save (ReceivingSave), the refusal (Refused: its
+/// <summary>What a player publishes about itself: its step with the percent of the save (ReceivingSave) or of the build (BuildingGame, with its detail; no
+/// percent when the tool step has no count), the refusal (Refused: its
 /// kind and its detail) or the reason a character could not be read (CharacterNotRead), a label (the host's campaign, a guest's
 /// character) and what the adapter says about the game (<see cref="GameState"/>).</summary>
 public sealed record StepReport(
-    SessionStep Step, int Percent = 0, RefusalKind? Refusal = null, string Detail = "", string Label = "", GameState? Game = null)
+    SessionStep Step, int Percent = 0, RefusalKind? Refusal = null, string Detail = "", string Label = "", GameState? Game = null, bool Ended = false)
 {
     public static readonly StepReport None = new(SessionStep.None);
 }
@@ -79,16 +82,21 @@ public static class StepCodec
     private const string WhyKey = "why";
     private const string DetailKey = "detail";
     private const string LabelKey = "label";
+    private const string EndedKey = "ended";
+    private const string Set = "1";
     private const int MaxPercent = 100;
     private const int MaxTextLength = 120;
 
     public static string Encode(StepReport report)
     {
         var pairs = new List<string> { $"{StepKey}{KeyValueSeparator}{report.Step}" };
-        if (report.Step == SessionStep.ReceivingSave) pairs.Add($"{PercentKey}{KeyValueSeparator}{Math.Clamp(report.Percent, 0, MaxPercent)}");
+        if (report.Step == SessionStep.ReceivingSave || report.Step == SessionStep.BuildingGame && report.Percent >= 0)
+            pairs.Add($"{PercentKey}{KeyValueSeparator}{Math.Clamp(report.Percent, 0, MaxPercent)}");
+        if (report.Step == SessionStep.BuildingGame) pairs.Add($"{DetailKey}{KeyValueSeparator}{Clean(report.Detail)}");
         if (report.Step == SessionStep.Refused && report.Refusal is { } kind)
         {
             pairs.Add($"{WhyKey}{KeyValueSeparator}{kind}");
+            if (report.Ended) pairs.Add($"{EndedKey}{KeyValueSeparator}{Set}");
             if (report.Detail.Length > 0) pairs.Add($"{DetailKey}{KeyValueSeparator}{Clean(report.Detail)}");
         }
         if (report.Step == SessionStep.CharacterNotRead) pairs.Add($"{WhyKey}{KeyValueSeparator}{Clean(report.Detail)}");
@@ -104,13 +112,14 @@ public static class StepCodec
         var pairs = GameState.Pairs(text);
         if (!pairs.TryGetValue(StepKey, out var name) || !TryEnum(name, out SessionStep step)) return false;
         var percent = pairs.TryGetValue(PercentKey, out var pct) && int.TryParse(pct, NumberStyles.None, CultureInfo.InvariantCulture, out var value)
-            ? Math.Min(value, MaxPercent) : 0;
+            ? Math.Min(value, MaxPercent) : step == SessionStep.BuildingGame ? ProgressMath.NoPercent : 0;
         RefusalKind? refusal = null;
         var detail = pairs.GetValueOrDefault(DetailKey, string.Empty);
         if (step == SessionStep.Refused && pairs.TryGetValue(WhyKey, out var why) && TryEnum(why, out RefusalKind kind)) refusal = kind;
         if (step == SessionStep.CharacterNotRead) detail = pairs.GetValueOrDefault(WhyKey, string.Empty);
         var game = GameState.FromPairs(pairs);
-        report = new StepReport(step, percent, refusal, detail, pairs.GetValueOrDefault(LabelKey, string.Empty), game.IsEmpty ? null : game);
+        report = new StepReport(step, percent, refusal, detail, pairs.GetValueOrDefault(LabelKey, string.Empty), game.IsEmpty ? null : game,
+            step == SessionStep.Refused && pairs.GetValueOrDefault(EndedKey) == Set);
         return true;
     }
 

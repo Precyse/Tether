@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>One file of a component: its path below the package root (forward slashes), SHA-256 (lowercase hex) and size.</summary>
 public sealed record ManifestFile(string Path, string Sha256, long Size);

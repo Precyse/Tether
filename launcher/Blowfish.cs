@@ -1,6 +1,6 @@
 using System.Buffers.Binary;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>Blowfish (Schneier 1993) in ECB mode with the byte order of the games that use it for their saves: each 8-byte block is
 /// two 32-bit halves stored little-endian (the standard test vectors are the same cipher with big-endian halves). Pure.</summary>

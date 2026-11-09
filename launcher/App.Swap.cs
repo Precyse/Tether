@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>Trading characters between the seats until the game starts. A guest asks by publishing the character it wants in its
 /// options (<see cref="GameOptions.SwapRequestKey"/>); the host's launcher answers by flipping the host's own character option

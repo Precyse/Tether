@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>Per-peer ping scheduling, EWMA round-trip time and last answer, reported to the adapter and shown per player.</summary>
 public sealed class PeerStats

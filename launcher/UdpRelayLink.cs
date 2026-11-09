@@ -3,7 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>Which end of the session this launcher's engine is: the host's engine listens on a UDP port, a joiner's engine sends to one.</summary>
 public enum RelayRole { Host, Joiner }
@@ -35,8 +35,10 @@ public sealed class UdpRelayLink : IAdapterLink
     private readonly Dictionary<byte, UdpClient> _joiners = new();
     private readonly UdpClient? _joinerSocket;
     private readonly EngineLogTail? _log;
+    private readonly EngineStatusFile? _status;
     private volatile IPEndPoint? _engine;
     private GameState _state = new();
+    private SessionEnd? _ended;
     private bool _ready;
     private long _nextPollMs;
     private bool _disposed;
@@ -44,12 +46,14 @@ public sealed class UdpRelayLink : IAdapterLink
     /// <param name="enginePort">Host: the port the engine listens on. Joiner: the port to open for it (0: any free one, read <see cref="Port"/>).</param>
     /// <param name="engineRunning">Whether the engine's process runs now.</param>
     /// <param name="log">The engine's log, whose <c>[net]</c> lines become GAME_STATE (<see cref="NetLog"/>); none: no state is reported.</param>
-    public UdpRelayLink(RelayRole role, int enginePort, Func<bool> engineRunning, EngineLogTail? log = null)
+    /// <param name="status">The engine's status file, whose stage and counts join that state (<see cref="EngineStatusFile"/>).</param>
+    public UdpRelayLink(RelayRole role, int enginePort, Func<bool> engineRunning, EngineLogTail? log = null, EngineStatusFile? status = null)
     {
         _role = role;
         _enginePort = enginePort;
         _engineRunning = engineRunning;
         _log = log;
+        _status = status;
         if (role != RelayRole.Joiner) return;
         _joinerSocket = new UdpClient(new IPEndPoint(IPAddress.Loopback, enginePort));
         StartReader(_joinerSocket, 0);
@@ -77,6 +81,12 @@ public sealed class UdpRelayLink : IAdapterLink
     /// <summary>How the engine said it was getting on the last time its log changed it (<see cref="GameNet.Unknown"/> before it said anything).</summary>
     public GameNet Net => _state.Net;
 
+    /// <summary>How the engine's session ended, from its last <c>session ended</c> line; null while it has not said.</summary>
+    public SessionEnd? Ended => _ended;
+
+    /// <summary>What the engine's status file said last (<see cref="GameState.Stage"/> and its counts); the stage is unknown before it said anything.</summary>
+    public GameState State => _state;
+
     /// <summary>Slots that have a socket to the host's engine (the host's relay only).</summary>
     public IReadOnlyCollection<byte> OpenSlots => _joiners.Keys;
 
@@ -98,6 +108,7 @@ public sealed class UdpRelayLink : IAdapterLink
             if (running && !_ready)
             {
                 _state = new GameState();
+                _ended = null;
                 AdapterReady?.Invoke();
             }
             _ready = running;
@@ -109,8 +120,10 @@ public sealed class UdpRelayLink : IAdapterLink
     /// <summary>The engine's new <c>[net]</c> lines move the state; a changed state is reported as the GAME_STATE text of an adapter.</summary>
     private void ReportEngineState()
     {
-        if (_log is null) return;
-        var next = _log.ReadNewLines().Aggregate(_state, NetLog.Apply);
+        var lines = _log?.ReadNewLines() ?? [];
+        foreach (var line in lines) _ended = NetLog.EndOf(line) ?? _ended;
+        var next = lines.Aggregate(_state, NetLog.Apply);
+        if (_status?.ReadChanged() is { } status) next = EngineStatusFile.Apply(next, status);
         if (next == _state) return;
         _state = next;
         GameStateReceived?.Invoke(Encoding.ASCII.GetBytes(string.Join(';', next.EncodePairs())));

@@ -2,7 +2,7 @@ using System.Buffers.Binary;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace CoopLauncher;
+namespace Tether;
 
 public enum ModState { NotInstalled, Installed, UpdateAvailable, Modified }
 

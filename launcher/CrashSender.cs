@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>Guest side of crash reporting: watches the profile's crash-file locations and the game's process, and sends the host what a
 /// crash or hang leaves behind through the shared <see cref="FileStreamer"/> (FILE_* frames, the host's <see cref="CrashReceiver"/> ACKs):

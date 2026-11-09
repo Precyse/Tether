@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using Steamworks;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>ISteamNetworkingMessages on the Main channel (0) and the Fresh channel (1), both received. Sessions are
 /// accepted only from lobby members.</summary>

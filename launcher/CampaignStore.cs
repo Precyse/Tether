@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>A game's campaigns (profile key <c>campaigns</c>): named worlds kept in the game folder, each a folder
 /// <c>&lt;dir&gt;\&lt;id&gt;\</c> with <see cref="InfoFile"/> (name, creation time, where it came from), the world's saves in

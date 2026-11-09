@@ -1,4 +1,4 @@
-using CoopLauncher;
+using Tether;
 
 var failures = 0;
 

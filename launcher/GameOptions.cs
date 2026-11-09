@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>The values of a game's options as the player set them: for the adapter ini, for the lobby (host options) and
 /// for the seat labels.</summary>

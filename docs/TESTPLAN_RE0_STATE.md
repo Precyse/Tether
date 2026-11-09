@@ -4,7 +4,7 @@ Probe ids (X1, A1, ...) are from STATE_PLAN.md section 5. Logs: `<game>\coop\ada
 
 ## Setup (once per PC, game closed)
 
-1. Extract the zip. Run `launcher\test\coop-launcher.exe` (never `launcher\app`), pick Resident Evil 0 HD, click Install. Close the launcher.
+1. Extract the zip. Run `launcher\test\tether.exe` (never `launcher\app`), pick Resident Evil 0 HD, click Install. Close the launcher.
 2. Copy `adapter.ini` to `<game>\coop\adapter.ini` (create `coop`). It holds `coop=1`, `overlay=1`, `partner_mode=state`, `trace=0`, `auto_join=0`. Both PCs use the same ini. The launcher only rewrites `coop` and the option keys.
 3. Uninstall afterwards: launcher Settings, the game's section, Uninstall (restores the original dinput8.dll).
 
@@ -26,8 +26,8 @@ Setup: set `partner_mode=input` in `<game>\coop\adapter.ini`. Run the echo setup
 Setup: `partner_mode=state`. From `launcher\test\` in three terminals, then start the game from Steam (host plays Rebecca, Billy is the puppet):
 
 ```
-coop-launcher host re0 --transport local --local-port 27961 --peer-port 27962 --no-launch
-coop-launcher join 0 --transport local --local-port 27962 --peer-port 27961 --bridge-port 27970 --no-launch
+tether host re0 --transport local --local-port 27961 --peer-port 27962 --no-launch
+tether join 0 --transport local --local-port 27962 --peer-port 27961 --bridge-port 27970 --no-launch
 python ..\..\tools\echo_peer.py --port 27970 --delay 1.0 --offset-x 150
 ```
 
@@ -139,7 +139,7 @@ Setup: start the game from the launcher (not from Steam), so `coop' + BS + 'ui` 
 
 ## TWO-PC
 
-Setup: both PCs install (Setup above), same build. Host: `character=rebecca` (default). Host opens `launcher\test\coop-launcher.exe`, Host, sends the code; guest Join. Both launcher logs: `Fresh channel: 3 types`. Wi-Fi guest is fine. Start with a fresh save the host owns; guest gets it automatically.
+Setup: both PCs install (Setup above), same build. Host: `character=rebecca` (default). Host opens `launcher\test\tether.exe`, Host, sends the code; guest Join. Both launcher logs: `Fresh channel: 3 types`. Wi-Fi guest is fine. Start with a fresh save the host owns; guest gets it automatically.
 
 ### T4 Join, ready, F9 (phase 16)
 

@@ -1,6 +1,6 @@
-using CoopLauncher.SaveResign;
+using Tether.SaveResign;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>When a guest gives up waiting for the host's save set: nothing from the host at all within
 /// <see cref="NoAnswerTimeoutMs"/> of the start, or no new frame for <see cref="StallTimeoutMs"/> once frames have arrived.</summary>

@@ -31,7 +31,7 @@ def copy_with_build(name, launcher_version):
     shutil.rmtree(target, ignore_errors=True)
     shutil.copytree(BUILD_DIR, target)
     (target / "installed.json").write_text(json.dumps({"build": 1, "components": {"launcher": launcher_version}}))
-    return target / "coop-launcher.exe"
+    return target / "tether.exe"
 
 
 def fake_game(library, game_build):

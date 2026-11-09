@@ -1,8 +1,8 @@
 using System.Collections.Concurrent;
 using System.Net.Sockets;
-using CoopLauncher.Gui;
+using Tether.Gui;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>
 /// Wires transport, lobby, bridge and session together and runs the ~100 Hz main loop. The CLI runs one session and exits;
@@ -316,7 +316,7 @@ public sealed partial class App
         var guestOf = _sessionStarted && _lobby!.OwnerId != _transport!.LocalId ? _lobby.Id : (ulong?)null;
         var gameId = _lobby!.GameId;
         var retrying = guestOf != null || _rejoin != null;
-        if (!retrying) Refuse(failure.Kind, failure.Detail);
+        if (!retrying) Refuse(failure.Kind, failure.Detail, ended: _sessionStarted);
         EndSession();
         if (guestOf is { } lobbyId) _rejoin ??= new Rejoin(lobbyId) { GameId = gameId };
         return guestOf != null || _interactive;
@@ -668,8 +668,8 @@ public sealed partial class App
 
     /// <summary>Records why a start did not go on and tells the player once. The refusal names the game and the lobby being
     /// opened or left.</summary>
-    private void Refuse(RefusalKind kind, string detail = "") =>
-        Refuse(new Refusal(kind, detail, _lobby?.GameId ?? _profile?.Id ?? _opening, _lobby is { Id: not 0 } lobby ? lobby.Id : _joining));
+    private void Refuse(RefusalKind kind, string detail = "", bool ended = false) =>
+        Refuse(new Refusal(kind, detail, _lobby?.GameId ?? _profile?.Id ?? _opening, _lobby is { Id: not 0 } lobby ? lobby.Id : _joining, ended));
 
     private void Refuse(Refusal refusal)
     {
@@ -682,7 +682,7 @@ public sealed partial class App
     /// <summary>The window's session ended: when the host ended it on purpose the player is told why, then the app goes idle.</summary>
     private void EndEndedSession(Session session)
     {
-        if (session.EndedBy is { } kind) Refuse(kind);
+        if (session.EndedBy is { } kind) Refuse(kind, ended: true);
         EndSession();
     }
 

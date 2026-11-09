@@ -1,7 +1,7 @@
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 
-namespace CoopLauncher.Gui;
+namespace Tether.Gui;
 
 /// <summary>Pixel format conversion for Steam avatars and the pictures taken from a game.</summary>
 public static class AvatarPixels

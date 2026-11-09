@@ -1,7 +1,7 @@
 using System.Text;
 using System.Text.Json;
 
-namespace CoopLauncher.Web;
+namespace Tether.Web;
 
 /// <summary>The names of the page's commands (SPEC 3.3). <c>js/bridge.js</c> lists the same names in <c>COMMANDS</c>; a test compares.</summary>
 internal static class Cmd
@@ -27,6 +27,7 @@ internal static class Cmd
     public const string ModRetry = "mod.retry";
     public const string ModCancel = "mod.cancel";
     public const string ModOpenLog = "mod.openLog";
+    public const string ModInstallTools = "mod.installTools";
     public const string DependenciesInstall = "dependencies.install";
     public const string NoticeFix = "notice.fix";
     public const string ReportCreate = "report.create";
@@ -124,6 +125,7 @@ internal static class UiCommands
         [Cmd.ModRetry] = [GameId],
         [Cmd.ModCancel] = [GameId],
         [Cmd.ModOpenLog] = [GameId],
+        [Cmd.ModInstallTools] = [GameId],
         [Cmd.DependenciesInstall] = [],
         [Cmd.NoticeFix] = [],
         [Cmd.ReportCreate] = [],

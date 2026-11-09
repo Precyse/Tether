@@ -1,9 +1,9 @@
 using Steamworks;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>
-/// Finds other people's lobbies: a lobby list search for every co-op launcher lobby (the <see cref="LobbyKeys.App"/> marker and
+/// Finds other people's lobbies: a lobby list search for every Tether lobby (the <see cref="LobbyKeys.App"/> marker and
 /// this protocol, worldwide), and the data of the lobbies friends host. Each is read into a <see cref="LobbyListing"/> with the
 /// ping estimated from the host's <see cref="LobbyKeys.Location"/>. Steam, loop thread only.
 /// </summary>

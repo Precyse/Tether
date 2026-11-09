@@ -1,4 +1,4 @@
-﻿using CoopLauncher;
+﻿using Tether;
 
 namespace RelayRig;
 

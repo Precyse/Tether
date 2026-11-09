@@ -1,6 +1,6 @@
 using Steamworks;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>Friends who are hosting a lobby this launcher can join: read from Steam's friend list and rich presence (the
 /// lobby and game the host's launcher publishes, see <see cref="LobbyPresence"/>). Loop thread only.</summary>

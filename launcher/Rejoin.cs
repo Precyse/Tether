@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>When retries are due and when to give up. Pure: the caller supplies the clock. The first attempt is due one
 /// interval after the start.</summary>

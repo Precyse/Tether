@@ -1,6 +1,6 @@
-using CoopLauncher.Gui;
+using Tether.Gui;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>Why a game that was started did not bring its co-op mod up, worked out from the logs of the mod loader and of the mod:
 /// the loader's own log not written since the start (it did not load), the mod's log not written since (the mod did not load), or

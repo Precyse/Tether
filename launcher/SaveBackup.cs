@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>Per-session copies of a game's own save folder, for games where each player plays their own save in the shared
 /// session (Crimson Desert): one copy before the game starts and one when the session ends, so a bad session can be compared

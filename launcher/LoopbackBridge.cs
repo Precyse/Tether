@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>
 /// Loopback TCP link to the in-game adapter: handshake, heartbeat and game frame relay. The loop thread never waits for the

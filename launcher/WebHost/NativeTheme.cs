@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace CoopLauncher.Gui;
+namespace Tether.Gui;
 
 /// <summary>Windows' own dark parts: the window frame (dark mode, a border in the line colour), and the scrollbars of
 /// native controls.</summary>

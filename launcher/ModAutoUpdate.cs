@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>
 /// Mods follow the package: an installed mod that reads <see cref="ModState.UpdateAvailable"/> (the package it came from changed) is

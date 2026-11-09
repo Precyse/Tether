@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>Other co-op mods that must not run beside ours (profile key <c>conflicts</c>: a name, its paths relative to the game
 /// folder, and the archive folder). When any path is there and the game is closed, every one of them (scripts and the mod's data,

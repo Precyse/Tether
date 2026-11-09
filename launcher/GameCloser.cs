@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>Ends a game this launcher started only for itself (the capture launch) or that the player asked to close: asked to close
 /// once, then ended; never waited for, so the loop thread keeps running while the game goes.</summary>

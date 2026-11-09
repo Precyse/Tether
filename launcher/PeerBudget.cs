@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>Integer token bucket: refills <c>ratePerSecond</c> tokens a second up to <c>capacity</c>, starting full. Pure: the caller supplies the clock.</summary>
 public sealed class TokenBucket

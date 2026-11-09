@@ -1,6 +1,6 @@
 using Microsoft.Win32;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>Expands save folder templates from a game profile: {documents} is the user's Documents folder (wherever
 /// it is redirected, e.g. OneDrive), {localappdata} the user's local application data folder, {steamid64} the signed-in

@@ -3,7 +3,7 @@
 // state digests agree. Only processes this rig started are ever stopped. Usage: dotnet run -c Release --project tools/warriors/relay_rig -- --out <dir> [--frames N] [--joiners N] [--delay ms]
 // With --build instead it runs the launcher's build step against the real setup tool (COOP_LAUNCHER_DATA names the launcher's data folder, whose settings name the disc and the tool).
 using System.Diagnostics;
-using CoopLauncher;
+using Tether;
 using RelayRig;
 
 const string ScratchRoot = @"C:\Users\ahmal\coop-scratch\warriors";

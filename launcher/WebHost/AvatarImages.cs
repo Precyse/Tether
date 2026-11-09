@@ -1,7 +1,7 @@
-using CoopLauncher.Gui;
+using Tether.Gui;
 using System.Drawing.Imaging;
 
-namespace CoopLauncher.Web;
+namespace Tether.Web;
 
 /// <summary>The Steam avatars the page may show: each is encoded to PNG once when it arrives from Steam, kept in a small cache, and
 /// served by the image host. <see cref="Revision"/> is what the snapshot carries in the avatar URL: it is null until the avatar

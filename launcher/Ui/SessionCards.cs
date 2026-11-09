@@ -1,4 +1,4 @@
-namespace CoopLauncher.Gui;
+namespace Tether.Gui;
 
 /// <summary>What the notice row's fix button does.</summary>
 internal enum NoticeFix { None, InstallMod, UpdateMod, UpdateLauncher, Browse, JoinAgain, Switch, StartSteam, CheckUpdate, CloseGame, Rebuild }

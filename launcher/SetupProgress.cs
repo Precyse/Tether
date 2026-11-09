@@ -1,35 +1,35 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>
-/// Reads what warriors-setup prints and turns it into one progress bar. The tool prints <c>[n/9] title</c> for each of its steps and, in the
-/// download step, <c>name: 10 of 263 MB</c>; its longest step (the game build, 8) writes ninja's <c>[k/total]</c> to a log the caller reads.
-/// Each step owns a share of the bar (<see cref="StepWeights"/>, measured on a clean run: the downloads 20 %, the build 65 %); inside a step
-/// the bar follows what that step reports. The percent never goes down.
+/// Reads what warriors-setup prints and turns it into the report of the build. The tool prints <c>[n/9] title</c> for each of its steps and, in the
+/// download step, <c>name: 10 of 263 MB</c>; its two compiling steps (the recompiler tools, 5, and the game, 8) write ninja's <c>[k/total]</c> to a log the
+/// caller reads (<see cref="LogName"/>). A report says what the tool is doing now with the count of that step (files compiled, megabytes read) and the percent
+/// that count gives; a step with no count has no percent, only its number out of nine. Nothing is estimated: no timer, no weights.
 /// </summary>
 public sealed partial class SetupProgress
 {
     public const int StepCount = 9;
-
-    /// <summary>The share of the bar of steps 0 to 9 (step 0 is the Python the tool fetches for itself); the sum is 100.</summary>
-    public static readonly int[] StepWeights = [1, 2, 2, 20, 2, 2, 2, 2, 65, 2];
-
-    /// <summary>The download size the tool prints no total for (llvm, cmake, wgpu, together about 330 MB).</summary>
-    public const int ExpectedDownloadMb = 330;
-
     public const int DownloadStep = 3;
+    public const int RecompilerStep = 5;
     public const int BuildStep = 8;
 
     private const int Whole = 100;
 
-    private readonly Dictionary<string, (int Done, int Total)> _downloads = new();
-    private string _currentDownload = string.Empty;
+    /// <summary>What each step of the tool does, in plain words (the tool's own titles are for its console).</summary>
+    private static readonly string[] StepWords =
+    [
+        "starting the setup tool", "checking the disc image", "checking this PC", "downloading the build tools", "preparing the engine source",
+        "building the recompiler tools", "converting the game code and graphics programs", "applying the co-op changes", "compiling the game code", "writing Warriors.exe",
+    ];
+
+    private long _done;
+    private long _total;
+    private string _download = string.Empty;
     private int _step;
     private string _title = string.Empty;
-    private double _fraction;
-    private int _last;
 
     [GeneratedRegex(@"^\[(\d+)/9\]\s+(.+?)\s*$")]
     private static partial Regex StepLine();
@@ -59,58 +59,71 @@ public sealed partial class SetupProgress
         return match.Success;
     }
 
-    /// <summary>The newest ninja counter (<c>[17/376]</c>) in a text, as the fraction of the build done; null when there is none.</summary>
-    public static double? NinjaFraction(string logText)
+    /// <summary>The newest ninja counter (<c>[17/376]</c>) in a text; null when there is none.</summary>
+    public static (int Done, int Total)? NinjaCount(string logText)
     {
         var last = NinjaLine().Matches(logText).LastOrDefault();
         if (last is null) return null;
-        var done = int.Parse(last.Groups[1].Value, CultureInfo.InvariantCulture);
         var total = int.Parse(last.Groups[2].Value, CultureInfo.InvariantCulture);
-        return total == 0 ? null : Math.Min(1.0, done / (double)total);
+        return total == 0 ? null : (Math.Min(total, int.Parse(last.Groups[1].Value, CultureInfo.InvariantCulture)), total);
     }
 
-    /// <summary>The percent of the whole run at a point inside a step (0 to 1): the steps before it, plus its share of its own weight.</summary>
-    public static int Percent(int step, double fraction)
+    /// <summary>The log (in the tool's logs folder) whose ninja counter the step's progress follows; null for a step with no such log.</summary>
+    public static string? LogName(int step) => step switch
     {
-        var before = StepWeights.Take(step).Sum();
-        return Math.Min(Whole - 1, before + (int)(StepWeights[Math.Min(step, StepWeights.Length - 1)] * Math.Clamp(fraction, 0, 1)));
-    }
+        RecompilerStep => "tools.build.log",
+        BuildStep => "game.build.log",
+        _ => null,
+    };
 
     /// <summary>The step the tool is in, 0 before it said anything.</summary>
     public int Step => _step;
 
-    /// <summary>One line of the tool's output: the report to show, or null when the line changes nothing on the bar.</summary>
+    /// <summary>One line of the tool's output: the report to show, or null when the line changes nothing.</summary>
     public ModProgress? Feed(string line)
     {
         if (TryParseStep(line, out var step, out var title))
         {
             _step = step;
             _title = title;
-            _fraction = 0;
+            _done = _total = 0;
+            _download = string.Empty;
             return Report();
         }
-        if (_step == DownloadStep && TryParseDownload(line, out var file, out var done, out var total))
-        {
-            _downloads[file] = (done, total);
-            _currentDownload = file;
-            _fraction = _downloads.Sum(entry => entry.Key == _currentDownload ? entry.Value.Done : entry.Value.Total) / (double)ExpectedDownloadMb;
-            return Report();
-        }
-        return null;
-    }
-
-    /// <summary>The build step's own progress, from the text of the log ninja writes.</summary>
-    public ModProgress? FeedBuildLog(string logText)
-    {
-        if (_step != BuildStep || NinjaFraction(logText) is not { } fraction || fraction <= _fraction) return null;
-        _fraction = fraction;
+        if (_step != DownloadStep || !TryParseDownload(line, out var file, out var done, out var total)) return null;
+        _download = file;
+        _done = done;
+        _total = total;
         return Report();
     }
 
+    /// <summary>The compiling step's own count, from the text of the log ninja writes; null when it has not moved forward.</summary>
+    public ModProgress? FeedBuildLog(string logText)
+    {
+        if (LogName(_step) is null || NinjaCount(logText) is not var (done, total) || total == _total && done <= _done) return null;
+        _done = done;
+        _total = total;
+        return Report();
+    }
+
+    /// <summary>The report: the bar is how far through the nine steps the tool is, counting the share of the current step that its count gives; the text says which.</summary>
     private ModProgress Report()
     {
-        _last = Math.Max(_last, Percent(_step, _fraction));
-        return new ModProgress(ModStep.Building, _last, _step, StepCount, $"{_title} ({_step}/{StepCount})");
+        var overall = (Math.Max(_step, 1) - 1) * Whole / StepCount + (_total > 0 ? (int)(_done * Whole / _total) : 0) / StepCount;
+        return new ModProgress(ModStep.Building, overall, _step, StepCount, Detail(overall));
+    }
+
+    /// <summary>What the tool is doing, with the real count of the step where it has one and the percent that gives, then the overall progress.</summary>
+    private string Detail(int overall)
+    {
+        var words = StepWords[Math.Min(_step, StepCount)];
+        var percent = _total > 0 ? $" ({_done * Whole / _total}%)" : string.Empty;
+        return _step switch
+        {
+            DownloadStep when _total > 0 => $"downloading {_download}: {_done} of {_total} MB{percent}, overall {overall}%",
+            RecompilerStep or BuildStep when _total > 0 => $"{words}: {_done} of {_total} files{percent}, overall {overall}%",
+            _ => $"{words}, step {_step} of {StepCount}, overall {overall}%",
+        };
     }
 }
 

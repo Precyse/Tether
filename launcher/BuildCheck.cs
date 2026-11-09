@@ -1,27 +1,35 @@
 using System.Buffers.Binary;
 using System.Security.Cryptography;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>
 /// One machine's build, as BUILD_INFO carries it: launcher build (the launcher component's version in installed.json; 0 = dev build), installed game build (Steam
 /// buildid; 0 = unknown), and the hash of the installed mod files (<see cref="ModInstaller.ContentHash"/>; null = not
-/// installed or unknown, sent as all zero). A payload from an older launcher is shorter: the missing fields skip their check.
+/// installed or unknown, sent as all zero), and for a game built on each PC the fingerprint text the hash is made of (<see cref="RecompBuildInfo.Fingerprint"/>, length
+/// byte and ASCII after the hash), so the guest can say which part differs. A payload from an older launcher is shorter: the missing fields skip their check.
 /// </summary>
-public sealed record BuildInfo(int LauncherBuild, int GameBuild, byte[]? ModHash)
+public sealed record BuildInfo(int LauncherBuild, int GameBuild, byte[]? ModHash, string? Fingerprint = null)
 {
     public const int DevBuild = 0;
     public const int HashBytes = SHA256.HashSizeInBytes;
 
     private const int IntBytes = sizeof(int);
     private const int GameBuildEnd = IntBytes + IntBytes;
+    private const int HashEnd = GameBuildEnd + HashBytes;
 
     public byte[] Encode()
     {
-        var payload = new byte[GameBuildEnd + HashBytes];
+        var text = Fingerprint is { Length: > 0 and <= byte.MaxValue } fingerprint ? System.Text.Encoding.ASCII.GetBytes(fingerprint) : [];
+        var payload = new byte[HashEnd + (text.Length > 0 ? 1 + text.Length : 0)];
         BinaryPrimitives.WriteInt32LittleEndian(payload, LauncherBuild);
         BinaryPrimitives.WriteInt32LittleEndian(payload.AsSpan(IntBytes), GameBuild);
         ModHash?.CopyTo(payload, GameBuildEnd);
+        if (text.Length > 0)
+        {
+            payload[HashEnd] = (byte)text.Length;
+            text.CopyTo(payload, HashEnd + 1);
+        }
         return payload;
     }
 
@@ -30,8 +38,10 @@ public sealed record BuildInfo(int LauncherBuild, int GameBuild, byte[]? ModHash
         info = new BuildInfo(DevBuild, GameBuilds.Unknown, null);
         if (payload.Length < IntBytes) return false;
         var game = payload.Length >= GameBuildEnd ? BinaryPrimitives.ReadInt32LittleEndian(payload.AsSpan(IntBytes)) : GameBuilds.Unknown;
-        var hash = payload.Length >= GameBuildEnd + HashBytes ? payload[GameBuildEnd..(GameBuildEnd + HashBytes)] : null;
-        info = new BuildInfo(BinaryPrimitives.ReadInt32LittleEndian(payload), game, hash is null || hash.All(b => b == 0) ? null : hash);
+        var hash = payload.Length >= HashEnd ? payload[GameBuildEnd..HashEnd] : null;
+        var length = payload.Length > HashEnd ? payload[HashEnd] : 0;
+        var fingerprint = length > 0 && payload.Length >= HashEnd + 1 + length ? System.Text.Encoding.ASCII.GetString(payload, HashEnd + 1, length) : null;
+        info = new BuildInfo(BinaryPrimitives.ReadInt32LittleEndian(payload), game, hash is null || hash.All(b => b == 0) ? null : hash, fingerprint);
         return true;
     }
 
@@ -49,12 +59,14 @@ public sealed record BuildInfo(int LauncherBuild, int GameBuild, byte[]? ModHash
     }
 
     /// <summary>The refusal detail of a mismatch, <see cref="RefusalVersions"/> of what differs: launcher builds, game builds, or
-    /// the installed mod builds (<paramref name="hostModBuild"/> is the host's <c>cf_mod</c>; the mod hash carries no number).
+    /// the installed mod builds (<paramref name="hostModBuild"/> is the host's <c>cf_mod</c>; the mod hash carries no number); for a
+    /// game built on each PC the parts of the fingerprint that differ (<see cref="RecompBuildInfo.Differences"/>).
     /// Empty for a mismatch with no numbers.</summary>
     public static string Detail(BuildMismatch mismatch, BuildInfo host, BuildInfo local, int hostModBuild, int localModBuild) => mismatch switch
     {
         BuildMismatch.LauncherBuild => RefusalVersions.Format(host.LauncherBuild, local.LauncherBuild),
         BuildMismatch.GameBuild => RefusalVersions.Format(host.GameBuild, local.GameBuild),
+        BuildMismatch.ModFiles when host.Fingerprint != null && local.Fingerprint != null => RecompBuildInfo.Differences(host.Fingerprint, local.Fingerprint),
         BuildMismatch.ModFiles => RefusalVersions.Format(hostModBuild, localModBuild),
         _ => string.Empty,
     };
@@ -124,7 +136,7 @@ public sealed class BuildCheck
     public (BuildInfo Host, BuildInfo Local)? Compared { get; private set; }
 
     private BuildInfo LocalInfo() => new(LocalBuild(), GameBuilds.Installed(_profile, _gameDir),
-        _gameDir is null ? null : ModInstaller.ContentHash(_profile, _gameDir));
+        _gameDir is null ? null : ModInstaller.ContentHash(_profile, _gameDir), _gameDir is null || _profile.Recomp is null ? null : RecompInstall.Fingerprint(_profile, _gameDir));
 
     private void SendTo(ulong peer)
     {

@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>A game's installed Steam build against the builds its profile lists as supported (the adapter's addresses
 /// are tied to the game's executable).</summary>

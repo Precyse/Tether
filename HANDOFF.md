@@ -1,6 +1,6 @@
 # RE0 co-op handoff (2026-10-25 evening)
 
-Repo worktree `C:\Users\ahmal\coop-next`, branch pushed to `next` (Precyse/RE0Together; each push builds a preview release). Last pushed: `d48a3d3` (lift), `4b09aca` (reload fix) after `1297749` (launcher); Build 208 = `a1bf7b5`. Working tree clean at handoff except this file.
+Repo worktree `C:\Users\ahmal\coop-next`, branch pushed to `next` (Precyse/Tether; each push builds a preview release). Last pushed: `d48a3d3` (lift), `4b09aca` (reload fix) after `1297749` (launcher); Build 208 = `a1bf7b5`. Working tree clean at handoff except this file.
 
 ## How to work here
 - Build adapter: `cmd //c "<scratchpad>\b.bat"` (VsDevCmd x86, cmake build in `adapters/re0`, prints only errors); copy `adapters/re0/build/dinput8.dll` to `adapters/re0/dinput8.dll`; tests = every `adapters/re0/build/*_test.exe` except `net_test`, `overlay_test` (87 pass).

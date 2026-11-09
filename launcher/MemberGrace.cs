@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>Who is held, who came back and who is gone after one membership check.</summary>
 public sealed record GraceVerdict(IReadOnlyList<ulong> Held, IReadOnlyList<ulong> Returned, IReadOnlyList<ulong> Expired);

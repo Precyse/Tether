@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>
 /// What the session and the loop need from the game's side of the launcher: game frames in both directions, the game's reports

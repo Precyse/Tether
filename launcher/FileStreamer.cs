@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>The sending half of the FILE_BEGIN / CHUNK / END transfer, shared by the host's save sync (<see cref="SaveSender"/>) and
 /// the guest's crash files (<see cref="CrashSender"/>): whole files held in memory, streamed paced, and resent until the other side

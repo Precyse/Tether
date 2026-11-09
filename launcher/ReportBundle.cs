@@ -2,7 +2,7 @@ using System.IO.Compression;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>One zip to send when something goes wrong: report.txt (launcher build, OS, each game's folder, build and mod state, what
 /// was left out and why), the launcher's settings and every log it kept, and from each game's coop folder the adapter log and ini, the

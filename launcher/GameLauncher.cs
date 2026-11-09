@@ -1,8 +1,8 @@
 using System.ComponentModel;
 using System.Diagnostics;
-using CoopLauncher.Gui;
+using Tether.Gui;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>How a game start ended: started, already running (left alone), or why it could not start.</summary>
 public enum LaunchResult { Started, AlreadyRunning, GameUnsupported, ModNotInstalled, SteamStartFailed }

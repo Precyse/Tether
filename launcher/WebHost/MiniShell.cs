@@ -1,6 +1,6 @@
-using CoopLauncher.Gui;
+using Tether.Gui;
 
-namespace CoopLauncher.Web;
+namespace Tether.Web;
 
 /// <summary>The mini mode window (SPEC 1): a small always-on-top window, with its own taskbar button, at the bottom right of the main
 /// window's screen, showing the mini page. It is made on the first MINI MODE and kept hidden for reuse, and shown only once its
@@ -15,7 +15,7 @@ internal sealed class MiniShell : Form
     private const int ReopenRenderTimeoutMs = 150;
     private const int ClientWidth = 360;
     private const int ClientHeight = 220;
-    private const string WindowTitle = "Co-op";
+    private const string WindowTitle = "Tether";
     private const int ScreenMargin = 16;
 
     private readonly UiController _controller;

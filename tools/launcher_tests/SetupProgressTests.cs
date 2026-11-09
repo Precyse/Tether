@@ -1,8 +1,8 @@
-using CoopLauncher;
+using Tether;
 
 namespace LauncherTests;
 
-/// <summary>What warriors-setup prints becomes one monotonic progress bar, and its last words become a failure a player can act on.</summary>
+/// <summary>What warriors-setup prints becomes what the build is doing with the real count of its step (megabytes read, files compiled), and its last words become a failure a player can act on.</summary>
 public static class SetupProgressTests
 {
     private const string CleanRun = """
@@ -40,30 +40,36 @@ public static class SetupProgressTests
         Check.That(SetupProgress.TryParseDownload("      clang+llvm-23.1.5-x86_64-pc-windows-msvc.tar.zst: 10 of 263 MB", out var file, out var done, out var total)
             && file.EndsWith(".tar.zst") && done == 10 && total == 263, "line: a download names its file and its megabytes");
         Check.That(!SetupProgress.TryParseDownload("      llvm 23.1.5", out _, out _, out _), "line: a tool's name is no download");
-        Check.That(SetupProgress.NinjaFraction("[1/6] Building\n[3/6] Generating\n") is { } half && Math.Abs(half - 0.5) < 1e-9, "ninja: the newest counter is the fraction");
-        Check.That(SetupProgress.NinjaFraction("> cmake --build\n") is null, "ninja: no counter, no fraction");
+        Check.That(SetupProgress.NinjaCount("[1/6] Building\n[3/6] Generating\n") is (3, 6), "ninja: the newest counter is the count");
+        Check.That(SetupProgress.NinjaCount("> cmake --build\n") is null, "ninja: no counter, no count");
+        Check.That(SetupProgress.LogName(SetupProgress.RecompilerStep) == "tools.build.log" && SetupProgress.LogName(SetupProgress.BuildStep) == "game.build.log" && SetupProgress.LogName(3) is null,
+            "ninja: the two compiling steps have a log");
     }
 
     private static void Bar()
     {
-        Check.That(SetupProgress.StepWeights.Sum() == 100 && SetupProgress.StepWeights.Length == SetupProgress.StepCount + 1, "weights: ten steps share the whole bar");
-        Check.That(SetupProgress.Percent(0, 0) == 0 && SetupProgress.Percent(SetupProgress.BuildStep, 0) == 33 && SetupProgress.Percent(9, 1) == 99, "bar: a step starts after the ones before it, 99 at most");
         var progress = new SetupProgress();
         var seen = new List<ModProgress>();
         foreach (var line in CleanRun.Split('\n').Select(l => l.TrimEnd('\r')))
             if (progress.Feed(line) is { } report) seen.Add(report);
-        Check.That(seen.Select(r => r.Percent).SequenceEqual(seen.Select(r => r.Percent).Order()), "bar: never goes back through a whole run");
-        Check.That(seen.All(r => r.Step == ModStep.Building && r.Files == SetupProgress.StepCount && r.Percent < 100), "bar: building steps, step n of 9, never 100 before the end");
-        var downloads = seen.Where(r => r.File == SetupProgress.DownloadStep).ToList();
-        Check.That(downloads.Count >= 5 && downloads[0].Percent < downloads[^1].Percent && downloads[^1].Percent <= SetupProgress.Percent(SetupProgress.DownloadStep, 1),
-            "bar: the download step moves with the megabytes and stays inside its share");
-        Check.That(seen[^1].Reason == "Writing Warriors.exe and its settings (9/9)", "bar: the text is the step's title and its number");
+        Check.That(seen.All(r => r.Step == ModStep.Building && r.Files == SetupProgress.StepCount), "report: building steps, step n of 9");
+        var downloads = seen.Where(r => r.Reason!.Contains(" MB (")).ToList();
+        Check.That(downloads[0].Reason == "downloading clang+llvm-23.1.5-x86_64-pc-windows-msvc.tar.zst: 10 of 263 MB (3%), overall 22%" && downloads[0].Percent == 22 && downloads[1].Percent == 32
+            && downloads[2].Reason == "downloading cmake-4.2.3-windows-x86_64.zip: 10 of 48 MB (20%), overall 24%" && downloads[2].Percent == 24,
+            "report: a download says its file, its megabytes and their percent; the bar is the overall progress");
+        Check.That(seen.Single(r => r.File == 1).Percent == 0 && seen.Single(r => r.File == 1).Reason == "checking the disc image, step 1 of 9, overall 0%",
+            "report: a step that counts nothing has its number out of nine and the overall progress");
+        Check.That(seen[^1].Reason == "writing Warriors.exe, step 9 of 9, overall 88%" && seen[^1].Percent == 88, "report: the last step");
         var build = new SetupProgress();
-        Check.That(build.FeedBuildLog("[5/10] x") is null, "build: log counters count only in the build step");
+        Check.That(build.FeedBuildLog("[5/10] x") is null, "build: log counters count only in the compiling steps");
         build.Feed("[8/9] Building the game (the long step)");
-        var first = build.FeedBuildLog("[188/376] Building CXX object a.obj");
-        Check.That(first is { } report1 && report1.Percent == SetupProgress.Percent(SetupProgress.BuildStep, 0.5), "build: ninja's counter moves the bar inside the build step");
-        Check.That(build.FeedBuildLog("[100/376] older text") is null, "build: a counter that is behind changes nothing");
+        var first = build.FeedBuildLog("[142/270] Building CXX object a.obj");
+        Check.That(first is { Reason: "compiling the game code: 142 of 270 files (52%), overall 82%", Percent: 82, File: 8, Files: 9 }, "build: ninja's counter is the count and the percent of the build step");
+        Check.That(build.FeedBuildLog("[100/270] older text") is null && build.FeedBuildLog("[142/270] same") is null, "build: a counter that is behind or has not moved changes nothing");
+        Check.That(build.FeedBuildLog("[270/270] Linking") is { Percent: 88 }, "build: all compiled is the end of step 8, overall 88");
+        var tools = new SetupProgress();
+        tools.Feed("[5/9] Building the recompiler tools");
+        Check.That(tools.FeedBuildLog("[3/12] x") is { Reason: "building the recompiler tools: 3 of 12 files (25%), overall 46%", Percent: 46, File: 5 }, "build: the recompiler tools count their files too");
     }
 
     private static void Failures()

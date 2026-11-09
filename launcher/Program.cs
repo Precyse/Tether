@@ -1,6 +1,6 @@
-using CoopLauncher;
-using CoopLauncher.Gui;
-using CoopLauncher.Web;
+using Tether;
+using Tether.Gui;
+using Tether.Web;
 
 internal static class Program
 {
@@ -9,6 +9,7 @@ internal static class Program
     [STAThread]
     private static int Main(string[] args)
     {
+        if (FormerInstall.HandOver(args)) return 0;
         if (args.Length != 0) ParentConsole.Attach();
         if (args is [WebCheckFlag]) return WebRuntime.Check();  // proves the web view loader works from the single-file exe, without a window
         var options = CliOptions.Parse(args);

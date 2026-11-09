@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>One player of the session as the game reads it: the session slot (also its pad port: the host is slot 0, pad 1) and the display name.</summary>
 public sealed record SessionPlayer(int Slot, string Name);
@@ -17,6 +17,7 @@ public sealed record SessionPlayer(int Slot, string Name);
 /// role=host          ; host or guest
 /// local_slot=0       ; this machine's pad port
 /// max_players=4      ; the host's setting
+/// status_file=C:\...\status.txt   ; where the game writes what it is doing (<see cref="EngineStatusFile"/>)
 /// [roster]           ; slot = pad port, the same on every machine; an open slot has no name
 /// 0=Alex
 /// 1=Sam
@@ -25,6 +26,9 @@ public sealed record SessionPlayer(int Slot, string Name);
 /// [host]
 /// profile_slot=-1    ; the lobby does not pick a profile
 /// memcard=C:\...\saves\card.ps2   ; this machine's card (a guest's: the copy of the host's the launcher sent)
+/// friendly_fire=0    ; the host's other terms (every host option of the profile but the player count): shared by all machines
+/// [local]            ; this machine's own options (resolution, anti-aliasing, volume, controller): never shared; omitted when none
+/// scale=4
 /// </code>
 /// Names are one line with no <c>=</c> or control characters; the game cuts them to what its font can draw. The refusals the launcher can show are
 /// <see cref="RefusalKind"/> names, stable and only ever appended, so the game may use them as reason codes.
@@ -34,7 +38,8 @@ public static class RecompSessionFile
     private const char Replacement = ' ';
 
     /// <summary>The file's text for a session.</summary>
-    public static string Build(uint epoch, ulong sessionId, bool host, int localSlot, int maxPlayers, IEnumerable<SessionPlayer> roster, string memcard)
+    public static string Build(uint epoch, ulong sessionId, bool host, int localSlot, int maxPlayers, IEnumerable<SessionPlayer> roster, string memcard, string statusFile,
+        IEnumerable<KeyValuePair<string, string>> hostTerms, IEnumerable<KeyValuePair<string, string>> localOptions)
     {
         var names = roster.ToDictionary(player => player.Slot, player => player.Name);
         var text = new StringBuilder();
@@ -44,12 +49,18 @@ public static class RecompSessionFile
         text.AppendLine($"role={(host ? "host" : "guest")}");
         text.AppendLine(string.Create(CultureInfo.InvariantCulture, $"local_slot={localSlot}"));
         text.AppendLine(string.Create(CultureInfo.InvariantCulture, $"max_players={maxPlayers}"));
+        text.AppendLine($"status_file={statusFile}");
         text.AppendLine("[roster]");
         for (var slot = 0; slot < maxPlayers; slot++)
             text.AppendLine(string.Create(CultureInfo.InvariantCulture, $"{slot}={(names.TryGetValue(slot, out var name) ? OneLine(name) : string.Empty)}"));
         text.AppendLine("[host]");
         text.AppendLine("profile_slot=-1");
         text.AppendLine($"memcard={memcard}");
+        foreach (var (key, value) in hostTerms) text.AppendLine($"{key}={OneLine(value)}");
+        var local = localOptions.ToList();
+        if (local.Count == 0) return text.ToString();
+        text.AppendLine("[local]");
+        foreach (var (key, value) in local) text.AppendLine($"{key}={OneLine(value)}");
         return text.ToString();
     }
 

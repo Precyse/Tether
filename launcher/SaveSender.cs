@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>Host side of save sync: chooses the profile's files for a peer and streams them with the shared <see cref="FileStreamer"/> (paced, resent until ACKed ok). A set the
 /// guest could not take (too many names, a name that is not ASCII, a file over <see cref="SaveReceiver.MaxFileBytes"/>) is not sent

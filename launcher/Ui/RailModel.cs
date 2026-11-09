@@ -1,4 +1,4 @@
-namespace CoopLauncher.Gui;
+namespace Tether.Gui;
 
 /// <summary>How a rail row's status line is coloured: quiet gray, amber (an update), red (a problem).</summary>
 internal enum RailTone { Quiet, Amber, Red }

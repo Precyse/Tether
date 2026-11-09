@@ -10,7 +10,7 @@ from pathlib import Path
 import release_manifest as rm
 
 FILES = {
-    "launcher/app/coop-launcher.exe": b"exe bytes",
+    "launcher/app/tether.exe": b"exe bytes",
     "launcher/app/steam_api64.dll": b"steam",
     "launcher/games/re0.json": b'{"id": "re0"}',
     "launcher/games/sr2.json": b'{"id": "sr2"}',
@@ -21,7 +21,7 @@ FILES = {
 }
 PARTS = ["launcher", "re0", "sr2"]
 RE0_CHANGED = {**FILES, "adapters/re0/dinput8.dll": b"re0 dll changed"}
-ALL_CHANGED = {**FILES, "launcher/app/coop-launcher.exe": b"exe changed", "adapters/re0/dinput8.dll": b"re0 dll changed",
+ALL_CHANGED = {**FILES, "launcher/app/tether.exe": b"exe changed", "adapters/re0/dinput8.dll": b"re0 dll changed",
                "adapters/sr2/dinput8.dll": b"sr2 dll changed"}
 failures = []
 
@@ -58,14 +58,14 @@ def zip_names(path):
 
 def test_assets_and_manifest(work):
     package, out, manifest = release(work)
-    check(sorted(path.name for path in out.iterdir()) == ["Coop.zip", "launcher.zip", "manifest.json", "mod-re0.zip", "mod-sr2.zip"],
+    check(sorted(path.name for path in out.iterdir()) == ["Tether.zip", "launcher.zip", "manifest.json", "mod-re0.zip", "mod-sr2.zip"],
           "the release holds the full zip, the launcher, one mod per game and the manifest")
-    check(zip_names(out / "launcher.zip") == ["launcher/app/coop-launcher.exe", "launcher/app/steam_api64.dll", "launcher/app/update.json"],
+    check(zip_names(out / "launcher.zip") == ["launcher/app/steam_api64.dll", "launcher/app/tether.exe", "launcher/app/update.json"],
           "launcher.zip is launcher/app/**, update.json included")
     check(zip_names(out / "mod-sr2.zip") == ["adapters/sr2/dinput8.dll", "adapters/sr2/scripts.delta.json", "launcher/games/sr2.json"],
           "a mod zip holds the profile and the adapter files")
-    check("launcher/installed.json" in zip_names(out / "Coop.zip") and "README.txt" in zip_names(out / "Coop.zip"),
-          "Coop.zip holds the whole package with installed.json and the readme")
+    check("launcher/installed.json" in zip_names(out / "Tether.zip") and "README.txt" in zip_names(out / "Tether.zip"),
+          "Tether.zip holds the whole package with installed.json and the readme")
     check(all("launcher/installed.json" not in zip_names(out / name) for name in ("launcher.zip", "mod-re0.zip", "mod-sr2.zip")),
           "installed.json is in no component")
     on_disk = json.loads((out / "manifest.json").read_text())
@@ -102,7 +102,7 @@ def test_written_files(package):
 def test_same_package_same_zips(work):
     _, first, _ = release(work, "again-a")
     _, second, _ = release(work, "again-b")
-    check(all((first / name).read_bytes() == (second / name).read_bytes() for name in ("Coop.zip", "launcher.zip", "mod-re0.zip")),
+    check(all((first / name).read_bytes() == (second / name).read_bytes() for name in ("Tether.zip", "launcher.zip", "mod-re0.zip")),
           "the same package gives byte-identical zips")
 
 
@@ -149,7 +149,7 @@ def test_identical_output_is_reused(work):
           "and their manifest entries (version, hashes, files) are the previous ones")
     check(manifest["build"] == 8 and json.loads((package / "launcher/installed.json").read_text())["components"] == {"launcher": 1, "re0": 1, "sr2": 1},
           "the release build moves on, the component versions stay")
-    check((second / "Coop.zip").read_bytes() != (first / "Coop.zip").read_bytes(), "Coop.zip still differs: installed.json names the new build")
+    check((second / "Tether.zip").read_bytes() != (first / "Tether.zip").read_bytes(), "Tether.zip still differs: installed.json names the new build")
 
 
 def test_changed_output_is_bumped(work):

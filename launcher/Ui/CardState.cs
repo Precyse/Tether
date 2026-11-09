@@ -1,4 +1,4 @@
-namespace CoopLauncher.Gui;
+namespace Tether.Gui;
 
 /// <summary>What a player's card shows as its state: Idle (in the lobby or ready), InGame, Progress (connecting, checking, receiving
 /// or starting), Problem (held, silent, refused, game closed, a character or save that is wrong) and Open (an empty seat).</summary>
@@ -34,21 +34,21 @@ public static class CardStates
         return player.Step == SessionStep.InGame && (GameProblem(player, host) != null || NetProblem(player)) ? CardState.Problem : OfStep(player.Step);
     }
 
-    /// <summary>The engines stopped agreeing, refused each other's build or could not reach one another.</summary>
-    private static bool NetProblem(PlayerSlot player) => player.Game?.Net is GameNet.Desync or GameNet.Refused or GameNet.Failed;
+    /// <summary>The engines stopped agreeing, refused each other's build or could not reach one another, or the game named an error.</summary>
+    private static bool NetProblem(PlayerSlot player) => player.Game?.Net is GameNet.Desync or GameNet.Refused or GameNet.Failed || player.Game?.Error != null;
 
     /// <summary>The player has everything it needs for the game to start: its step is Ready and it is neither held nor silent.</summary>
     public static bool IsReady(PlayerSlot player) => player.Step == SessionStep.Ready && !player.Held && !player.Silent;
 
     /// <summary>The player is ready or already past it (its game starting or running): the host may start once every guest is.</summary>
     public static bool IsPrepared(PlayerSlot player) =>
-        player.Step is SessionStep.Ready or SessionStep.StartingGame or SessionStep.InGame && !player.Held && !player.Silent;
+        player.Step is SessionStep.Ready or SessionStep.StartingGame or SessionStep.BuildingGame or SessionStep.InGame && !player.Held && !player.Silent;
 
     /// <summary>The state of a step alone (a roster entry of a lobby listing has no ping or hold).</summary>
     public static CardState OfStep(SessionStep step) => step switch
     {
         SessionStep.Refused or SessionStep.GameClosed or SessionStep.CharacterNotRead => CardState.Problem,
-        SessionStep.CheckingBuild or SessionStep.ReceivingSave or SessionStep.ReadingCharacter or SessionStep.StartingGame => CardState.Progress,
+        SessionStep.CheckingBuild or SessionStep.BuildingGame or SessionStep.ReceivingSave or SessionStep.ReadingCharacter or SessionStep.StartingGame => CardState.Progress,
         SessionStep.InGame => CardState.InGame,
         _ => CardState.Idle,
     };
@@ -67,6 +67,7 @@ public static class CardStates
             SessionStep.Lobby => "In lobby",
             SessionStep.Ready => "Ready",
             SessionStep.CheckingBuild => "Checking build",
+            SessionStep.BuildingGame => BuildingWords(player),
             SessionStep.ReceivingSave => "Receiving save",
             SessionStep.ReadingCharacter => "Reading character",
             SessionStep.PickingCharacter => "Picking character",
@@ -74,21 +75,32 @@ public static class CardStates
             SessionStep.StartingGame => "Starting game",
             SessionStep.InGame => InGameWords(player, host),
             SessionStep.GameClosed => "Game closed",
-            SessionStep.Refused => player.Refusal is { } kind ? RefusalWords(player, new Refusal(kind, player.Detail)) : "Refused",
+            SessionStep.Refused => player.Refusal is { } kind ? RefusalWords(player, new Refusal(kind, player.Detail, Ended: player.Ended)) : "Refused",
             _ => player.RttMs != null ? ConnectedWords : string.Empty,
         };
     }
 
     private static string RefusalWords(PlayerSlot player, Refusal refusal) => player.IsLocal ? StatusText.Refusal(refusal) : StatusText.RefusalOf(refusal, player.Name);
 
+    /// <summary>The game is being built on this player's PC: what the setup tool is doing, with its count, percent and overall progress.</summary>
+    private static string BuildingWords(PlayerSlot player) =>
+        $"Building game: {player.Detail}";
+
     private static string InGameWords(PlayerSlot player, PlayerSlot? host) =>
-        GameProblem(player, host) ?? NetWords(player.Game?.Net) ?? player.Game?.Place switch
+        GameProblem(player, host) ?? ErrorWords(player.Game) ?? NetProblemWords(player.Game?.Net) ?? StageWords.Of(player.Game) ?? NetWords(player.Game?.Net) ?? player.Game?.Place switch
         {
             GamePlace.Title => "At title",
             GamePlace.Loading => "Loading",
             GamePlace.World => "In world",
             _ => "In game",
         };
+
+    /// <summary>The error a game names, as the refusal of that name says it with the game's own reason.</summary>
+    private static string? ErrorWords(GameState? game) =>
+        game?.Error is { } kind ? StatusText.Refusal(new Refusal(kind, game.Reason)) : null;
+
+    /// <summary>The netplay states that stopped the game or the link, in words; null while the netplay is well.</summary>
+    private static string? NetProblemWords(GameNet? net) => net is GameNet.Stalled or GameNet.Desync or GameNet.PeerLeft or GameNet.Refused or GameNet.Failed ? NetWords(net) : null;
 
     /// <summary>Where a game with its own netplay is with the other machines (<see cref="GameNet"/>), in words; null when it says nothing.</summary>
     internal static string? NetWords(GameNet? net) => net switch

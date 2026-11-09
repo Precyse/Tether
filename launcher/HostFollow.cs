@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>
 /// A guest keeps an eye on its host's published lobby. When the host crashes or relaunches it opens a new lobby with a

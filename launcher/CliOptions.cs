@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 public enum TransportKind { Steam, Local }
 
@@ -10,10 +10,10 @@ public sealed record CliOptions(
 {
     public const string Usage = """
         Usage:
-          coop-launcher host <gameId>
-          coop-launcher join <lobbyId>
-          coop-launcher +connect_lobby <lobbyId>
-          coop-launcher                              (wait for a Steam overlay invite)
+          tether host <gameId>
+          tether join <lobbyId>
+          tether +connect_lobby <lobbyId>
+          tether                              (wait for a Steam overlay invite)
         Flags:
           --transport steam|local   default steam
           --local-port N --peer-port M   required with --transport local

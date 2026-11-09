@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace CoopLauncher.Gui;
+namespace Tether.Gui;
 
 /// <summary>How one seat of the lobby popup's roster reads: a member the roster names, a member it does not name (a plain
 /// row) or an open seat.</summary>

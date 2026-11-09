@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>What must hold on this machine before a lobby is opened for a game, or a joined lobby's session starts: the game is
 /// found and, when it runs, started with the settings this session needs (<see cref="BootSettings"/>), its build is supported, its required files are there and its mod is installed and current. A conflicting mod
