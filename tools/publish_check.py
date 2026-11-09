@@ -18,7 +18,10 @@ ALLOWED_PREFIXES = ("adapters/re0/third_party/", "adapters/dd2/third_party/")
 GENERATED_SCRIPTS_PREFIX = "adapters/sr2/scripts/"
 OWN_LUA_PREFIX = "tools/sr2/lua/"
 # Game-derived formats and captures: RE0 archives, memory/code dumps, crash dumps, logs, saves.
-BLOCKED_SUFFIXES = {".arc", ".pak", ".dmp", ".bin", ".log", ".sav", ".exe", ".tex", ".mod", ".lmt"}
+BLOCKED_SUFFIXES = {".arc", ".pak", ".dmp", ".bin", ".log", ".sav", ".exe", ".tex", ".mod", ".lmt", ".iso", ".state", ".ps2"}
+# The Warriors is built on the player's PC from their own disc: its executable (SLUS_*) and the C++ generated from it never ship.
+PS2_EXECUTABLE = re.compile(r"(^|/)SLUS_", re.IGNORECASE)
+GENERATED_CODE = re.compile(r"(^|/)(gen|generated)/")
 SECRET_PATTERNS = {
     "private key": re.compile(rb"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
     "GitHub token": re.compile(rb"gh[pousr]_[A-Za-z0-9]{36}"),
@@ -50,6 +53,10 @@ def path_problems(path):
         return ["generated game scripts (the launcher builds them on the player's PC)"]
     if path.lower().endswith(".lua") and not path.startswith(OWN_LUA_PREFIX):
         return ["Lua outside tools/sr2/lua/ (game scripts are never published)"]
+    if PS2_EXECUTABLE.search(path):
+        return ["a PS2 executable (built from the player's own disc, never published)"]
+    if GENERATED_CODE.search(path) and path.lower().endswith((".cpp", ".hpp", ".h")):
+        return ["recompiled game code (generated on the player's PC, never published)"]
     return []
 
 

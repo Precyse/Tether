@@ -10,5 +10,6 @@ Spec: `docs/CONTRACT.md`. This file is the index: which file holds the table of 
 | SR2 | `docs/codemap/sr2.md` | `adapters/sr2/`, `tools/sr2/` rows |
 | CD | `docs/codemap/cd.md` | `adapters/cd/` (Crimson Desert), `adapters/common/`, `tools/cd/` |
 | DD2 | `docs/codemap/dd2.md` | `adapters/dd2/` (Dragon's Dogma 2 REFramework plugin) |
+| Warriors | `adapters/warriors/setup/CODEMAP.md` | the setup tool that builds The Warriors from the player's disc (recompiler pins, co-op hooks, runtime patch) |
 | where | `docs/codemap/where.md` | "where to look for X" by symptom or system (grep it, never read it whole) |
 | tools | `docs/codemap/tools.md` | release files (`release.yml`, README, package README, `update.json`) and an overview of the root test tools, the research tools of each game and `tools/publish_check.py` (the rows of each tool are in the file of its game) |

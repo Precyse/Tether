@@ -1,0 +1,2 @@
+# The Warriors setup: the patch and its pinned tree hashes need the exact bytes on every checkout
+adapters/warriors/setup/** -text

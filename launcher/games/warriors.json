@@ -5,7 +5,7 @@
     "hero": { "url": "https://cdn2.steamgriddb.com/hero/9884bfb6c4e8914720829708e508f822.png", "sha256": "9bc23f267c644257fb0c34be60e67122b87a9c805cf6855bfb74a2f1c96ed8c5" },
     "logo": { "url": "https://cdn2.steamgriddb.com/logo/cb1353eab083bf555a21713f4b1f1ec2.png", "sha256": "afca2f23aeb67ee4051b1b3415b0bc2323b98319b1deb61f6106cbdec5e08030" } },
   "recomp": {
-    "setup": "tools/warriors-setup/warriors-setup.cmd",
+    "setup": "adapters/warriors/setup/warriors-setup.cmd",
     "discPrompt": "Your The Warriors (USA) disc image",
     "installDir": "games/warriors",
     "buildInfo": "game/build.json",

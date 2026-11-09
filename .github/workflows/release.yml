@@ -233,7 +233,7 @@ jobs:
           dotnet publish launcher/Tether.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -o pkg/launcher/app
           # Installs made before the rename restart coop-launcher.exe after an update; it hands over to tether.exe (launcher/FormerInstall.cs).
           Copy-Item pkg/launcher/app/tether.exe pkg/launcher/app/coop-launcher.exe
-          New-Item -ItemType Directory -Force pkg/launcher/games, pkg/adapters/re0, pkg/adapters/sr2, pkg/adapters/dd2, pkg/adapters/cd | Out-Null
+          New-Item -ItemType Directory -Force pkg/launcher/games, pkg/adapters/re0, pkg/adapters/sr2, pkg/adapters/dd2, pkg/adapters/cd, pkg/adapters/warriors | Out-Null
           Copy-Item launcher/games/*.json pkg/launcher/games/ -Exclude ds2.json
           Copy-Item adapters/re0/dinput8.dll pkg/adapters/re0/
           Copy-Item adapters/re0/fonts pkg/adapters/re0/ -Recurse
@@ -241,6 +241,7 @@ jobs:
           Copy-Item adapters/sr2/scripts.delta.json pkg/adapters/sr2/
           Copy-Item adapters/dd2/dd2coop.dll pkg/adapters/dd2/
           Copy-Item adapters/cd/winmm.dll pkg/adapters/cd/
+          Copy-Item adapters/warriors/setup pkg/adapters/warriors/ -Recurse
           Copy-Item launcher/package/README.txt pkg/
           $legacy = if ($env:CHANNEL -eq 'latest') { @('--legacy-zip', 'RE0-Coop.zip') } else { @() }
           $previous = if (Test-Path previous/manifest.json) { @('--previous', 'previous') } else { @() }
