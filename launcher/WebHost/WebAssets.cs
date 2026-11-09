@@ -124,7 +124,7 @@ internal sealed class WebAssets
         {
             return route switch
             {
-                ImageRoute.Steam steam => LoadSteam(steam),
+                ImageRoute.Art art => LoadArt(art),
                 ImageRoute.Avatar avatar => _avatars.Png(avatar.SteamId) is { } png ? new ImageBytes(png, PngType) : null,
                 ImageRoute.Figure figure => LoadFigure(figure),
                 _ => null,
@@ -138,11 +138,11 @@ internal sealed class WebAssets
         }
     }
 
-    /// <summary>Steam's library art of a game this launcher loaded.</summary>
-    private ImageBytes? LoadSteam(ImageRoute.Steam route)
+    /// <summary>The art of a game this launcher loaded.</summary>
+    private ImageBytes? LoadArt(ImageRoute.Art route)
     {
-        if (_profiles.All(profile => profile.SteamAppId != route.AppId)) return null;
-        if (SteamArt.FindFile(route.AppId, route.Kind) is not { } path) return null;
+        if (_profiles.FirstOrDefault(profile => profile.Id == route.GameId) is not { } game) return null;
+        if (GameArt.FindFile(game, route.Kind) is not { } path) return null;
         return MimeTypes.TryGetValue(Path.GetExtension(path), out var mime) ? new ImageBytes(File.ReadAllBytes(path), mime) : null;
     }
 

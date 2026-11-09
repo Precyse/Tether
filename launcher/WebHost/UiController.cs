@@ -190,10 +190,10 @@ internal sealed partial class UiController : IDisposable
     }
 
     private static ArtDto ArtOf(GameProfile profile) => new(
-        ArtUrl(profile, SteamArt.Kind.Hero), ArtUrl(profile, SteamArt.Kind.Logo), ArtUrl(profile, SteamArt.Kind.Capsule));
+        ArtUrl(profile, GameArt.Kind.Hero), ArtUrl(profile, GameArt.Kind.Logo), ArtUrl(profile, GameArt.Kind.Capsule));
 
-    private static string? ArtUrl(GameProfile profile, SteamArt.Kind kind) =>
-        SteamArt.FindFile(profile.SteamAppId, kind) == null ? null : ImageRoutes.SteamUrl(profile.SteamAppId, kind);
+    private static string? ArtUrl(GameProfile profile, GameArt.Kind kind) =>
+        GameArt.FindFile(profile, kind) == null ? null : ImageRoutes.ArtUrl(profile.Id, kind);
 
     /// <summary>The game a screen is about: the open lobby's (or the refused lobby's), else the one selected in the rail.</summary>
     private GameEntry? GameOf(AppStatus status) =>
@@ -333,6 +333,7 @@ internal sealed partial class UiController : IDisposable
     {
         try
         {
+            GameArt.Fetch(game);
             return (game, GameStatus.Read(game), ArtOf(game));
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)

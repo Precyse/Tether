@@ -165,25 +165,25 @@ public static class UiCommandsTests
     private static void ImageRoutesAreStrict()
     {
         const string host = WebHosts.ImageOrigin;
-        Check.That(ImageRoutes.Parse(host + "steam/418370/capsule") is ImageRoute.Steam { AppId: 418370, Kind: Tether.Gui.SteamArt.Kind.Capsule }, "images: steam art by app id and kind");
-        Check.That(ImageRoutes.Parse(host + "steam/418370/hero") is ImageRoute.Steam { Kind: Tether.Gui.SteamArt.Kind.Hero }, "images: steam hero");
+        Check.That(ImageRoutes.Parse(host + "art/re0/capsule") is ImageRoute.Art { GameId: "re0", Kind: Tether.Gui.GameArt.Kind.Capsule }, "images: game art by game id and kind");
+        Check.That(ImageRoutes.Parse(host + "art/re0/hero") is ImageRoute.Art { Kind: Tether.Gui.GameArt.Kind.Hero }, "images: game hero");
         Check.That(ImageRoutes.Parse(host + "avatar/76561198000000001?r=3") is ImageRoute.Avatar { SteamId: 76561198000000001UL }, "images: an avatar by Steam id, the revision is only a key");
         Check.That(ImageRoutes.Parse(host + "figure/re0/outfit_rebecca/costume_2") is ImageRoute.Figure { GameId: "re0", Segment: "outfit_rebecca", Value: "costume_2", IsSilhouette: false }, "images: an outfit figure");
         Check.That(ImageRoutes.Parse(host + "figure/re0/rebecca/silhouette") is ImageRoute.Figure { Segment: "rebecca", IsSilhouette: true }, "images: a silhouette figure");
         string[] refused =
         [
-            "steam/abc/capsule", "steam/1/other", "steam/1/capsule/extra", "steam/../capsule", "steam/99999999999/capsule", "avatar/", "avatar/abc",
+            "art/re0/other", "art/re0/capsule/extra", "art/../capsule", "art/re.0/capsule", "steam/1/capsule", "avatar/", "avatar/abc",
             "avatar/123456789012345678901", "avatar/1/2", "figure/re0/a", "figure/re0/a/b/c", "figure/../x/y", "figure/re0/a%2fb/c", "figure/re0/a/b c",
-            "figure/re0/../etc", "", "steam", "other/1",
+            "figure/re0/../etc", "", "art", "other/1",
         ];
         foreach (var path in refused) Check.That(ImageRoutes.Parse(host + path) == null, $"images: '{path}' is refused");
-        Check.That(ImageRoutes.Parse("https://app.coop.example/steam/1/capsule") == null, "images: the page host serves no images");
-        Check.That(ImageRoutes.Parse("https://img.coop.example.evil/steam/1/capsule") == null, "images: a longer host name is refused");
+        Check.That(ImageRoutes.Parse("https://app.coop.example/art/re0/capsule") == null, "images: the page host serves no images");
+        Check.That(ImageRoutes.Parse("https://img.coop.example.evil/art/re0/capsule") == null, "images: a longer host name is refused");
 
         var figure = new Tether.Gui.Figure("rebecca", "outfit_rebecca", "costume_2", "R");
         Check.That(ImageRoutes.FigureUrl("re0", figure) == host + "figure/re0/outfit_rebecca/costume_2", "images: a figure with an outfit routes to the outfit");
         Check.That(ImageRoutes.FigureUrl("re0", figure with { Value = null }) == host + "figure/re0/rebecca/silhouette", "images: a figure with no outfit routes to the silhouette");
         Check.That(ImageRoutes.FigureUrl("re0", figure with { Value = "" }) == host + "figure/re0/rebecca/silhouette", "images: the saved outfit routes to the silhouette");
-        Check.That(ImageRoutes.AvatarUrl(7, 3) == host + "avatar/7?r=3" && ImageRoutes.SteamUrl(5, Tether.Gui.SteamArt.Kind.Logo) == host + "steam/5/logo", "images: urls are built to the route shapes");
+        Check.That(ImageRoutes.AvatarUrl(7, 3) == host + "avatar/7?r=3" && ImageRoutes.ArtUrl("sr2", Tether.Gui.GameArt.Kind.Logo) == host + "art/sr2/logo", "images: urls are built to the route shapes");
     }
 }

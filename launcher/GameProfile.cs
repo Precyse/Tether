@@ -75,6 +75,12 @@ public sealed record BridgeCondition(string Key, string Value);
 /// fade out.</summary>
 public sealed record ArtSource(string Arc, string Texture, List<int>? Crop = null, int Feather = 0);
 
+/// <summary>A picture the window downloads for a game that has no Steam art (<see cref="Gui.GameArt"/>): an https .png or .jpg and its SHA-256.</summary>
+public sealed record ArtLink(string Url, string Sha256);
+
+/// <summary>The pictures of the window a profile links: the rail's capsule, the home's hero and its logo.</summary>
+public sealed record ArtLinks(ArtLink? Capsule = null, ArtLink? Hero = null, ArtLink? Logo = null);
+
 /// <summary>Where the game's own UI art for the in-game overlay is in the game folder: the archive holding the message font's
 /// texture and layout (<see cref="Gui.UiArt"/> writes them to coop/ui at launch) and the archive and texture of the dialog panel.</summary>
 public sealed record UiArtSource(string FontArc, string FontTexture, string FontGfd, string DialogArc, string DialogTexture);
@@ -114,11 +120,12 @@ public sealed record GameProfile(
     List<string>? FreshTypes = null, ArtSource? OutfitArt = null, List<string>? CrashFiles = null, SaveIndexProfile? SaveIndex = null, UiArtSource? UiArt = null,
     SaveBackupProfile? SaveBackup = null, CampaignsProfile? Campaigns = null, List<ConflictProfile>? Conflicts = null,
     List<string>? BootKeys = null, long LinkTimeoutMs = GameWatch.UnlinkedAfterMs, string? FrameworkLog = null, string? InGameStep = null,
-    RecompProfile? Recomp = null, PeerBudgetLimits? PeerBudget = null)
+    RecompProfile? Recomp = null, PeerBudgetLimits? PeerBudget = null, ArtLinks? Art = null)
 {
     // Recomp: a game with no Steam app that the launcher builds from the player's own disc image (SteamAppId 0, see RecompProfile); the game
     // folder is the build's install folder, Exe is relative to it and a lobby game's frames travel as the engine's UDP datagrams (UdpRelayLink).
     // PeerBudget: the budget of a peer's game frames when the defaults are too small (PeerBudgetLimits).
+    // Art: the window's pictures of a game without Steam art, downloaded on the player's PC (never shipped).
     // UiArt: the game art the in-game overlay draws, taken from the player's own install at launch.
     // CrashFiles: where the game and its adapter leave crash files, relative to the game folder, as folder and pattern ("coop/dumps/*.dmp").
     // BootKeys: the adapter ini keys the adapter reads only at the game's start; a game that already runs started with other values of them cannot be given a session (<see cref="BootSettings"/>).

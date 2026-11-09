@@ -11,11 +11,11 @@ internal static class WebHosts
     public const string ImageOrigin = "https://img.coop.example/";
 }
 
-/// <summary>What an image URL on the image host asks for. Steam art is by app id; an avatar by Steam id (the revision is only
+/// <summary>What an image URL on the image host asks for. A game's art is by game id; an avatar by Steam id (the revision is only
 /// a cache key); a figure is an outfit picture (Value is an outfit option value) or, for the silhouette, a character's.</summary>
 internal abstract record ImageRoute
 {
-    internal sealed record Steam(int AppId, SteamArt.Kind Kind) : ImageRoute;
+    internal sealed record Art(string GameId, GameArt.Kind Kind) : ImageRoute;
 
     internal sealed record Avatar(ulong SteamId) : ImageRoute;
 
@@ -31,12 +31,12 @@ internal static partial class ImageRoutes
 {
     public const string SilhouetteWord = "silhouette";
 
-    private const string SteamPrefix = "steam/";
+    private const string ArtPrefix = "art/";
     private const string AvatarPrefix = "avatar/";
     private const string FigurePrefix = "figure/";
 
-    [GeneratedRegex(@"^steam/(?<app>[0-9]{1,10})/(?<kind>capsule|hero|logo)$", RegexOptions.CultureInvariant)]
-    private static partial Regex SteamPattern();
+    [GeneratedRegex(@"^art/(?<game>[A-Za-z0-9_-]{1,32})/(?<kind>capsule|hero|logo)$", RegexOptions.CultureInvariant)]
+    private static partial Regex ArtPattern();
 
     [GeneratedRegex(@"^avatar/(?<id>[0-9]{1,20})$", RegexOptions.CultureInvariant)]
     private static partial Regex AvatarPattern();
@@ -44,8 +44,7 @@ internal static partial class ImageRoutes
     [GeneratedRegex(@"^figure/(?<game>[A-Za-z0-9_-]{1,32})/(?<segment>[A-Za-z0-9_]{1,48})/(?<value>[A-Za-z0-9_.-]{1,64})$", RegexOptions.CultureInvariant)]
     private static partial Regex FigurePattern();
 
-    public static string SteamUrl(int appId, SteamArt.Kind kind) =>
-        string.Create(CultureInfo.InvariantCulture, $"{WebHosts.ImageOrigin}{SteamPrefix}{appId}/{kind.ToString().ToLowerInvariant()}");
+    public static string ArtUrl(string gameId, GameArt.Kind kind) => $"{WebHosts.ImageOrigin}{ArtPrefix}{gameId}/{kind.ToString().ToLowerInvariant()}";
 
     public static string AvatarUrl(ulong steamId, int revision) =>
         string.Create(CultureInfo.InvariantCulture, $"{WebHosts.ImageOrigin}{AvatarPrefix}{steamId}?r={revision}");
@@ -63,8 +62,8 @@ internal static partial class ImageRoutes
         var path = url[WebHosts.ImageOrigin.Length..];
         var query = path.IndexOf('?');
         if (query >= 0) path = path[..query];
-        if (SteamPattern().Match(path) is { Success: true } steam && int.TryParse(steam.Groups["app"].Value, NumberStyles.None, CultureInfo.InvariantCulture, out var app))
-            return new ImageRoute.Steam(app, Enum.Parse<SteamArt.Kind>(steam.Groups["kind"].Value, ignoreCase: true));
+        if (ArtPattern().Match(path) is { Success: true } art)
+            return new ImageRoute.Art(art.Groups["game"].Value, Enum.Parse<GameArt.Kind>(art.Groups["kind"].Value, ignoreCase: true));
         if (AvatarPattern().Match(path) is { Success: true } avatar && ulong.TryParse(avatar.Groups["id"].Value, NumberStyles.None, CultureInfo.InvariantCulture, out var id))
             return new ImageRoute.Avatar(id);
         return FigurePattern().Match(path) is { Success: true } figure
