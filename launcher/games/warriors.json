@@ -30,6 +30,7 @@
     { "key": "msaa", "label": "Anti-aliasing", "values": [ { "value": "0", "label": "Off" }, { "value": "1", "label": "On" } ] },
     { "key": "aniso", "label": "Texture filtering", "values": [ { "value": "16", "label": "16x" }, { "value": "8", "label": "8x" }, { "value": "4", "label": "4x" }, { "value": "2", "label": "2x" }, { "value": "0", "label": "Off" } ] },
     { "key": "sharpen", "label": "Sharpen", "values": [ { "value": "1", "label": "On" }, { "value": "0", "label": "Off" } ] },
+    { "key": "brightness", "label": "Brightness", "values": [ { "value": "100", "label": "Normal" }, { "value": "110", "label": "+10%" }, { "value": "120", "label": "+20%" }, { "value": "90", "label": "-10%" } ] },
     { "key": "volume", "label": "Volume", "values": [ { "value": "100", "label": "100%" }, { "value": "75", "label": "75%" }, { "value": "50", "label": "50%" }, { "value": "25", "label": "25%" }, { "value": "0", "label": "Muted" } ] },
     { "key": "pad_user", "label": "Controller", "values": [ { "value": "0", "label": "Controller 1" }, { "value": "1", "label": "Controller 2" }, { "value": "2", "label": "Controller 3" }, { "value": "3", "label": "Controller 4" } ] }
   ] }

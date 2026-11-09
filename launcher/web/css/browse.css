@@ -120,6 +120,7 @@
 .popup { position: relative; width: var(--popup-w); background: var(--popup-fill); backdrop-filter: blur(var(--blur-popup)); border: 1px solid var(--glass-edge); box-shadow: var(--lift-popup); display: flex; flex-direction: column; }
 .popup-options { width: var(--popup-options-w); }
 .popup-options .popup-header { height: var(--popup-options-header-h); }
+.popup-options .popup-logo { height: var(--popup-options-logo-h); bottom: var(--popup-options-logo-bottom); }
 .popup-header { position: relative; height: var(--popup-header-h); overflow: hidden; flex: none; }
 .popup-hero { position: absolute; inset: 0; object-position: 50% 25%; }
 .popup-header-fade { position: absolute; inset: 0; background: linear-gradient(180deg, var(--popup-header-top) 30%, var(--bg2) 100%); }
