@@ -17,6 +17,7 @@ export function create(ctx) {
   const rail = createRail(ctx);
   const heroArt = createImage('fit-cover hero-art');
   const logo = createImage('hero-logo');
+  const nameLogo = h('div', { class: 'hero-name', hidden: true });
   const host = h('button', { class: 'btn btn-primary hero-host', type: 'button', on: { click: () => send('host') } });
   const mod = h('button', { class: 'btn btn-over-art hero-mod', type: 'button', hidden: true });
   const modRun = createModRun(ctx, 'hero');
@@ -30,7 +31,7 @@ export function create(ctx) {
   const row = h('div', { class: 'hero-row' }, host, code.el, options);
   const noticeSlot = h('div', { class: 'hero-notice' });
   const dock = h('div', { class: 'hero-dock' }, modRun.el, row, noticeSlot);
-  const hero = h('section', { class: 'hero' }, fade, logo.el, h('div', { class: 'hero-corner' }, mod, characters), dock);
+  const hero = h('section', { class: 'hero' }, fade, logo.el, nameLogo, h('div', { class: 'hero-corner' }, mod, characters), dock);
   const pane = h('div', { class: 'home-pane' });
   let layout = null;
 
@@ -57,11 +58,14 @@ export function create(ctx) {
   function update(state) {
     const { home } = state;
     if (!home) return;
-    gameId = state.games.find((game) => game.selected)?.id ?? null;
+    const game = state.games.find((entry) => entry.selected);
+    gameId = game?.id ?? null;
     rail.update(state);
     friends.update(state);
     heroArt.set(state.art.hero);
     logo.set(state.art.logo);
+    nameLogo.hidden = Boolean(state.art.logo) || !game;
+    setText(nameLogo, game?.name ?? '');
     setText(host, home.hostLabel);
     host.disabled = !home.hostEnabled;
     modRun.update(home.modRun, gameId);

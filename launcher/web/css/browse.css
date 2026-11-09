@@ -52,6 +52,7 @@
 .hero-shade { position: absolute; inset: 0; background: linear-gradient(90deg, var(--shade-solid) 0%, var(--shade-mid) 45%, var(--shade-clear) 75%); }
 .hero-fade { position: absolute; left: 0; right: 0; bottom: calc(var(--hero-fade-overlap) * -1); height: calc(var(--hero-fade-h) + var(--hero-fade-overlap)); background: linear-gradient(180deg, var(--shade-clear) 0%, var(--fade-mid) 54%, var(--bg) 100%); }
 .hero-logo { position: absolute; left: var(--hero-logo-left); top: var(--hero-logo-top); width: var(--hero-logo-w); height: var(--hero-logo-h); object-fit: contain; object-position: left bottom; filter: var(--shadow-logo); }
+.hero-name { position: absolute; left: var(--hero-logo-left); top: var(--hero-logo-top); width: var(--hero-logo-w); height: var(--hero-logo-h); display: flex; align-items: flex-end; font-family: var(--font-display); font-weight: 700; font-size: var(--fs-hero-name); line-height: 1; letter-spacing: 0.02em; text-transform: uppercase; color: var(--text); filter: var(--shadow-logo); }
 .hero-dock {
   position: absolute; left: var(--hero-pad); right: var(--hero-pad); bottom: var(--hero-row-bottom); display: flex; flex-direction: column; padding: var(--dock-pad);
   background: var(--glass-fill); backdrop-filter: blur(var(--blur-glass)) saturate(var(--glass-saturate)); border: 1px solid var(--glass-edge); box-shadow: var(--lift-dock);
