@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>
 /// Guests mirror the lines their adapter appends to its log to the host (LOG_APPEND; a second forwarder does the same for the launcher's

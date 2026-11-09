@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>A crash file as the guest sees it on disk.</summary>
 public readonly record struct CrashFileInfo(string Path, DateTime ModifiedUtc, long Length);

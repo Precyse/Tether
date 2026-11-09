@@ -1,5 +1,5 @@
 using System.Text;
-using CoopLauncher;
+using Tether;
 
 namespace LauncherTests;
 

@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>The restored window rectangle: size in 96 dpi units, position in screen pixels.</summary>
 public sealed record WindowBounds(int X, int Y, int Width, int Height, bool Maximized);
@@ -10,7 +10,7 @@ public sealed record WindowBounds(int X, int Y, int Width, int Height, bool Maxi
 public enum LobbyVisibility { Friends, Everyone }
 
 /// <summary>
-/// The launcher's settings, stored as JSON in %AppData%\CoopLauncher\settings.json. Read once at start; every change
+/// The launcher's settings, stored as JSON in %AppData%\Tether\settings.json. Read once at start; every change
 /// replaces <see cref="Current"/> and writes the file. A file is written whole beside itself and then moved over the old one, which
 /// stays as settings.json.bak: a file that turns out unreadable falls back to that copy, and a missing file means the defaults.
 /// </summary>
@@ -43,7 +43,7 @@ public sealed record AppSettings(
             _current = change(_current);
             Write(_current);
         }
-        CoopLauncher.GameFolders.Invalidate();
+        Tether.GameFolders.Invalidate();
     }
 
     /// <summary>The game folder the player chose for this game, or null to use the one Steam knows.</summary>

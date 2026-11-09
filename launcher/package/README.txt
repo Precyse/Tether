@@ -1,8 +1,8 @@
-Co-op
+Tether
 
-First install: unzip https://github.com/Precyse/Tether/releases/download/preview/Coop.zip anywhere (for example %LocalAppData%\CoopLauncher) and start launcher\app\coop-launcher.exe. From then on it updates itself and the installed mods.
+First install: unzip https://github.com/Precyse/Tether/releases/download/preview/Tether.zip anywhere (for example %LocalAppData%\Tether) and start launcher\app\tether.exe. From then on it updates itself and the installed mods.
 
-Start launcher\app\coop-launcher.exe. One package holds the launcher and the mod for every game.
+Start launcher\app\tether.exe. One package holds the launcher and the mod for every game.
 
 Each game in the list shows its mod: Not installed, Mod N, Mod update M or Mod modified.
 Pick a game and use the button next to Host: Install, Update or Repair (the game must be closed). Uninstall is in Settings, in the game's section.

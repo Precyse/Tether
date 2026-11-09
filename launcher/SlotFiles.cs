@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>The game save slots of a folder whose slots are separate files (Dragon's Dogma 2): <c>data000.bin</c> is slot 0 (the
 /// autosave), <c>data00NSlot.bin</c> slot N; the system file (<c>data00-1.bin</c>) and anything else is no game slot. A slot's time is

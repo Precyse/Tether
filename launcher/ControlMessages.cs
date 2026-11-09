@@ -1,7 +1,7 @@
 using System.Buffers.Binary;
 using System.Text;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>Builders and parsers for launcher-owned control payloads (types below 0x0100).</summary>
 public static class ControlMessages

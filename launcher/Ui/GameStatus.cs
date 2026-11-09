@@ -1,4 +1,4 @@
-namespace CoopLauncher.Gui;
+namespace Tether.Gui;
 
 /// <summary>The mod button the Session row offers: what it does and whether it can be used now.</summary>
 internal readonly record struct ModAction(string Label, bool Enabled);
@@ -8,9 +8,11 @@ internal readonly record struct ModAction(string Label, bool Enabled);
 /// or a required file the game folder does not satisfy (UnmetRequirement), is shown instead of the mod state.</summary>
 internal sealed record GameStatus(
     ModStatus Mod, bool GameFound, int PackageBuild, int GameBuild = GameBuilds.Unknown, bool BuildSupported = true,
-    RequirementProblem? UnmetRequirement = null, bool GameRunning = false)
+    RequirementProblem? UnmetRequirement = null, bool GameRunning = false, bool Built = false, bool DiscSet = false)
 {
     private const string ReplaceLabel = "Replace";
+
+    // Built: the game is one the launcher builds from the player's disc (no mod to install: Install reads Build, an installed mod "Built"). DiscSet: that disc is picked.
 
     public static readonly GameStatus Unknown = new(new ModStatus(ModState.NotInstalled, 0), false, 0);
 
@@ -34,29 +36,40 @@ internal sealed record GameStatus(
         : UnmetRequirement is { } unmet ? StatusText.Requirement(unmet.Name, unmet.OtherVersion)
         : Mod.State switch
         {
-            ModState.NotInstalled => "Not installed",
+            ModState.NotInstalled => Built ? "Not built" : "Not installed",
             ModState.UpdateAvailable => PackageBuild > 0 ? $"Mod update {PackageBuild}" : "Mod update",
-            ModState.Modified => "Mod modified",
+            ModState.Modified => Built ? "Build damaged" : "Mod modified",
             _ => ModLabel,
         };
 
     /// <summary>The settings view's line under a game's folder: the mod and the game's build (two items, a gap apart on the web page).</summary>
     public string SettingsLine => $"{SettingsMod} / {SettingsGame}";
 
+    private string InstallLabel => Built ? "Build" : "Install";
+
+    private string RepairLabel => Built ? "Rebuild" : "Repair";
+
     /// <summary>The one mod button the Session row offers, or none when the mod needs nothing. Never usable while the game runs.</summary>
     public ModAction? Action => Mod.State switch
     {
-        ModState.NotInstalled => new ModAction("Install", GameFound && !GameRunning),
-        _ when UnmetRequirement is { } unmet => new ModAction(unmet.OtherVersion ? ReplaceLabel : "Install", GameFound && !GameRunning),
+        ModState.NotInstalled => new ModAction(InstallLabel, GameFound && !GameRunning),
+        _ when UnmetRequirement is { } unmet => new ModAction(unmet.OtherVersion ? ReplaceLabel : InstallLabel, GameFound && !GameRunning),
         ModState.UpdateAvailable => new ModAction("Update", GameFound && !GameRunning),
-        ModState.Modified => new ModAction("Repair", GameFound && !GameRunning),
+        ModState.Modified => new ModAction(RepairLabel, GameFound && !GameRunning),
         _ => null,
     };
 
     private string ModLabel => Mod.Build > 0 ? $"Mod {Mod.Build}" : "Installed";
 
+    private string BuiltSettingsMod => Mod.State switch
+    {
+        ModState.NotInstalled => "Not built",
+        ModState.Modified => "Build damaged",
+        _ => "Built",
+    };
+
     /// <summary>The mod half of the settings line.</summary>
-    public string SettingsMod => Mod.State switch
+    public string SettingsMod => Built ? BuiltSettingsMod : Mod.State switch
     {
         ModState.NotInstalled => "Mod not installed",
         ModState.Modified => "Mod modified",
@@ -65,7 +78,8 @@ internal sealed record GameStatus(
     };
 
     /// <summary>The game half of the settings line.</summary>
-    public string SettingsGame => !GameFound ? "Game not found"
+    public string SettingsGame => Built ? (DiscSet ? "Disc set" : "Disc not set")
+        : !GameFound ? "Game not found"
         : GameBuild == GameBuilds.Unknown ? "Game found"
         : BuildSupported ? $"Game build {GameBuild}"
         : $"Game build {GameBuild} unsupported";
@@ -78,6 +92,6 @@ internal sealed record GameStatus(
         var gameBuild = GameBuilds.Installed(game, gameDir);
         return new GameStatus(
             ModInstaller.Status(game, gameDir), gameDir != null, BuildCheck.LocalModVersion(game.Id), gameBuild, GameBuilds.IsSupported(game, gameBuild),
-            gameDir == null ? null : game.UnmetRequirement(gameDir), GameLauncher.IsRunning(game));
+            gameDir == null ? null : game.UnmetRequirement(gameDir), GameLauncher.IsRunning(game), game.Recomp != null, RecompInstall.DiscPath(game) != null);
     }
 }

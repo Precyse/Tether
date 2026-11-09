@@ -18,7 +18,7 @@ import winreg
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-LAUNCHER = Path(os.environ.get("COOP_LAUNCHER", ROOT / "launcher" / "bin" / "Release" / "net8.0-windows" / "coop-launcher.exe"))
+LAUNCHER = Path(os.environ.get("COOP_LAUNCHER", ROOT / "launcher" / "bin" / "Release" / "net8.0-windows" / "tether.exe"))
 SAVE_FILES = {"profile.dat": 8_324, "autosave0.dat": 1_100_000, "manualsave3.dat": 900_000}
 OTHER_FILE = "bindings.cfg"
 STEAM_ID64_BASE = 76561197960265728

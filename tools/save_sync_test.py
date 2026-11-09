@@ -14,7 +14,7 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-LAUNCHER = Path(os.environ.get("COOP_LAUNCHER", ROOT / "launcher" / "bin" / "Release" / "net8.0-windows" / "coop-launcher.exe"))
+LAUNCHER = Path(os.environ.get("COOP_LAUNCHER", ROOT / "launcher" / "bin" / "Release" / "net8.0-windows" / "tether.exe"))
 FILE_NAME = "data0.bin"
 FILE_BYTES = 2_300_000
 HOST_PORTS = (27981, 27982)

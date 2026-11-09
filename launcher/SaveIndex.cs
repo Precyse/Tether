@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>One save slot of a game's save file, as the game's own load list reads it. <see cref="Hash"/> identifies the slot's bytes
 /// (FNV-1a over the whole slot, 8 lowercase hex digits): the adapter computes the same, so both machines can tell they hold the same slot.</summary>

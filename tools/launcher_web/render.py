@@ -26,7 +26,7 @@ RUN_TIMEOUT_S = 90
 STEAM_DEFAULT = r"C:\Program Files (x86)\Steam"
 APP_IDS = [339340, 9480, 3280350]
 ART_FILES = {"capsule.jpg": ["library_600x900.jpg", "library_capsule.jpg"], "hero.jpg": ["library_hero.jpg"], "logo.png": ["logo.png"]}
-OUTFIT_SOURCE = os.path.join(os.environ.get("APPDATA", ""), "CoopLauncher", "art", "re0")
+OUTFIT_SOURCE = os.path.join(os.environ.get("APPDATA", ""), "Tether", "art", "re0")
 SMOKE_DUMP = re.compile(r'<pre id="smoke"[^>]*>(.*?)</pre>', re.S)
 
 

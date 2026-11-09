@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace CoopLauncher.Gui;
+namespace Tether.Gui;
 
 internal static partial class SessionScreens
 {

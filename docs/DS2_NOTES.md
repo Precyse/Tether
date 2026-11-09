@@ -157,8 +157,8 @@ The host simulates the world around one point. EntityManagerGame (global 0x14623
 
 ## One-PC test
 ```
-coop-launcher host ds2 --transport local --local-port 27981 --peer-port 27982 --no-launch
-coop-launcher join 0 --transport local --local-port 27982 --peer-port 27981 --bridge-port 27990 --game ds2 --no-launch
+tether host ds2 --transport local --local-port 27981 --peer-port 27982 --no-launch
+tether join 0 --transport local --local-port 27982 --peer-port 27981 --bridge-port 27990 --game ds2 --no-launch
 python tools/echo_peer.py --port 27990 --game ds2 --delay 1.0 --offset-x 3
 Copy `adapters/ds2/version.dll` into the game folder (there is no `version.dll` of the game's own to back up), optionally `coop/adapter.ini` with `self_marker=1`, start the game, press Play and Continue. Remove `version.dll` and the `coop` folder afterwards. Starting a launcher resets every profile with a `saveSync` block (RE0's `adapter.ini` gets `coop=0`); keep test launchers running rather than restarting them while another agent tests RE0.
 ```

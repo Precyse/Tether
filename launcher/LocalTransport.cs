@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Sockets;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>UDP on 127.0.0.1 between two launchers on one PC. Identity is the UDP port.</summary>
 public sealed class LocalTransport : ITransport

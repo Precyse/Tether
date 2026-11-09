@@ -1,4 +1,4 @@
-"""Echo hub: stands in for every instance's co-op launcher so up to four real SR2 instances play together on one PC
+"""Echo hub: stands in for every instance's Tether so up to four real SR2 instances play together on one PC
 (docs/SR2_NOTES.md "Echo testing"). It listens on the adapter port 127.0.0.1:27962, tells the instances apart by the folder the
 connecting process runs from, answers HELLO with the snapshot of that instance's view (echo_session.py, a port of the
 launcher's Session) and relays GAME_DATAGRAM between them. Join and status files are the launcher's (echo_files.py), the
@@ -109,7 +109,7 @@ class Hub:
             listener.bind((LISTEN_HOST, self.requested_port))
         except OSError as error:
             listener.close()
-            raise HubError(f"port {self.requested_port} is taken ({error}); close the co-op launcher first") from error
+            raise HubError(f"port {self.requested_port} is taken ({error}); close Tether first") from error
         listener.listen()
         self.listener = listener
         self.port = listener.getsockname()[1]

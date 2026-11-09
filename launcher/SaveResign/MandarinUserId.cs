@@ -1,6 +1,6 @@
 // Ported from MandarinJuice (https://github.com/mi5hmash/MandarinJuice), MIT License, Copyright (c) 2026 Michał Gębicki.
 // The full licence text is in THIRD_PARTY.md.
-namespace CoopLauncher.SaveResign;
+namespace Tether.SaveResign;
 
 /// <summary>The user id a game encrypts its saves for, derived from a SteamID64 by the game's variant (a number in its profile). Pure.</summary>
 internal static class MandarinUserId

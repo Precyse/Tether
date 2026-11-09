@@ -1,6 +1,6 @@
-using CoopLauncher.Gui;
+using Tether.Gui;
 
-namespace CoopLauncher.Web;
+namespace Tether.Web;
 
 /// <summary>The launcher window on the web page (SPEC 0 and 1): the existing chromeless window, with one WebView2 filling it under
 /// a top band that stays the frame's resize edge (the page's top bar drags the window with <c>app-region</c>). It owns what is
@@ -9,7 +9,7 @@ namespace CoopLauncher.Web;
 /// comes from <see cref="UiController"/>.</summary>
 public sealed class WebShell : ChromelessForm
 {
-    private const string WindowTitle = "Co-op Launcher";
+    private const string WindowTitle = "Tether";
     private const int ClockIntervalMs = 1000;
 
     private static readonly int WindowWidth = Theme.Scale(840);
@@ -67,6 +67,7 @@ public sealed class WebShell : ChromelessForm
             Raise();
             if (ActiveForm != this) WindowFlash.Start(this);
         };
+        _controller.GameTookOver += () => WindowState = FormWindowState.Minimized;
         _controller.RestartRequested += Close;
         _clock.Tick += (_, _) => _controller.Tick();
         Shown += (_, _) => _controller.Shown();

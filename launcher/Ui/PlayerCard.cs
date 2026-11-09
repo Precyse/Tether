@@ -1,4 +1,4 @@
-namespace CoopLauncher.Gui;
+namespace Tether.Gui;
 
 /// <summary>How the players of a session are laid out: wide (two seats, one under the other), tall (two or four seats, two
 /// columns), mini and mini portrait (the always-on-top window).</summary>

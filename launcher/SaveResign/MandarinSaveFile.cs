@@ -4,7 +4,7 @@ using System.IO.Compression;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
-namespace CoopLauncher.SaveResign;
+namespace Tether.SaveResign;
 
 /// <summary>How a Mandarin save's data is stored: as is (<see cref="Default"/>) or deflate-compressed before it is encrypted
 /// (<see cref="Compressible"/>). The file header names it; one game can use both for different files.</summary>

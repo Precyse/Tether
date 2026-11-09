@@ -34,8 +34,8 @@ The rescue chord, in every partner mode: hold both stick clicks (L3 and R3) of a
 The game plays the host; `echo_peer.py` plays the remote player and mirrors your own pad and position back after 1 s, so the character you do not control repeats what you did a second ago. The echo carries PLAYER_STATE with your own character id and the host flag, and OWNERSHIP is not echoed, so the test exercises input replay only: snapping ignores the echoed state (your character is locally owned) and no camera swap happens on the host. From `launcher\`:
 
 ```
-coop-launcher host re0 --transport local --local-port 27961 --peer-port 27962 --no-launch
-coop-launcher join 0 --transport local --local-port 27962 --peer-port 27961 --bridge-port 27970 --no-launch
+tether host re0 --transport local --local-port 27961 --peer-port 27962 --no-launch
+tether join 0 --transport local --local-port 27962 --peer-port 27961 --bridge-port 27970 --no-launch
 python ..\tools\echo_peer.py --port 27970 --delay 1.0
 ```
 

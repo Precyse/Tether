@@ -1,8 +1,8 @@
-using CoopLauncher.Gui;
+using Tether.Gui;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace CoopLauncher.Web;
+namespace Tether.Web;
 
 /// <summary>The JSON records the page receives (SPEC 3.2) and how they are written: camelCase names, enums as camelCase
 /// strings, nulls kept. A Steam id (a <c>ulong</c>) is never a number here: ids are decimal strings, because they exceed 2^53.</summary>
@@ -26,8 +26,9 @@ internal sealed record ImgDto(string? Src, string Initial);
 
 internal sealed record BtnDto(string Label, bool Enabled);
 
-/// <summary>A mod action on show: the step row (text, percent and bar, check or cross) and, once it failed, the Retry button.</summary>
-internal sealed record ModRunDto(StepDto Step, bool Failed, BtnDto? Retry);
+/// <summary>A mod action on show: the step row (text, percent and bar, check or cross) and, once it failed, the Retry button. A game the
+/// launcher builds also has Cancel while it builds and Log (open the build's log) after it failed.</summary>
+internal sealed record ModRunDto(StepDto Step, bool Failed, BtnDto? Retry, BtnDto? Cancel = null, BtnDto? Log = null, BtnDto? Fix = null);
 
 internal sealed record ArtDto(string? Hero, string? Logo, string? Capsule);
 
@@ -97,7 +98,7 @@ internal sealed record CardDto(
 
 internal sealed record SessionDto(
     bool Hosting, bool IsHost, string Code, StepDto[] Steps, bool StartEnabled, LobbyStateDto? State, string[][] Options, string[] Events, bool Relaunch,
-    string Counter, CardLayout Layout, CardDto[] Seats, bool SeatsClickable, NoticeDto? Notice, OptionRowDto[] Pickers, string Primary);
+    string Counter, CardLayout Layout, CardDto[] Seats, bool SeatsClickable, NoticeDto? Notice, OptionRowDto[] Pickers, string Primary, string? StartHint);
 
 internal sealed record HalfDto(ImgDto Figure, string Name, string Role, string Label, string Kind, bool Locked, int Dots, int Index, bool CanCycle, double Opacity);
 

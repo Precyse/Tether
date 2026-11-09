@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>Reads a lobby id out of what a player pastes: the digits as shown ("1097 7524 3712 345678"), with a label
 /// ("Lobby: ..."), or a <c>steam://joinlobby/&lt;appid&gt;/&lt;lobby&gt;/&lt;host&gt;</c> link. Pure.</summary>

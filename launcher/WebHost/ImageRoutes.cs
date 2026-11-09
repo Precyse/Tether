@@ -1,8 +1,8 @@
-using CoopLauncher.Gui;
+using Tether.Gui;
 using System.Globalization;
 using System.Text.RegularExpressions;
 
-namespace CoopLauncher.Web;
+namespace Tether.Web;
 
 /// <summary>The two private hosts the window's pages are served from (neither ever resolves in DNS).</summary>
 internal static class WebHosts

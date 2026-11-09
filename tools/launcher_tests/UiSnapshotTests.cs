@@ -1,6 +1,6 @@
-using CoopLauncher;
-using CoopLauncher.Gui;
-using CoopLauncher.Web;
+using Tether;
+using Tether.Gui;
+using Tether.Web;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 

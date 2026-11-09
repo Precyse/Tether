@@ -1,6 +1,6 @@
 using System.Buffers.Binary;
 
-namespace CoopLauncher;
+namespace Tether;
 
 public readonly record struct Frame(ushort Type, byte Flags, byte Slot, byte[] Payload);
 

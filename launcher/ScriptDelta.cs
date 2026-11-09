@@ -2,7 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>A script that cannot be built on this PC: the recipe is damaged, or a file it starts from is missing or is not the
 /// supported version. The message names the file; it is shown to the player as the reason an install was refused.</summary>

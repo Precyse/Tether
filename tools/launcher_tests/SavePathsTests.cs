@@ -1,4 +1,4 @@
-using CoopLauncher;
+using Tether;
 
 namespace LauncherTests;
 
@@ -26,5 +26,7 @@ public static class SavePathsTests
         Check.That(Expand("{localappdata}/save/{steamaccountid}", Documents, null) == null, "{steamaccountid} needs a signed-in Steam user");
         Check.That(Expand("{steamuserdata}/{steamaccountid}/2054970/remote/win64_save", Documents, SteamId) == $@"{SteamUserData}\1\2054970\remote\win64_save", "{steamuserdata} expands to Steam's userdata folder");
         Check.That(SavePaths.Expand("{steamuserdata}/x", new SavePaths.Folders(Documents, LocalAppData, SteamId, "")) == null, "no Steam folder: null");
+        Check.That(SavePaths.Expand("{launcherdata}/games/w", new SavePaths.Folders(Documents, LocalAppData, SteamId, "", @"D:\Data")) == @"D:\Data\games\w"
+            && SavePaths.Expand("{launcherdata}/x", new SavePaths.Folders(Documents, LocalAppData, SteamId, "")) == null, "{launcherdata} expands to the launcher's data folder");
     }
 }

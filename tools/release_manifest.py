@@ -1,11 +1,11 @@
-"""Turns an assembled package into the files of a release channel: Coop.zip, launcher.zip, mod-<id>.zip per game and manifest.json.
+"""Turns an assembled package into the files of a release channel: Tether.zip, launcher.zip, mod-<id>.zip per game and manifest.json.
 
 usage: python tools/release_manifest.py PACKAGE OUT --repo OWNER/REPO --channel next --build N --commit SHA [--previous DIR] [--legacy-zip NAME]
 
 PACKAGE holds launcher/app (the published launcher), launcher/games/<id>.json, adapters/<id>/** per game and README.txt. The
 script writes launcher/app/update.json ({repo, channel}) and launcher/installed.json ({build, channel, commit, components}) into it,
 then zips (entries sorted, fixed timestamps, forward slashes, so the same package gives the same zips):
-  Coop.zip      the whole package, for first installs
+  Tether.zip    the whole package, for first installs
   launcher.zip  launcher/app/**
   mod-<id>.zip  launcher/games/<id>.json and adapters/<id>/**
 manifest.json lists every asset with its SHA-256 and size, and every component's files with theirs (the launcher reads it,
@@ -35,10 +35,10 @@ from pathlib import Path
 
 LAUNCHER_ID = "launcher"
 APP_DIR = "launcher/app"
-LAUNCHER_EXE = "launcher/app/coop-launcher.exe"
+LAUNCHER_EXE = "launcher/app/tether.exe"
 GAMES_DIR = "launcher/games"
 ADAPTERS_DIR = "adapters"
-FULL_ASSET = "Coop.zip"
+FULL_ASSET = "Tether.zip"
 MANIFEST_FILE = "manifest.json"
 README_FILE = "README.txt"
 INSTALLED_FILE = "launcher/installed.json"

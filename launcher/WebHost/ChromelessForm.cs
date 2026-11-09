@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace CoopLauncher.Gui;
+namespace Tether.Gui;
 
 /// <summary>A resizable window whose client area covers the system title bar. The frame stays a normal sizable frame
 /// underneath, so Windows keeps the shadow, the rounded corners, Snap, the taskbar entry, Alt+F4, the minimize and

@@ -6,14 +6,14 @@
     <TargetFramework>net8.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <RootNamespace>CoopLauncher</RootNamespace>
+    <RootNamespace>Tether</RootNamespace>
     <PlatformTarget>x64</PlatformTarget>
     <UseWindowsForms>true</UseWindowsForms>
     <RollForward>LatestMajor</RollForward>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../../launcher/CoopLauncher.csproj" />
+    <ProjectReference Include="../../../launcher/Tether.csproj" />
   </ItemGroup>
 
   <!-- The WebView2 package (through the launcher) also references its WPF control, which clashes on WindowsBase and is never used. -->

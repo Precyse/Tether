@@ -1,6 +1,7 @@
-namespace CoopLauncher;
+namespace Tether;
 
-/// <summary>Where a game is installed: the folder chosen in the settings, else the one Steam knows. A found folder is remembered
+/// <summary>Where a game is installed: the folder chosen in the settings, else the one Steam knows; a game the launcher builds
+/// (<see cref="RecompProfile"/>) lives in its own folder, built or not. A found folder is remembered
 /// per game until <see cref="Invalidate"/> (the settings changed, or the window refreshes), so a status update does not read the
 /// registry and Steam's files again. A game that is not found is looked for again each time, so installing it is noticed.</summary>
 public static class GameFolders
@@ -14,6 +15,7 @@ public static class GameFolders
         {
             if (Found.TryGetValue(profile.Id, out var remembered)) return remembered;
         }
+        if (profile.Recomp is { } recomp) return RecompInstall.GameDir(recomp);
         var folder = AppSettings.Current.GameFolder(profile.Id) is { } chosen && Directory.Exists(chosen)
             ? chosen
             : SteamLibrary.FindGameDir(profile.SteamAppId);

@@ -1,4 +1,4 @@
-namespace CoopLauncher.Gui;
+namespace Tether.Gui;
 
 /// <summary>Where a game's artwork is: the player's custom Steam art first, then Steam's local library cache. Missing art is normal
 /// (never opened in the Steam library, or another Steam layout): every lookup returns null and the page shows without it.</summary>

@@ -1,8 +1,8 @@
 using System.ComponentModel;
 using System.Diagnostics;
-using CoopLauncher.Gui;
+using Tether.Gui;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>How a game start ended: started, already running (left alone), or why it could not start.</summary>
 public enum LaunchResult { Started, AlreadyRunning, GameUnsupported, ModNotInstalled, SteamStartFailed }
@@ -15,7 +15,7 @@ public static class GameLauncher
 {
     public static bool IsRunning(GameProfile profile)
     {
-        var processes = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(profile.Exe));
+        var processes = GameProcesses.Of(profile);
         foreach (var process in processes) process.Dispose();
         return processes.Length > 0;
     }
@@ -23,7 +23,7 @@ public static class GameLauncher
     /// <summary>When the game's oldest running process started, null when no process runs or its start cannot be read.</summary>
     public static DateTime? StartedAtUtc(GameProfile profile)
     {
-        var processes = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(profile.Exe));
+        var processes = GameProcesses.Of(profile);
         try
         {
             return processes.Length == 0 ? null : processes.Min(process => process.StartTime.ToUniversalTime());
@@ -42,7 +42,7 @@ public static class GameLauncher
     /// <summary>The game's process now; a window that does not answer (<see cref="Process.Responding"/>) is a hang.</summary>
     public static GameProcess Probe(GameProfile profile)
     {
-        var processes = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(profile.Exe));
+        var processes = GameProcesses.Of(profile);
         try
         {
             if (processes.Length == 0) return GameProcess.Gone;

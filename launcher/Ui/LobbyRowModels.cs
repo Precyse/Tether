@@ -1,4 +1,4 @@
-namespace CoopLauncher.Gui;
+namespace Tether.Gui;
 
 /// <summary>Which lobbies the Lobbies tab lists: everyone's, or the friends'. (The Home server filter is drawn disabled and has no
 /// code behind it.)</summary>

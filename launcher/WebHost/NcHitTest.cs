@@ -1,4 +1,4 @@
-namespace CoopLauncher.Gui;
+namespace Tether.Gui;
 
 /// <summary>WM_NCHITTEST: the message, the answers this window uses, and the screen point it asks about.</summary>
 internal static class NcHitTest

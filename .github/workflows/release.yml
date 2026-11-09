@@ -1,11 +1,11 @@
 name: release
 
 # One rolling release per channel: a push to `main` publishes `latest`, a push to `next` publishes the `preview` prerelease (a tag may not share the branch's name). Each holds
-# Coop.zip (the whole package, for first installs), launcher.zip, mod-<id>.zip per game and manifest.json (SHA-256 and size of every
+# Tether.zip (the whole package, for first installs), launcher.zip, mod-<id>.zip per game and manifest.json (SHA-256 and size of every
 # asset and file; tools/release_manifest.py). Installed launchers read the manifest and download only the components that changed.
 # Each component has its own version. A component whose built files (paths and SHA-256) are the same as in the channel's current
 # release ships that release's zip again, byte for byte, with its version; the other components get the previous version + 1.
-# Friends install once from https://github.com/<repo>/releases/download/<channel>/Coop.zip.
+# Friends install once from https://github.com/<repo>/releases/download/<channel>/Tether.zip.
 on:
   push:
     branches: [main, next]
@@ -166,7 +166,7 @@ jobs:
       - name: Launcher end-to-end tests
         shell: pwsh
         run: |
-          dotnet build launcher/CoopLauncher.csproj -c Release -o launcher/bin/Release/net8.0-windows
+          dotnet build launcher/Tether.csproj -c Release -o launcher/bin/Release/net8.0-windows
           python tools/save_sync_test.py
           if ($LASTEXITCODE -ne 0) { throw "save_sync_test failed" }
           python tools/diagnostics_test.py
@@ -230,7 +230,9 @@ jobs:
         run: |
           # The SR2 mission scripts are not shipped: the launcher generates them on the player's PC from this delta.
           if (-not (Test-Path adapters/sr2/scripts.delta.json)) { throw "adapters/sr2/scripts.delta.json is missing (rebuild.cmd in adapters/sr2 writes it)" }
-          dotnet publish launcher/CoopLauncher.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -o pkg/launcher/app
+          dotnet publish launcher/Tether.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -o pkg/launcher/app
+          # Installs made before the rename restart coop-launcher.exe after an update; it hands over to tether.exe (launcher/FormerInstall.cs).
+          Copy-Item pkg/launcher/app/tether.exe pkg/launcher/app/coop-launcher.exe
           New-Item -ItemType Directory -Force pkg/launcher/games, pkg/adapters/re0, pkg/adapters/sr2, pkg/adapters/dd2, pkg/adapters/cd | Out-Null
           Copy-Item launcher/games/*.json pkg/launcher/games/ -Exclude ds2.json
           Copy-Item adapters/re0/dinput8.dll pkg/adapters/re0/
@@ -251,8 +253,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $tag = $env:CHANNEL
-          $firstInstall = "https://github.com/${{ github.repository }}/releases/download/$tag/Coop.zip"
-          $notes = "Automated build $env:GITHUB_RUN_NUMBER of $env:GITHUB_SHA on $env:GITHUB_REF_NAME. First install: unzip $firstInstall anywhere and run launcher\app\coop-launcher.exe; it updates itself from then on."
+          $firstInstall = "https://github.com/${{ github.repository }}/releases/download/$tag/Tether.zip"
+          $notes = "Automated build $env:GITHUB_RUN_NUMBER of $env:GITHUB_SHA on $env:GITHUB_REF_NAME. First install: unzip $firstInstall anywhere and run launcher\app\tether.exe; it updates itself from then on."
           [string[]]$flags = if ($tag -eq 'latest') { @() } else { @('--prerelease') }
           $assets = Get-ChildItem release -File | Where-Object { $_.Name -ne 'manifest.json' } | ForEach-Object { $_.FullName }
 

@@ -1,5 +1,5 @@
 using System.IO.Compression;
-using CoopLauncher;
+using Tether;
 
 namespace LauncherTests;
 

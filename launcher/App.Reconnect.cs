@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>The paths on which a session outlives its lobby: the lobby connection is lost and rejoined (guest), the host
 /// left and its next lobby is awaited (guest), or the host's own lobby failed and a new one is opened (host). The session,
@@ -102,7 +102,7 @@ public sealed partial class App
         if (_session is not { Ended: false } || wait.Schedule.GaveUp(Environment.TickCount64))
         {
             Log.Info("The host did not come back");
-            Refuse(new Refusal(RefusalKind.HostLeft, "", wait.GameId, wait.LobbyId));
+            Refuse(new Refusal(RefusalKind.HostLeft, "", wait.GameId, wait.LobbyId, Ended: true));
             CancelReconnect();
             EndSession();
             return;
@@ -119,7 +119,7 @@ public sealed partial class App
         if (plan.Schedule.GaveUp(now))
         {
             Log.Info("Could not open a new lobby, giving up");
-            Refuse(new Refusal(RefusalKind.SteamOffline, "", plan.GameId, plan.LobbyId));
+            Refuse(new Refusal(RefusalKind.SteamOffline, "", plan.GameId, plan.LobbyId, Ended: true));
             CancelReconnect();
             EndSession();
             return;
@@ -149,7 +149,7 @@ public sealed partial class App
         if (_rejoin.GaveUp)
         {
             Log.Info($"Could not rejoin lobby {_rejoin.LobbyId}, giving up");
-            Refuse(new Refusal(RefusalKind.RejoinGaveUp, "", _rejoin.GameId, _rejoin.LobbyId));
+            Refuse(new Refusal(RefusalKind.RejoinGaveUp, "", _rejoin.GameId, _rejoin.LobbyId, Ended: true));
             _rejoin = null;
             EndSession();
             return _interactive;

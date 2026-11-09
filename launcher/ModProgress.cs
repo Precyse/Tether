@@ -1,7 +1,7 @@
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>What an install, an uninstall or a launcher update is doing. Done and Failed end a run.</summary>
-public enum ModStep { Checking, BackingUp, Copying, Verifying, RemovingOld, Removing, Downloading, Installing, Done, Failed }
+public enum ModStep { Checking, BackingUp, Copying, Verifying, RemovingOld, Removing, Downloading, Installing, Done, Failed, Building }
 
 /// <summary>One report of a run: the step, the percent of the whole run (0 to 100, 100 only for Done), the file being worked on
 /// out of the files of the step (0 of 0 when the step has no file count), and why for Failed (or the note a step carries: what it did
@@ -13,6 +13,9 @@ public readonly record struct ModProgress(ModStep Step, int Percent, int File, i
 public static class ProgressMath
 {
     public const int Complete = 100;
+
+    /// <summary>The percent of a report that has no count to follow (a step of the setup tool that counts nothing): shown as a bar of unknown length, no number.</summary>
+    public const int NoPercent = -1;
     private const int BeforeDone = Complete - 1;
 
     /// <summary>The first and last percent of a step's band.</summary>
@@ -26,6 +29,7 @@ public static class ProgressMath
         ModStep.Removing => (0, BeforeDone),
         ModStep.Downloading => (0, 90),
         ModStep.Installing => (90, BeforeDone),
+        ModStep.Building => (0, BeforeDone),
         _ => (Complete, Complete),
     };
 

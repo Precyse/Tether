@@ -96,7 +96,7 @@
   --rail-art-h: 60px;
   --rail-pad-x: 14px;
   --hero-h: 296px;
-  --hero-pad: 24px;
+  --hero-pad: 16px;
   --hero-row-bottom: 32px;
   --hero-fade-h: 192px;
   --hero-fade-overlap: 2px;
@@ -108,7 +108,7 @@
   --hero-logo-h: 140px;
   --dock-pad: 20px;
   --action-h: 44px;
-  --host-w: 120px;
+  --host-w: 104px;
   --code-digits: 20;
   --field-chrome: 26px;
   --join-w: 88px;

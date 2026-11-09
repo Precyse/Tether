@@ -1,10 +1,10 @@
-using CoopLauncher.Gui;
+using Tether.Gui;
 using Microsoft.Web.WebView2.Core;
 using System.Collections.Concurrent;
 using System.Drawing.Imaging;
 using System.Reflection;
 
-namespace CoopLauncher.Web;
+namespace Tether.Web;
 
 /// <summary>Answers every request the pages make, for both private hosts, through <c>WebResourceRequested</c>: the page files from
 /// the manifest resources of the exe (SPEC 7: no folder next to the exe) and the images (SPEC 3.4) loaded in the background behind

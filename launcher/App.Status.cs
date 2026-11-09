@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>What the loop tells the window (the status) and the other players (the published step).</summary>
 public sealed partial class App
@@ -62,8 +62,9 @@ public sealed partial class App
             BuildCheckPending: _buildCheck is { Ready: false }, SaveSyncPending: _saveSync is { Ready: false }, LaunchPending: _launchPending,
             Bridged: _bridge != null, BridgeReady: _bridge?.IsReady == true, BridgeWasReady: _bridgeWasReady,
             StartHeld: _launchPending && StartGateClosed(), ReadingCharacter: _capture is { InProgress: true },
-            PickingCharacter: MustPickCharacter(), CharacterFailed: _capture is { View.State: CaptureState.Failed } && !_startRequested));
-        return new StepReport(step, _saveMeter.Percent, _refusal?.Kind, ReportDetail(step), LocalLabel(), _gameState);
+            PickingCharacter: MustPickCharacter(), CharacterFailed: _capture is { View.State: CaptureState.Failed } && !_startRequested,
+            BuildingGame: BuildShown()));
+        return new StepReport(step, StepPercent(step), _refusal?.Kind, ReportDetail(step), LocalLabel(), _gameState, _refusal?.Ended ?? false);
     }
 
     /// <summary>Why the host cannot start with guests yet: its campaign holds no saved world for them to receive (looked at once a second).
@@ -81,11 +82,15 @@ public sealed partial class App
     private bool MustPickCharacter() =>
         _launchPending && _startHeld && _profile != null && _session?.IsHost == false && OptionSources.GuestPicksCharacter(_profile) && !_startRequested;
 
-    /// <summary>What the published step says besides its name: the refusal's detail, or why the character could not be read.</summary>
+    /// <summary>The percent the published step carries: the save received, or the build's own count (none while the setup tool step has no count).</summary>
+    private int StepPercent(SessionStep step) => step == SessionStep.BuildingGame ? _buildReading?.Percent ?? ProgressMath.NoPercent : _saveMeter.Percent;
+
+    /// <summary>What the published step says besides its name: the refusal's detail, why the character could not be read, or what the setup tool is doing.</summary>
     private string ReportDetail(SessionStep step) => step switch
     {
         SessionStep.Refused => _refusal?.Detail ?? string.Empty,
         SessionStep.CharacterNotRead => _capture?.View.Reason ?? string.Empty,
+        SessionStep.BuildingGame => _buildReading?.Detail ?? string.Empty,
         _ => string.Empty,
     };
 
@@ -253,7 +258,7 @@ public sealed partial class App
                     member.Id, member.Name, member.Id == hostId, isLocal, NativeJoin.Readable(lobby.MemberData(member, MemberKey.GameStatus)),
                     report.Step, report.Percent, isLocal ? null : MeasuredRtt(member.Id, report.Step, local.Step), _session?.IsHeld(member.Id) ?? false,
                     !transferring && (_session?.IsSilent(member.Id, nowMs) ?? false), lobby.MemberData(member, MemberKey.Options),
-                    HoldSecondsLeft(member.Id, nowMs), report.Refusal, !isLocal && (_session?.IsConnecting(member.Id) ?? false), report.Detail, report.Label, report.Game);
+                    HoldSecondsLeft(member.Id, nowMs), report.Refusal, !isLocal && (_session?.IsConnecting(member.Id) ?? false), report.Detail, report.Label, report.Game, report.Ended);
             })
             .ToList();
     }

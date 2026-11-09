@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using Steamworks;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>Steam could not be started: <see cref="Result"/> says why (NoSteamClient = Steam is not running).</summary>
 public sealed class SteamUnavailableException(ESteamAPIInitResult result, string detail = "")

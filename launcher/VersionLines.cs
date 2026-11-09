@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>The words of the log lines that name a component's version, one place so the updater and the mod installer say the same
 /// thing: "Launcher updated to v8 (was v7)", "Saints Row 2 mod installed v12". Version 0 is a dev build and is left out.</summary>

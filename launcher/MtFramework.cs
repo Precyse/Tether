@@ -1,6 +1,6 @@
 using System.IO.Compression;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>A decoded texture: Width x Height pixels in the memory order of a 32 bit ARGB bitmap (blue, green, red, alpha).</summary>
 public sealed record DecodedTexture(int Width, int Height, byte[] Bgra);

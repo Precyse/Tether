@@ -1,4 +1,4 @@
-namespace CoopLauncher.Gui;
+namespace Tether.Gui;
 
 /// <summary>The pure rules of a game's section in the settings view, used by the web window's snapshot.
 /// <c>free</c> is whether no session is open.</summary>
@@ -8,6 +8,9 @@ internal static class SettingsModel
     public static string Line(GameStatus status) => status.SettingsLine;
 
     public static bool BrowseEnabled(bool free) => free;
+
+    /// <summary>The path shown beside Browse: the game's folder, or for a game the launcher builds the disc image it is built from.</summary>
+    public static string Folder(GameProfile game, string? gameFolder) => game.Recomp != null ? RecompInstall.DiscPath(game) ?? string.Empty : gameFolder ?? string.Empty;
 
     /// <summary>Reset returns to the folder Steam knows; it is offered once the player chose another.</summary>
     public static bool ResetEnabled(GameProfile game, bool free) => free && AppSettings.Current.GameFolder(game.Id) != null;

@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>Integer token bucket: refills <c>ratePerSecond</c> tokens a second up to <c>capacity</c>, starting full. Pure: the caller supplies the clock.</summary>
 public sealed class TokenBucket
@@ -36,22 +36,21 @@ public sealed class TokenBucket
     public void Take(long cost) => _tokens -= cost;
 }
 
+/// <summary>The rates and bursts of the four buckets of one source slot. The defaults are about twice the RE0 peak (contract, "Peer frame
+/// budget"); a profile's <c>peerBudget</c> replaces them for a game that moves bulk data in game frames (The Warriors' join snapshot).</summary>
+public sealed record PeerBudgetLimits(
+    long UnreliableFramesPerSecond = 300, long UnreliableFrameCapacity = 600, long UnreliableBytesPerSecond = 256 * 1024, long UnreliableByteCapacity = 512 * 1024,
+    long ReliableFramesPerSecond = 300, long ReliableFrameCapacity = 3000, long ReliableBytesPerSecond = 512 * 1024, long ReliableByteCapacity = 4 * 1024 * 1024);
+
 /// <summary>
 /// A cap on what one peer can push into the game through its launcher: per source slot, game frames (type 0x0100 and up)
 /// must fit a frame bucket and a byte bucket, one pair for unreliable and one for reliable frames. A frame that does not
 /// fit is dropped and counted per (slot, type, reliability); the peer is never disconnected. Launcher-owned frames are
 /// not budgeted.
 /// </summary>
-public sealed class PeerBudget
+public sealed class PeerBudget(PeerBudgetLimits? limits = null)
 {
-    private const long UnreliableFramesPerSecond = 300;
-    private const long UnreliableFrameCapacity = 600;
-    private const long UnreliableBytesPerSecond = 256 * 1024;
-    private const long UnreliableByteCapacity = 512 * 1024;
-    private const long ReliableFramesPerSecond = 300;
-    private const long ReliableFrameCapacity = 3000;
-    private const long ReliableBytesPerSecond = 512 * 1024;
-    private const long ReliableByteCapacity = 4 * 1024 * 1024;
+    private readonly PeerBudgetLimits _limits = limits ?? new PeerBudgetLimits();
 
     private sealed record Buckets(TokenBucket Frames, TokenBucket Bytes);
 
@@ -106,10 +105,10 @@ public sealed class PeerBudget
     {
         if (_buckets.TryGetValue((slot, reliable), out var existing)) return existing;
         var created = reliable
-            ? new Buckets(new TokenBucket(ReliableFramesPerSecond, ReliableFrameCapacity, nowMs),
-                new TokenBucket(ReliableBytesPerSecond, ReliableByteCapacity, nowMs))
-            : new Buckets(new TokenBucket(UnreliableFramesPerSecond, UnreliableFrameCapacity, nowMs),
-                new TokenBucket(UnreliableBytesPerSecond, UnreliableByteCapacity, nowMs));
+            ? new Buckets(new TokenBucket(_limits.ReliableFramesPerSecond, _limits.ReliableFrameCapacity, nowMs),
+                new TokenBucket(_limits.ReliableBytesPerSecond, _limits.ReliableByteCapacity, nowMs))
+            : new Buckets(new TokenBucket(_limits.UnreliableFramesPerSecond, _limits.UnreliableFrameCapacity, nowMs),
+                new TokenBucket(_limits.UnreliableBytesPerSecond, _limits.UnreliableByteCapacity, nowMs));
         _buckets[(slot, reliable)] = created;
         return created;
     }

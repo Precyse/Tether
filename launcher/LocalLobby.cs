@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>Two-member stand-in for a Steam lobby: the peer is a member while its datagrams arrive.</summary>
 public sealed class LocalLobby : ILobby

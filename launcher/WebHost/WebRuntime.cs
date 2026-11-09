@@ -1,7 +1,7 @@
 using Microsoft.Web.WebView2.Core;
 using System.Diagnostics;
 
-namespace CoopLauncher.Web;
+namespace Tether.Web;
 
 /// <summary>The Microsoft Edge WebView2 Runtime the window needs: whether it is installed and new enough, and the dialog that
 /// explains when it is not.</summary>
@@ -14,7 +14,7 @@ internal static class WebRuntime
     private const string MissingWord = "missing";
     private const string DialogHeading = "Microsoft Edge WebView2 Runtime is required";
     private const string DialogLink = "Download the WebView2 Runtime";
-    private const string DialogTitle = "Co-op Launcher";
+    private const string DialogTitle = "Tether";
     private const string CloseLabel = "Close";
 
     /// <summary>The installed runtime's version, or null when there is none (or it cannot be read).</summary>

@@ -1,6 +1,6 @@
 using System.Drawing;
-using CoopLauncher;
-using CoopLauncher.Gui;
+using Tether;
+using Tether.Gui;
 
 namespace LauncherTests;
 

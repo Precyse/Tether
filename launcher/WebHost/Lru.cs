@@ -1,4 +1,4 @@
-namespace CoopLauncher.Web;
+namespace Tether.Web;
 
 /// <summary>A small least-recently-used cache, safe to use from the UI thread and the loading threads. The capacity is a named
 /// constant at each use.</summary>

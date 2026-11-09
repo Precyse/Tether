@@ -1,7 +1,7 @@
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 
-namespace CoopLauncher.Gui;
+namespace Tether.Gui;
 
 /// <summary>The pictures of a game's outfits, taken from the game's own files when the launcher runs (nothing of the game is
 /// kept in the launcher's repository): where an outfit's picture is (the profile's outfitArt pattern, a DLC outfit's folder,

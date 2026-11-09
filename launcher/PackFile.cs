@@ -1,7 +1,7 @@
 using System.Buffers.Binary;
 using System.Text;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>Reads one named entry of a Saints Row 2 packfile (<c>.vpp_pc</c>, version 4), read-only. Layout: a header whose flags
 /// are at 0x150 and counts at 0x154 (files, total size, then the sizes of the directory, the names, the extensions and the data,

@@ -3,7 +3,7 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
 
-namespace CoopLauncher.SaveResign;
+namespace Tether.SaveResign;
 
 /// <summary>The key arithmetic of a Mandarin slice header: it holds the slice's AES key material as pairs of numbers modulo a
 /// fixed modulus, and only the owner's user id recovers it. MandarinJuice does this on 2048-bit containers (<c>Limegator</c> is a

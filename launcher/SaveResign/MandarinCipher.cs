@@ -3,7 +3,7 @@
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
-namespace CoopLauncher.SaveResign;
+namespace Tether.SaveResign;
 
 /// <summary>The "Mandarin" cipher of a save's data: the data is cut into slices of 16 KiB multiples (their sizes come from the
 /// game's seed), each slice has a header (its key material wrapped for the owner's user id, the checksum of its data, a stream-cipher

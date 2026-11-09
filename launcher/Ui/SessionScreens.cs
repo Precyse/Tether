@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace CoopLauncher.Gui;
+namespace Tether.Gui;
 
 /// <summary>The pure mappings from the app's status to the session screens (joining, hosting and lobby, the mini window); unit
 /// tested (<c>SessionScreensTests</c>). This part is the joining screen and the helpers all three share.</summary>
@@ -67,7 +67,7 @@ internal static partial class SessionScreens
     }
 
     /// <summary>Installing or updating the mod needs the game closed; every other fix is always usable.</summary>
-    private static bool FixEnabled(NoticeFix fix, GameStatus mod) => !(fix is NoticeFix.InstallMod or NoticeFix.UpdateMod && mod.GameRunning);
+    private static bool FixEnabled(NoticeFix fix, GameStatus mod) => !(fix is NoticeFix.InstallMod or NoticeFix.UpdateMod or NoticeFix.Rebuild && mod.GameRunning);
 
     private static IReadOnlyList<StepRow> JoiningSteps(AppStatus s, GameProfile g, string? gameDir, string hostName, long nowMs)
     {
@@ -106,12 +106,21 @@ internal static partial class SessionScreens
             JoinStep.ReceivingSave => active ? ReceivingRow(s) : new StepRow("Receiving save", mark),
             JoinStep.Character => CharacterRow(mark, s, g, nowMs),
             JoinStep.Waiting => new StepRow($"Waiting for {(hostName.Length > 0 ? hostName : UnknownHost)}", mark),
-            JoinStep.Starting => active
-                ? new StepRow(s.GameWaitingForTitle ? WaitingForTitleWords : "Starting game", mark, SinceTimer(s.StepSinceMs, nowMs), Indeterminate: true)
-                : new StepRow("Starting game", mark),
+            JoinStep.Starting => active ? StartingRow(s, mark, nowMs) : new StepRow("Starting game", mark),
             _ => new StepRow(g.InGameStep ?? "In game", mark),
         };
     }
+
+    /// <summary>The row of the game starting: the build the setup tool is running with its count, else the wait for the game's title with its timer.</summary>
+    private static StepRow StartingRow(AppStatus s, StepMark mark, long nowMs) =>
+        s.Step == SessionStep.BuildingGame && s.Players.FirstOrDefault(player => player.IsLocal) is { } local
+            ? BuildRow(local, mark)
+            : new StepRow(s.GameWaitingForTitle ? WaitingForTitleWords : "Starting game", mark, SinceTimer(s.StepSinceMs, nowMs), Indeterminate: true);
+
+    /// <summary>The row of a game being built on this PC: what the setup tool does with its count, the percent and bar of that count (a bar of unknown length when the step counts nothing).</summary>
+    private static StepRow BuildRow(PlayerSlot player, StepMark mark) => player.Percent >= 0
+        ? new StepRow(CardStates.Words(player), mark, $"{player.Percent}%", player.Percent / PercentScale)
+        : new StepRow(CardStates.Words(player), mark, Indeterminate: true);
 
     /// <summary>The character row: choose it, reading it (the game opens to its title and closes by itself), read.</summary>
     private static StepRow CharacterRow(StepMark mark, AppStatus s, GameProfile g, long nowMs)
@@ -165,7 +174,7 @@ internal static partial class SessionScreens
         SessionStep.ReceivingSave => JoinStep.ReceivingSave,
         SessionStep.PickingCharacter or SessionStep.ReadingCharacter or SessionStep.CharacterNotRead => JoinStep.Character,
         SessionStep.Ready => JoinStep.Waiting,
-        SessionStep.StartingGame => JoinStep.Starting,
+        SessionStep.StartingGame or SessionStep.BuildingGame => JoinStep.Starting,
         SessionStep.InGame or SessionStep.GameClosed => JoinStep.InGame,
         _ => JoinStep.Lobby,
     };

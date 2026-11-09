@@ -1,4 +1,4 @@
-namespace CoopLauncher.Gui;
+namespace Tether.Gui;
 
 /// <summary>The window host's colours and metrics: the page's own backgrounds shown behind it while it loads, and sizes
 /// converted to the screen's scale.</summary>

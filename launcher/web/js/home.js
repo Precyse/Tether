@@ -29,8 +29,8 @@ export function create(ctx) {
   const code = createCodeField(ctx);
   const row = h('div', { class: 'hero-row' }, host, code.el, options);
   const noticeSlot = h('div', { class: 'hero-notice' });
-  const dock = h('div', { class: 'hero-dock' }, row, noticeSlot);
-  const hero = h('section', { class: 'hero' }, fade, logo.el, h('div', { class: 'hero-corner' }, modRun.el, mod, characters), dock);
+  const dock = h('div', { class: 'hero-dock' }, modRun.el, row, noticeSlot);
+  const hero = h('section', { class: 'hero' }, fade, logo.el, h('div', { class: 'hero-corner' }, mod, characters), dock);
   const pane = h('div', { class: 'home-pane' });
   let layout = null;
 

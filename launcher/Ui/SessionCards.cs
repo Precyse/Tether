@@ -1,7 +1,7 @@
-namespace CoopLauncher.Gui;
+namespace Tether.Gui;
 
 /// <summary>What the notice row's fix button does.</summary>
-internal enum NoticeFix { None, InstallMod, UpdateMod, UpdateLauncher, Browse, JoinAgain, Switch, StartSteam, CheckUpdate, CloseGame }
+internal enum NoticeFix { None, InstallMod, UpdateMod, UpdateLauncher, Browse, JoinAgain, Switch, StartSteam, CheckUpdate, CloseGame, Rebuild }
 
 /// <summary>What the home hero and friends show for one status: which buttons are usable, the mod button, the friends hosting
 /// and the notice.</summary>
@@ -40,6 +40,7 @@ internal static class SessionCards
         {
             RefusalKind.ModNotInstalled or RefusalKind.RequirementMissing or RefusalKind.RequirementOtherVersion => NoticeFix.InstallMod,
             RefusalKind.ModFiles => NoticeFix.UpdateMod,
+            RefusalKind.BuildDiffers or RefusalKind.BuildFailed => NoticeFix.Rebuild,
             RefusalKind.LauncherBuild when HostIsBehind(refusal.Detail) => NoticeFix.None,
             RefusalKind.LauncherBuild or RefusalKind.UnknownGame => newerBuild > 0 ? NoticeFix.UpdateLauncher : NoticeFix.None,
             RefusalKind.GameUnsupported => NoticeFix.CheckUpdate,
@@ -97,6 +98,7 @@ internal static class SessionCards
     {
         NoticeFix.InstallMod => "Install",
         NoticeFix.UpdateMod => "Update",
+        NoticeFix.Rebuild => "Rebuild",
         NoticeFix.UpdateLauncher => $"Update to {newerBuild}",
         NoticeFix.Browse => "Browse",
         NoticeFix.JoinAgain => "Join again",

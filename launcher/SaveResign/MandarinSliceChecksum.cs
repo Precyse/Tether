@@ -3,7 +3,7 @@
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 
-namespace CoopLauncher.SaveResign;
+namespace Tether.SaveResign;
 
 /// <summary>The 64-bit checksum of a slice's data that a Mandarin slice header holds (a hash with the constants of CityHash64 v1.0,
 /// one routine per length class). Pure.</summary>

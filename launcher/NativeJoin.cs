@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>
 /// The launcher's side of a rendezvous game (SessionKind.Rendezvous): the Steam lobby says who hosts, and the game's mod

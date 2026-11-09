@@ -1,6 +1,6 @@
 using Steamworks;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>A Steam avatar as the window needs it: RGBA bytes, row by row from the top.</summary>
 public sealed record AvatarImage(ulong Id, int Width, int Height, byte[] Rgba);

@@ -2,7 +2,7 @@ using System.Buffers.Binary;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace CoopLauncher;
+namespace Tether;
 
 public readonly record struct FileBegin(uint Id, uint Size, byte[] Hash, string Name);
 

@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>What differs between the host's and this machine's setup, in the order it is checked.</summary>
 public enum BuildMismatch { None, LauncherBuild, GameBuild, ModFiles, ModNotInstalled }
@@ -12,12 +12,13 @@ public enum RefusalKind
     UnknownGame, LobbyFull, LobbyClosed, LobbyNotAllowed, LobbyFailed, NotCoopLobby, SteamOffline, SaveTimedOut,
     SaveFolderMissing, SaveDiffers, HostLeft, Removed, RejoinGaveUp, PortInUse, LaunchFailed, RequirementOtherVersion,
     HostUnreachable, GameRunning, SaveResignFailed, FrameworkNotLoaded, ModNotLoaded, SaveNotProtected,
-    OtherCoopMod, ModNotStarted,
+    OtherCoopMod, ModNotStarted, BuildDiffers, BuildFailed, GameDesync, PeerGone, GameCrashed, LoadFailed,
 }
 
 /// <summary>A refused start: the kind, a detail for the words that carry one (build number, file name, port), the game it
-/// concerns and the lobby it was tried on (0 when none).</summary>
-public sealed record Refusal(RefusalKind Kind, string Detail = "", string? GameId = null, ulong LobbyId = 0);
+/// concerns and the lobby it was tried on (0 when none). Ended: it is the end of a session that was going (the words read
+/// "Session ended (&lt;kind&gt;): &lt;why&gt;"); then the detail is the plain reason where the game or the launcher gave one.</summary>
+public sealed record Refusal(RefusalKind Kind, string Detail = "", string? GameId = null, ulong LobbyId = 0, bool Ended = false);
 
 /// <summary>A lobby that cannot be used: the refusal kind it maps to, the diagnostic line for the log and the refusal's
 /// detail where its words carry one (the host's build for LauncherBuild).</summary>
@@ -57,11 +58,12 @@ public static class Refusals
     private const int ResultTimeout = 16;
     private const int ResultServiceUnavailable = 20;
 
-    public static RefusalKind FromBuildMismatch(BuildMismatch mismatch) => mismatch switch
+    /// <summary><paramref name="builtGame"/>: the game is built on each PC (<see cref="RecompProfile"/>), so differing files mean another build, not another mod.</summary>
+    public static RefusalKind FromBuildMismatch(BuildMismatch mismatch, bool builtGame = false) => mismatch switch
     {
         BuildMismatch.LauncherBuild => RefusalKind.LauncherBuild,
         BuildMismatch.GameBuild => RefusalKind.GameBuild,
-        BuildMismatch.ModFiles => RefusalKind.ModFiles,
+        BuildMismatch.ModFiles => builtGame ? RefusalKind.BuildDiffers : RefusalKind.ModFiles,
         BuildMismatch.ModNotInstalled => RefusalKind.ModNotInstalled,
         _ => throw new ArgumentOutOfRangeException(nameof(mismatch), mismatch, "No mismatch to refuse"),
     };

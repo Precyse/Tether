@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>
 /// The name a rendezvous game's local player gets: the Steam persona name shaped to what the game's HUD and scoreboard take

@@ -78,10 +78,13 @@ function createHostingBody(ctx) {
   const pickers = createPickers(ctx);
   let relaunch = false;
   const primary = button(LABELS.start, 'btn-primary session-primary', () => ctx.send(relaunch ? 'session.relaunch' : 'session.start'));
-  const el = h('div', { class: 'session-body' }, steps.el, pickers.el, h('div', { class: 'session-buttons' }, primary, button(LABELS.leave, 'btn-ghost session-leave', () => ctx.send('session.leave'))));
+  const hint = h('div', { class: 'session-hint', hidden: true });
+  const el = h('div', { class: 'session-body' }, steps.el, pickers.el, h('div', { class: 'session-buttons' }, primary, button(LABELS.leave, 'btn-ghost session-leave', () => ctx.send('session.leave'))), hint);
   return {
     el,
     update(session, gameId) {
+      hint.hidden = !session.startHint;
+      setText(hint, session.startHint || '');
       steps.update(session.steps);
       pickers.update(session.pickers, gameId);
       relaunch = !session.isHost && session.relaunch;

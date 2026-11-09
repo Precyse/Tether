@@ -1,7 +1,7 @@
 using System.IO.Compression;
 using System.Security.Cryptography;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>
 /// Installs a game's unmet dependencies (a profile's <c>requires</c> entries with an <c>install</c> source, such as REFramework for

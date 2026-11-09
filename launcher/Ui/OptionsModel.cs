@@ -1,4 +1,4 @@
-namespace CoopLauncher.Gui;
+namespace Tether.Gui;
 
 /// <summary>The pure rules of a game's option rows (the session options popup and the settings view's game options), used by
 /// the web window's snapshot.</summary>

@@ -1,8 +1,8 @@
-using CoopLauncher.Gui;
+using Tether.Gui;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
 
-namespace CoopLauncher.Web;
+namespace Tether.Web;
 
 /// <summary>One hardened WebView2 showing one of the pages (SPEC 1 and 4). The environment is shared by every surface. Inbound:
 /// only messages whose source is the app page and that <see cref="UiCommands"/> accepts. Outbound: data only, never script;

@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>What the local adapter should hear about a partner's game.</summary>
 public enum PresenceChange { None, Down, Up }
@@ -53,5 +53,5 @@ public sealed class PartnerPresence
 
     private static bool Left(SessionStep step, SessionStep last) =>
         step == SessionStep.GameClosed
-        || (step is SessionStep.Refused or SessionStep.Lobby && last is SessionStep.StartingGame or SessionStep.InGame);
+        || (step is SessionStep.Refused or SessionStep.Lobby && last is SessionStep.StartingGame or SessionStep.BuildingGame or SessionStep.InGame);
 }

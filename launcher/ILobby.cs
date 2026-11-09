@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 public sealed record LobbyMember(ulong Id, string Name);
 

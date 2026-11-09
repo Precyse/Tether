@@ -1,7 +1,7 @@
 using System.Buffers.Binary;
 using System.Text;
 using System.Text.Json;
-using CoopLauncher;
+using Tether;
 
 namespace LauncherTests;
 

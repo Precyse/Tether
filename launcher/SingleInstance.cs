@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>
 /// One launcher window per user session. A second start asks the running window to come to the front and exits. The window
@@ -13,9 +13,9 @@ namespace CoopLauncher;
 public sealed class SingleInstance : IDisposable
 {
     public const string PredecessorVariable = "COOP_LAUNCHER_PREDECESSOR";
-    private const string MutexName = @"Local\CoopLauncher.Window";
-    private const string FocusRequestName = @"Local\CoopLauncher.FocusRequest";
-    private const string FocusAnswerName = @"Local\CoopLauncher.FocusAnswer";
+    private const string MutexName = @"Local\Tether.Window";
+    private const string FocusRequestName = @"Local\Tether.FocusRequest";
+    private const string FocusAnswerName = @"Local\Tether.FocusAnswer";
     private const int AnswerWaitMs = 3000;
     public const int HungAfterMs = 10_000;
     private const int TakeOverWaitMs = 5000;

@@ -1,7 +1,7 @@
 using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text.Json;
-using CoopLauncher;
+using Tether;
 
 namespace LauncherTests;
 
@@ -10,7 +10,7 @@ namespace LauncherTests;
 /// A component's version counts up in the publish where its files changed, like the real release does.</summary>
 internal sealed class ReleaseFixture : IDisposable
 {
-    public const string LauncherExe = "launcher/app/coop-launcher.exe";
+    public const string LauncherExe = "launcher/app/tether.exe";
     public const string Re0Profile = "launcher/games/re0.json";
     public const string Re0Dll = "adapters/re0/dinput8.dll";
     public const string Ds2Dll = "adapters/ds2/version.dll";
@@ -62,7 +62,7 @@ internal sealed class ReleaseFixture : IDisposable
     {
         _published++;
         var components = Components.Select(entry => Zip(entry.Key, entry.Value)).ToList();
-        var full = ZipAsset(Path.Combine(Assets, "Coop.zip"), Components.Values.SelectMany(paths => paths));
+        var full = ZipAsset(Path.Combine(Assets, "Tether.zip"), Components.Values.SelectMany(paths => paths));
         var manifest = new ReleaseManifest(_published, "next", "abc123", full, components);
         File.WriteAllText(Path.Combine(Assets, ReleaseManifest.FileName), JsonSerializer.Serialize(manifest));
         return ReleaseManifest.Parse(File.ReadAllText(Path.Combine(Assets, ReleaseManifest.FileName)));

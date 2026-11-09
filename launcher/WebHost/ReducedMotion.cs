@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
 
-namespace CoopLauncher.Gui;
+namespace Tether.Gui;
 
 /// <summary>Whether Windows' "Animation effects" setting is off; the page then plays no animation. Read again after Windows
 /// reports a changed user preference.</summary>

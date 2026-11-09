@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
-using CoopLauncher;
-using CoopLauncher.SaveResign;
+using Tether;
+using Tether.SaveResign;
 
 namespace LauncherTests;
 

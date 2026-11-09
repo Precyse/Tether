@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace CoopLauncher.SaveResign;
+namespace Tether.SaveResign;
 
 /// <summary>Re-signs a game's save files from one Steam account to another (profile <c>saveSync.resign</c>): the saves of games that
 /// encrypt them for the account that wrote them (Dragon's Dogma 2) can then be read by a guest's game. Pure apart from

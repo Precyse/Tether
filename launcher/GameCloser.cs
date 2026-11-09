@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>Ends a game this launcher started only for itself (the capture launch) or that the player asked to close: asked to close
 /// once, then ended; never waited for, so the loop thread keeps running while the game goes.</summary>
@@ -32,5 +32,5 @@ public static class GameCloser
 
     public static bool IsGone(GameProfile profile) => !GameLauncher.IsRunning(profile);
 
-    private static Process[] ProcessesOf(GameProfile profile) => Process.GetProcessesByName(Path.GetFileNameWithoutExtension(profile.Exe));
+    private static Process[] ProcessesOf(GameProfile profile) => GameProcesses.Of(profile);
 }

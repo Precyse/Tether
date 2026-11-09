@@ -1,5 +1,5 @@
 using System.Security.Cryptography;
-using CoopLauncher;
+using Tether;
 
 namespace LauncherTests;
 

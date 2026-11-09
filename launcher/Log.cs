@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 public static class Log
 {

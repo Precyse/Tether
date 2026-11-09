@@ -1,4 +1,4 @@
-namespace CoopLauncher.Gui;
+namespace Tether.Gui;
 
 /// <summary>What the Settings "Check for updates" button shows: nothing special, a check the player asked for is running, or it found
 /// nothing newer (shown for a moment).</summary>

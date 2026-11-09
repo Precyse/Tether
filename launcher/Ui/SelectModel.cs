@@ -1,4 +1,4 @@
-namespace CoopLauncher.Gui;
+namespace Tether.Gui;
 
 /// <summary>One outfit of a character: the option value it sets, its label and the figure it shows.</summary>
 internal sealed record OutfitTile(string Value, string Label, Figure Figure);

@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>A save file this machine cannot use at all, and why.</summary>
 public sealed record SaveFailure(string File, string Reason);

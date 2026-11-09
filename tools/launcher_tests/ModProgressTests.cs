@@ -1,4 +1,4 @@
-using CoopLauncher;
+using Tether;
 
 namespace LauncherTests;
 
@@ -72,8 +72,8 @@ public static class ModProgressTests
         notedReport.Advance(10);
         Check.That(noted.Reports.Where(r => r.Step == ModStep.BackingUp).All(r => r.Reason == "Another winmm.dll was moved to x")
             && noted.Reports.Where(r => r.Step == ModStep.Copying).All(r => r.Reason == null), "a step's note is on that step's reports only");
-        Check.That(CoopLauncher.Web.ModRunViews.Text(noted.Reports.First()) == "Another winmm.dll was moved to x"
-            && CoopLauncher.Web.ModRunViews.Text(noted.Reports.Last(r => r.Step == ModStep.Copying)) == "Copying", "the page shows the note instead of the step name");
+        Check.That(Tether.Web.ModRunViews.Text(noted.Reports.First()) == "Another winmm.dll was moved to x"
+            && Tether.Web.ModRunViews.Text(noted.Reports.Last(r => r.Step == ModStep.Copying)) == "Copying", "the page shows the note instead of the step name");
 
         new ProgressReporter(null).Begin(ModStep.Checking, 10, 1);
     }

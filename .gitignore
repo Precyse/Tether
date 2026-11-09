@@ -22,3 +22,5 @@ tools/sr2/session_test/obj/
 launcher/web/dev/art/
 adapters/sr2/scripts/
 .claude/
+tools/warriors/relay_rig/bin/
+tools/warriors/relay_rig/obj/

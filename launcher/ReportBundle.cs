@@ -2,7 +2,7 @@ using System.IO.Compression;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>One zip to send when something goes wrong: report.txt (launcher build, OS, each game's folder, build and mod state, what
 /// was left out and why), the launcher's settings and every log it kept, and from each game's coop folder the adapter log and ini, the
@@ -71,9 +71,9 @@ public static class ReportBundle
         var build = GameBuilds.Installed(game, gameDir);
         lines.Add($"  game build: {(build == GameBuilds.Unknown ? "unknown" : build.ToString())}");
         lines.Add($"  mod: {mod.State}{(mod.Build == 0 ? "" : $", build {mod.Build}")}");
-        if (game.AdapterLog != null)
+        if ((game.AdapterLog ?? game.Recomp?.EngineLog) is { } log)
         {
-            var coopDir = Path.GetDirectoryName(Path.Combine(gameDir, game.AdapterLog))!;
+            var coopDir = Path.GetDirectoryName(Path.Combine(gameDir, log))!;
             foreach (var pattern in GameFilePatterns)
                 foreach (var file in entries.Files(coopDir, pattern).Where(file => !IsJoinFile(game, file)))
                     entries.Add(file, $"{game.Id}/{Path.GetFileName(file)}");

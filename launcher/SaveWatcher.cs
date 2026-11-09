@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>Host side of save sync after the join: notices saves the game writes into the save folder and reports each name
 /// once it has stopped changing (a save is written in many small steps, and the game may still hold the file). When the

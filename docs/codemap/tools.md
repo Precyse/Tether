@@ -7,13 +7,15 @@ Repo-level test, release and research tools. Index and "where to look for X": `C
 | file | owns |
 |---|---|
 | tools/launcher_tests/ | C# console unit tests of the launcher's pure rules and file/process rules (mod install, updater, save sync, UI snapshot, release manifest, component update); `dotnet run --project tools/launcher_tests`, subsets with `LAUNCHER_TESTS_ONLY=web|mod|files`; tests that touch settings or logs set `COOP_LAUNCHER_DATA` |
+| tools/warriors/fake_status.py | a fake Warriors engine for the status channel: writes the status file and `[net]` lines of a join, a host, a crash or a session end in real steps, to see the launcher's cards without a game (spec `coop-scratch\warriors\design\STATUS_CONTRACT.md`) |
+| tools/warriors/relay_rig/ | The Warriors over the launcher's relay on one PC: a host engine and N joiner engines (the existing recomp build, run only) connected through `UdpRelayLink` and the profile's peer budget, with an optional one-way delay; reports the join time and whether the digests agree; only its own processes are stopped. `--build` instead runs the launcher's build step against the real setup tool (`COOP_LAUNCHER_DATA` names the data folder, `--cancel-after N` cancels). `dotnet run -c Release --project tools/warriors/relay_rig -- --out <dir> [--frames N] [--joiners N] [--delay ms]` |
 | tools/save_sync_test.py | two local launchers: the save transfer and the reset |
 | tools/diagnostics_test.py | guest log lines and a crash dump reach the host |
 | tools/build_check_test.py | mismatched builds, game builds and mod files refuse; matching ones carry on |
 | tools/peer_link_test.py | `--gap S` (held vs PEER_DOWN) and `--flood N` (peer budget) against a host launcher with `fake_adapter.py` |
 | tools/fake_adapter.py, tools/echo_peer.py, tools/spoof_peer.py | stand-in adapter; echo of 0x0100/0x0101 and the puppet frames; a wrong slot byte over local transport |
 | tools/publish_check.py | gates pushes and releases (no game files, keys or stray binaries) |
-| tools/release_manifest.py, tools/release_manifest_test.py | the package into `Coop.zip`, `launcher.zip`, `mod-<id>.zip`, `manifest.json`; unchanged components ship the previous zip |
+| tools/release_manifest.py, tools/release_manifest_test.py | the package into `Tether.zip`, `launcher.zip`, `mod-<id>.zip`, `manifest.json`; unchanged components ship the previous zip |
 | tools/sr2/tunnel_launcher_test.py, tools/sr2/session_test, tools/sr2/player_name_test | SR2 Steam tunnel on local transport; `Session` with a scripted lobby; `PlayerName` |
 
 ## RE0 research (`tools/re0/`)

@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>Host side of crash reporting: takes the files a guest's <see cref="CrashSender"/> sends (FILE_BEGIN / CHUNK / END), checks
 /// size and sha256, writes them to <see cref="CrashRules.Destination"/> and ACKs. A guest gets <see cref="CrashRules.MaxIncidents"/>

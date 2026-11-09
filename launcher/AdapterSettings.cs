@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Security.Cryptography;
 
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>The launcher's part of the adapter config: the coop flag and the game's options in the adapter ini, and the
 /// session save folder.</summary>

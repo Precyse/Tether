@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace CoopLauncher.Gui;
+namespace Tether.Gui;
 
 /// <summary>The one rule for the letter that stands in for a player's avatar: the first character of the name in capitals.</summary>
 internal static class Initials

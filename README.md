@@ -14,8 +14,8 @@ Online co-op for single-player PC games. Tether is one launcher that installs th
 
 ## Install
 
-1. Download [Coop.zip](https://github.com/Precyse/Tether/releases/download/latest/Coop.zip) from the latest release and unzip it anywhere, for example `%LocalAppData%\CoopLauncher`.
-2. Start `launcher\app\coop-launcher.exe`. Steam must be running.
+1. Download [Tether.zip](https://github.com/Precyse/Tether/releases/download/latest/Tether.zip) from the latest release and unzip it anywhere, for example `%LocalAppData%\Tether`.
+2. Start `launcher\app\tether.exe`. Steam must be running.
 3. Pick a game and press **Install** (the game must be closed). The launcher installs every file the mod needs (for Dragon's Dogma 2 also REFramework) and backs up anything it replaces. **Uninstall** in Settings puts your files back.
 
 From then on Tether updates itself and the installed mods. Preview builds of the newest work are on the [preview release](https://github.com/Precyse/Tether/releases/tag/preview).

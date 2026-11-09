@@ -1,4 +1,4 @@
-namespace CoopLauncher;
+namespace Tether;
 
 /// <summary>A game's installed Steam build against the builds its profile lists as supported (the adapter's addresses
 /// are tied to the game's executable).</summary>
@@ -9,6 +9,7 @@ public static class GameBuilds
     /// <summary>The installed build id from Steam's appmanifest of that game folder; <see cref="Unknown"/> when Steam has none.</summary>
     public static int Installed(GameProfile profile, string? gameDir)
     {
+        if (profile.Recomp != null) return Unknown;  // no Steam build: the build's fingerprint is the version (RecompBuildInfo)
         try
         {
             return SteamLibrary.InstalledBuild(profile.SteamAppId, gameDir) ?? Unknown;
