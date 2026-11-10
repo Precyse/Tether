@@ -69,5 +69,5 @@ internal static class ModRunViews
 
     /// <summary>The home screen while a mod action runs: nothing that starts a session or another action can be pressed.</summary>
     public static HomeView WhileRunning(HomeView view, bool running) =>
-        running ? view with { HostEnabled = false, JoinEnabled = false, CodeEnabled = false, ModEnabled = false } : view;
+        running ? view with { HostEnabled = false, LocalEnabled = false, JoinEnabled = false, CodeEnabled = false, ModEnabled = false } : view;
 }

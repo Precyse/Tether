@@ -23,9 +23,10 @@ namespace Tether;
 /// <param name="SessionFile">What the lobby decided, for the game to read at its start (<see cref="RecompSessionFile"/>).</param>
 /// <param name="StatusFile">What the game is doing, written by the game for the launcher to read while it runs (<see cref="EngineStatusFile"/>).</param>
 /// <param name="SessionArg">The engine argument that takes the session file, once the engine has one; none: the file is written and not passed.</param>
+/// <param name="LocalCoop">The game can start a local co-op session (<see cref="LocalCoop"/>): every player on this PC, no lobby; needs <paramref name="SessionArg"/>.</param>
 public sealed record RecompProfile(
     string Setup, string DiscPrompt, string InstallDir, string BuildInfo, string Engine, string LogsDir, string EngineLog, string Card, string SessionCard, string SessionFile,
-    string StatusFile, string? SessionArg = null);
+    string StatusFile, string? SessionArg = null, bool LocalCoop = false);
 
 /// <summary>The build a setup run made, from its <c>build.json</c>: the three parts of the fingerprint the engines compare when they meet
 /// (generated game code, runtime sources, memory patches) and the hash of the engine it installed. Two machines play together only when

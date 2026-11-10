@@ -60,6 +60,7 @@
 .hero-row { display: flex; align-items: center; gap: var(--gap); }
 .hero-row > .btn, .hero-row .code-input { height: var(--action-h); }
 .hero-host { width: var(--host-w); flex: none; font-size: var(--fs-primary); }
+.hero-local { flex: none; padding: 0 16px; white-space: nowrap; }
 .hero-mod { width: var(--tool-w); }
 .hero-corner { position: absolute; top: var(--hero-corner-top); right: var(--hero-pad); display: flex; gap: var(--gap); }
 .hero-corner > .btn { height: var(--control-h); }

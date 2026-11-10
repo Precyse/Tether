@@ -94,9 +94,10 @@ public sealed record OptionValue(string Value, string Label, string? DlcAppId = 
 /// default. A Host option is the host's alone (the guest takes what follows from it). A Settings option is shown in the
 /// settings view, not in the session's options grid. An option with a Character is the outfit of that character (a value
 /// of the game's character option. An option with a Source takes its values from this machine at run time (<see cref="OptionSources"/>):
-/// Values are the ones always offered (the first is the default), the grids do not list it, and a guest takes the host's value as it is.</summary>
+/// Values are the ones always offered (the first is the default), the grids do not list it, and a guest takes the host's value as it is.
+/// An Online option means something only with a network (seats, input delay, which controller a window reads): a local session leaves it out.</summary>
 public sealed record GameOption(string Key, string Label, List<OptionValue> Values, bool Host = false, bool Settings = false,
-    string? Character = null, string? Source = null)
+    string? Character = null, string? Source = null, bool Online = false)
 {
     private const string DlcFolder = "DLC";
 

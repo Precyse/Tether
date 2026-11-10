@@ -163,7 +163,7 @@ internal static partial class UiSnapshot
         var view = ModRunViews.WhileRunning(
             SessionCards.Home(i.Status, selected.Profile, selected.Status, i.Update.Staged, i.Update.NewerBuild, i.Profiles), i.ModRunning);
         return new HomeDto(
-            view.Native ? "LAUNCH" : "HOST", view.Native, view.HostEnabled, view.JoinEnabled, view.CodeEnabled,
+            view.Native ? "LAUNCH" : "HOST", view.Native, view.LocalCoop, view.HostEnabled, view.LocalEnabled, view.JoinEnabled, view.CodeEnabled,
             view.Mod is { } mod ? new BtnDto(mod.Label, view.ModEnabled) : null, OptionsModel.Has(selected.Profile), selected.Profile.HasCharacterSelect,
             i.Popup == PopupKind.Options, view.Notice == null ? null : Notice(view.Notice),
             view.Friends.Select(friend => new FriendDto(UiJson.Id(friend.LobbyId), Avatar(i, friend.AvatarId, friend.Name), friend.Name, friend.Game, friend.Count, friend.Selected)).ToArray(),

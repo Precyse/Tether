@@ -16,21 +16,22 @@
     "sessionCard": "game/saves/session/card.ps2",
     "sessionFile": "game/session.ini",
     "statusFile": "game/status.txt",
-    "sessionArg": "--coop-session" },
+    "sessionArg": "--coop-session", "localCoop": true },
   "saveSync": { "steamRemoteFiles": [], "sessionDir": "game/saves/session", "hostSaveDir": "{launcherdata}/games/warriors/game/saves", "filePattern": "card.ps2" },
   "saveBackup": { "dir": "{launcherdata}/games/warriors/game/saves", "into": "game/save_backups", "keep": 10 },
   "crashFiles": ["game/logs/crash-*.dmp"],
   "peerBudget": { "unreliableFramesPerSecond": 12000, "unreliableFrameCapacity": 24000, "unreliableBytesPerSecond": 16777216, "unreliableByteCapacity": 33554432 },
   "options": [
-    { "key": "max_players", "label": "Players", "host": true, "values": [
+    { "key": "max_players", "label": "Players", "host": true, "online": true, "values": [
       { "value": "4", "label": "4" }, { "value": "3", "label": "3" }, { "value": "2", "label": "2" } ] },
     { "key": "friendly_fire", "label": "Friendly fire", "host": true, "values": [ { "value": "0", "label": "Off" }, { "value": "1", "label": "On" } ] },
-    { "key": "input_delay", "label": "Input delay", "host": true, "values": [ { "value": "0", "label": "Auto" }, { "value": "2", "label": "2 frames" }, { "value": "3", "label": "3 frames" }, { "value": "4", "label": "4 frames" }, { "value": "6", "label": "6 frames" }, { "value": "8", "label": "8 frames" } ] },
+    { "key": "split_screen", "label": "Split screen", "host": true, "values": [ { "value": "auto", "label": "Auto" }, { "value": "always", "label": "Always split" } ] },
+    { "key": "input_delay", "label": "Input delay", "host": true, "online": true, "values": [ { "value": "0", "label": "Auto" }, { "value": "2", "label": "2 frames" }, { "value": "3", "label": "3 frames" }, { "value": "4", "label": "4 frames" }, { "value": "6", "label": "6 frames" }, { "value": "8", "label": "8 frames" } ] },
     { "key": "scale", "label": "Resolution", "values": [ { "value": "4", "label": "4x" }, { "value": "3", "label": "3x" }, { "value": "2", "label": "2x" }, { "value": "1", "label": "1x" } ] },
     { "key": "msaa", "label": "Anti-aliasing", "values": [ { "value": "0", "label": "Off" }, { "value": "1", "label": "On" } ] },
     { "key": "aniso", "label": "Texture filtering", "values": [ { "value": "16", "label": "16x" }, { "value": "8", "label": "8x" }, { "value": "4", "label": "4x" }, { "value": "2", "label": "2x" }, { "value": "0", "label": "Off" } ] },
     { "key": "sharpen", "label": "Sharpen", "values": [ { "value": "1", "label": "On" }, { "value": "0", "label": "Off" } ] },
     { "key": "brightness", "label": "Brightness", "values": [ { "value": "100", "label": "Normal" }, { "value": "110", "label": "+10%" }, { "value": "120", "label": "+20%" }, { "value": "90", "label": "-10%" } ] },
     { "key": "volume", "label": "Volume", "values": [ { "value": "100", "label": "100%" }, { "value": "75", "label": "75%" }, { "value": "50", "label": "50%" }, { "value": "25", "label": "25%" }, { "value": "0", "label": "Muted" } ] },
-    { "key": "pad_user", "label": "Controller", "values": [ { "value": "0", "label": "Controller 1" }, { "value": "1", "label": "Controller 2" }, { "value": "2", "label": "Controller 3" }, { "value": "3", "label": "Controller 4" } ] }
+    { "key": "pad_user", "label": "Controller", "online": true, "values": [ { "value": "0", "label": "Controller 1" }, { "value": "1", "label": "Controller 2" }, { "value": "2", "label": "Controller 3" }, { "value": "3", "label": "Controller 4" } ] }
   ] }

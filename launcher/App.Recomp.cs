@@ -72,7 +72,7 @@ public sealed partial class App
         var card = session.IsHost ? RecompInstall.CardPath(_profile!, _gameDir!) : RecompInstall.SessionCardPath(_profile!, _gameDir!);
         var options = AdapterOptions();
         var shared = (_profile!.Options ?? []).Where(option => option.Host && option.Key != GameOptions.SeatsKey).Select(option => option.Key).ToHashSet();
-        var text = RecompSessionFile.Build(session.Epoch, _lobby.Id, session.IsHost, session.SlotOf(_transport!.LocalId) ?? SlotAssigner.HostSlot,
+        var text = RecompSessionFile.Build(session.Epoch, _lobby.Id, session.IsHost ? SessionRole.Host : SessionRole.Guest, session.SlotOf(_transport!.LocalId) ?? SlotAssigner.HostSlot,
             GameOptions.Seats(_profile, _lobby.HostOptions), roster, card, RecompInstall.StatusFilePath(_profile, _gameDir!),
             options.Where(pair => shared.Contains(pair.Key)), options.Where(pair => (_profile.Options ?? []).Any(option => !option.Host && option.Key == pair.Key)));
         var path = RecompInstall.SessionFilePath(_profile!, _gameDir!);

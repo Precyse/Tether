@@ -8,6 +8,7 @@ export const COMMANDS = [
   'tab.select',
   'game.select',
   'host',
+  'local.start',
   'join.code',
   'join.friend',
   'lobby.open',

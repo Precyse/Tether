@@ -72,7 +72,7 @@ internal sealed record LobbyPopupDto(
 internal sealed record FriendDto(string Key, ImgDto Avatar, string Name, string Game, string Count, bool Primary);
 
 internal sealed record HomeDto(
-    string HostLabel, bool Native, bool HostEnabled, bool JoinEnabled, bool CodeEnabled, BtnDto? Mod, bool HasOptions, bool HasCharacters,
+    string HostLabel, bool Native, bool LocalCoop, bool HostEnabled, bool LocalEnabled, bool JoinEnabled, bool CodeEnabled, BtnDto? Mod, bool HasOptions, bool HasCharacters,
     bool OptionsOpen, NoticeDto? Notice, FriendDto[] Friends, ModRunDto? ModRun);
 
 internal sealed record LobbyRowDto(

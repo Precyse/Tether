@@ -127,6 +127,11 @@ public static class SessionCardsTests
         Check.That(!Home(AppStatus.Idle, Mod(ModState.UpdateAvailable), locked: true).ModEnabled, "home: a staged update locks the mod button");
         Check.That(!Home(AppStatus.Idle, Mod(ModState.UpdateAvailable) with { GameRunning = true }).ModEnabled, "home: the mod button waits for the game to close");
 
+        var local = SessionCards.Home(AppStatus.Idle, GameProfile.Load("warriors"), Mod(ModState.Installed), false, 0, [Re0]);
+        Check.That(local is { LocalCoop: true, LocalEnabled: true } && Home(AppStatus.Idle) is { LocalCoop: false, LocalEnabled: false }, "home: Local co-op where the game has it");
+        Check.That(!SessionCards.Home(AppStatus.Idle, GameProfile.Load("warriors"), Mod(ModState.Installed) with { GameRunning = true }, false, 0, [Re0]).LocalEnabled, "home: Local co-op waits for the game to close");
+        Check.That(SessionCards.Home(AppStatus.Idle with { State = AppState.Hosting }, GameProfile.Load("warriors"), Mod(ModState.Installed), false, 0, [Re0]) is { LocalEnabled: false }, "home: no Local co-op in a session");
+
         var offline = Home(new AppStatus(AppState.Offline));
         Check.That(offline is { HostEnabled: false, JoinEnabled: false, CodeEnabled: false }, "home: offline hosts and joins nothing");
         Check.That(Home(new AppStatus(AppState.Offline), Mod(ModState.NotInstalled)).ModEnabled, "home: offline is free for the mod button");

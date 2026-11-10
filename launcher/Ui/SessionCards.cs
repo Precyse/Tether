@@ -3,10 +3,10 @@ namespace Tether.Gui;
 /// <summary>What the notice row's fix button does.</summary>
 internal enum NoticeFix { None, InstallMod, UpdateMod, UpdateLauncher, Browse, JoinAgain, Switch, StartSteam, CheckUpdate, CloseGame, Rebuild }
 
-/// <summary>What the home hero and friends show for one status: which buttons are usable, the mod button, the friends hosting
-/// and the notice.</summary>
+/// <summary>What the home hero and friends show for one status: which buttons are usable (LocalCoop: the game has a local co-op start), the mod button,
+/// the friends hosting and the notice.</summary>
 internal sealed record HomeView(
-    bool Native, bool HostEnabled, bool JoinEnabled, ModAction? Mod, bool ModEnabled, bool CodeEnabled,
+    bool Native, bool LocalCoop, bool HostEnabled, bool LocalEnabled, bool JoinEnabled, ModAction? Mod, bool ModEnabled, bool CodeEnabled,
     IReadOnlyList<FriendCard> Friends, Notice? Notice);
 
 /// <summary>The pure mapping from the app's status to what the home screen's buttons, friends and notices say; unit tested
@@ -89,7 +89,8 @@ internal static class SessionCards
         var free = idle || status.State == AppState.Offline;
         var action = mod.Action;
         return new HomeView(
-            Native: game.NativeSession, HostEnabled: (game.NativeSession ? free : idle) && mod.CanHost, JoinEnabled: idle && mod.CanHost,
+            Native: game.NativeSession, LocalCoop: LocalCoop.Supported(game), HostEnabled: (game.NativeSession ? free : idle) && mod.CanHost,
+            LocalEnabled: free && mod.CanHost && !mod.GameRunning && LocalCoop.Supported(game), JoinEnabled: idle && mod.CanHost,
             Mod: action, ModEnabled: free && !modLocked && action is { Enabled: true }, CodeEnabled: idle,
             Friends: idle ? Friends(status, games, game.Id) : [], Notice: NoticeFor(status, newerBuild));
     }

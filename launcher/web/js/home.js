@@ -8,6 +8,7 @@ import { createHeroLayout } from './hero-layout.js';
 import { createModRun } from './mod-run.js';
 
 const CHARACTERS_LABEL = 'Characters';
+const LOCAL_LABEL = 'Local co-op';
 const OPTIONS_LABEL = 'Options';
 const ICON_SIZE = 20;
 
@@ -19,6 +20,7 @@ export function create(ctx) {
   const logo = createImage('hero-logo');
   const nameLogo = h('div', { class: 'hero-name', hidden: true });
   const host = h('button', { class: 'btn btn-primary hero-host', type: 'button', on: { click: () => send('host') } });
+  const local = h('button', { class: 'btn btn-over-art hero-local', type: 'button', text: LOCAL_LABEL, hidden: true, on: { click: () => send('local.start') } });
   const mod = h('button', { class: 'btn btn-over-art hero-mod', type: 'button', hidden: true });
   const modRun = createModRun(ctx, 'hero');
   const options = h('button', { class: 'btn-icon hero-icon', type: 'button', 'aria-label': OPTIONS_LABEL, on: { click: () => send('popup.options') } }, icons.icon('cog', ICON_SIZE));
@@ -28,7 +30,7 @@ export function create(ctx) {
   const backdrop = h('div', { class: 'hero-backdrop' }, heroArt.el, h('div', { class: 'hero-shade' }));
   const fade = h('div', { class: 'hero-fade' });
   const code = createCodeField(ctx);
-  const row = h('div', { class: 'hero-row' }, host, code.el, options);
+  const row = h('div', { class: 'hero-row' }, host, local, code.el, options);
   const noticeSlot = h('div', { class: 'hero-notice' });
   const dock = h('div', { class: 'hero-dock' }, modRun.el, row, noticeSlot);
   const hero = h('section', { class: 'hero' }, fade, logo.el, nameLogo, h('div', { class: 'hero-corner' }, mod, characters), dock);
@@ -68,6 +70,8 @@ export function create(ctx) {
     setText(nameLogo, game?.name ?? '');
     setText(host, home.hostLabel);
     host.disabled = !home.hostEnabled;
+    local.hidden = !home.localCoop;
+    local.disabled = !home.localEnabled;
     modRun.update(home.modRun, gameId);
     mod.hidden = !home.mod || Boolean(home.modRun);
     if (home.mod) {

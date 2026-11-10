@@ -32,6 +32,9 @@ internal sealed partial class UiController
             case Cmd.Host when CurrentHome()?.HostEnabled == true:
                 HostOrLaunch();
                 return null;
+            case Cmd.LocalStart when CurrentHome()?.LocalEnabled == true:
+                StartLocal();
+                return null;
             case Cmd.JoinCode when CurrentHome()?.JoinEnabled == true:
                 JoinTypedCode(command.Text("code"));
                 return null;
@@ -181,6 +184,14 @@ internal sealed partial class UiController
         AppSettings.Update(settings => settings.WithLastGame(game.Id));
         Apply(_app.Status);
         return null;
+    }
+
+    /// <summary>The home hero's Local co-op button: the game starts with every player on this PC.</summary>
+    private void StartLocal()
+    {
+        if (SelectedGame?.Profile is not { } game || GameFolders.Find(game) is not { } gameDir) return;
+        var result = LocalCoop.Start(game, gameDir);
+        Log.Info($"Local co-op of {game.Name}: {result}");
     }
 
     /// <summary>The home hero's main button: opens a lobby, or for a game that matches its players itself starts the game.</summary>

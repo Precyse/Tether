@@ -3,6 +3,9 @@ using System.Text;
 
 namespace Tether;
 
+/// <summary>The part this machine plays in the session file's <c>role</c>: Local has every player on this PC and no link.</summary>
+public enum SessionRole { Host, Guest, Local }
+
 /// <summary>One player of the session as the game reads it: the session slot (also its pad port: the host is slot 0, pad 1) and the display name.</summary>
 public sealed record SessionPlayer(int Slot, string Name);
 
@@ -14,7 +17,7 @@ public sealed record SessionPlayer(int Slot, string Name);
 /// [session]
 /// epoch=1            ; the slot map's epoch
 /// session_id=1097752 ; the Steam lobby's id, the same on every machine
-/// role=host          ; host or guest
+/// role=host          ; host, guest or local (every player on this PC, no link)
 /// local_slot=0       ; this machine's pad port
 /// max_players=4      ; the host's setting
 /// status_file=C:\...\status.txt   ; where the game writes what it is doing (<see cref="EngineStatusFile"/>)
@@ -38,7 +41,7 @@ public static class RecompSessionFile
     private const char Replacement = ' ';
 
     /// <summary>The file's text for a session.</summary>
-    public static string Build(uint epoch, ulong sessionId, bool host, int localSlot, int maxPlayers, IEnumerable<SessionPlayer> roster, string memcard, string statusFile,
+    public static string Build(uint epoch, ulong sessionId, SessionRole role, int localSlot, int maxPlayers, IEnumerable<SessionPlayer> roster, string memcard, string statusFile,
         IEnumerable<KeyValuePair<string, string>> hostTerms, IEnumerable<KeyValuePair<string, string>> localOptions)
     {
         var names = roster.ToDictionary(player => player.Slot, player => player.Name);
@@ -46,7 +49,7 @@ public static class RecompSessionFile
         text.AppendLine("[session]");
         text.AppendLine(string.Create(CultureInfo.InvariantCulture, $"epoch={epoch}"));
         text.AppendLine(string.Create(CultureInfo.InvariantCulture, $"session_id={sessionId}"));
-        text.AppendLine($"role={(host ? "host" : "guest")}");
+        text.AppendLine($"role={role.ToString().ToLowerInvariant()}");
         text.AppendLine(string.Create(CultureInfo.InvariantCulture, $"local_slot={localSlot}"));
         text.AppendLine(string.Create(CultureInfo.InvariantCulture, $"max_players={maxPlayers}"));
         text.AppendLine($"status_file={statusFile}");

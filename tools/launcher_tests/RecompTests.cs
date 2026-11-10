@@ -28,6 +28,7 @@ public static class RecompTests
         Words();
         RunView();
         SessionFile();
+        LocalSession();
     }
 
     /// <summary>The names of the refusals as the game may use them for reason codes: only ever appended to.</summary>
@@ -35,10 +36,26 @@ public static class RecompTests
         + "LobbyFailed NotCoopLobby SteamOffline SaveTimedOut SaveFolderMissing SaveDiffers HostLeft Removed RejoinGaveUp PortInUse LaunchFailed RequirementOtherVersion HostUnreachable "
         + "GameRunning SaveResignFailed FrameworkNotLoaded ModNotLoaded SaveNotProtected OtherCoopMod ModNotStarted BuildDiffers BuildFailed GameDesync PeerGone GameCrashed LoadFailed";
 
+    private static void LocalSession()
+    {
+        var warriors = GameProfile.Load("warriors");
+        Check.That(LocalCoop.Supported(warriors) && !LocalCoop.Supported(GameProfile.Parse("built", ProfileJson, RepoPaths.RepoRoot)), "local co-op: The Warriors has it, a profile without the flag does not");
+        var chosen = new Dictionary<string, string>
+        {
+            ["max_players"] = "3", ["friendly_fire"] = "1", ["split_screen"] = "always", ["input_delay"] = "4", ["scale"] = "2", ["pad_user"] = "2",
+        };
+        var lines = LocalCoop.SessionText(warriors, @"C:\g", chosen).Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries);
+        Check.That(lines.Contains("role=local") && lines.Contains("max_players=4") && lines.Contains("friendly_fire=1") && lines.Contains("split_screen=always") && lines.Contains("scale=2"),
+            "local co-op: the session file says local, takes the split screen and the local options");
+        Check.That(!lines.Any(line => line.StartsWith("input_delay") || line.StartsWith("pad_user")) && lines.Count(line => line.StartsWith("max_players")) == 1,
+            "local co-op: the options that need a network are left out");
+        Check.That(lines.SkipWhile(line => line != "[roster]").Skip(1).TakeWhile(line => !line.StartsWith('[')).All(line => line.EndsWith('=')), "local co-op: no names in the roster");
+    }
+
     private static void SessionFile()
     {
         var roster = new[] { new SessionPlayer(1, "Bo"), new SessionPlayer(0, "Amy=\r\n[host]") };
-        var text = RecompSessionFile.Build(7, 109775240912345, host: false, localSlot: 1, maxPlayers: 4, roster, @"C:\g\saves\session\card.ps2", @"C:\g\status.txt",
+        var text = RecompSessionFile.Build(7, 109775240912345, SessionRole.Guest, localSlot: 1, maxPlayers: 4, roster, @"C:\g\saves\session\card.ps2", @"C:\g\status.txt",
             [new("friendly_fire", "1")], [new("scale", "2")]);
         var lines = text.Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries);
         Check.That(lines.SequenceEqual(["[session]", "epoch=7", "session_id=109775240912345", "role=guest", "local_slot=1", "max_players=4", @"status_file=C:\g\status.txt", "[roster]", "0=Amy   [host]", "1=Bo", "2=", "3=",

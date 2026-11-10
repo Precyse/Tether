@@ -59,7 +59,9 @@ export default {
     "home": {
       "hostLabel": "HOST",
       "native": false,
+      "localCoop": false,
       "hostEnabled": false,
+      "localEnabled": false,
       "joinEnabled": false,
       "codeEnabled": true,
       "mod": {

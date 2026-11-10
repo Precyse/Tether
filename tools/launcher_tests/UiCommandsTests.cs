@@ -16,6 +16,7 @@ public static class UiCommandsTests
         [Cmd.TabSelect] = """{"type":"tab.select","tab":"lobbies"}""",
         [Cmd.GameSelect] = """{"type":"game.select","gameId":"re0"}""",
         [Cmd.Host] = """{"type":"host"}""",
+        [Cmd.LocalStart] = """{"type":"local.start"}""",
         [Cmd.JoinCode] = """{"type":"join.code","code":"109775243712345678"}""",
         [Cmd.JoinFriend] = """{"type":"join.friend","lobbyId":"109775243712345678"}""",
         [Cmd.LobbyOpen] = """{"type":"lobby.open","lobbyId":"1"}""",

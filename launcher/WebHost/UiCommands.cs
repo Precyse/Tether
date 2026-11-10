@@ -14,6 +14,7 @@ internal static class Cmd
     public const string TabSelect = "tab.select";
     public const string GameSelect = "game.select";
     public const string Host = "host";
+    public const string LocalStart = "local.start";
     public const string JoinCode = "join.code";
     public const string JoinFriend = "join.friend";
     public const string LobbyOpen = "lobby.open";
@@ -112,6 +113,7 @@ internal static class UiCommands
         [Cmd.TabSelect] = [new("tab", FieldKind.Text, Choices: Tabs)],
         [Cmd.GameSelect] = [GameId],
         [Cmd.Host] = [],
+        [Cmd.LocalStart] = [],
         [Cmd.JoinCode] = [new("code", FieldKind.Text)],
         [Cmd.JoinFriend] = [LobbyId],
         [Cmd.LobbyOpen] = [LobbyId],
