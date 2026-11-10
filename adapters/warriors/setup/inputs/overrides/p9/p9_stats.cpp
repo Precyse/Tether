@@ -9,7 +9,7 @@ namespace warriors::p9 {
 namespace {
 
 constexpr std::uint32_t kStatsObject = 0x006FE490, kPlayerStatsBytes = 0xC0, kStatsHumanPanel = kPanelOffset;
-constexpr std::uint32_t kStatsMergePlayer2 = 0x00422DA0, kPlayerStatsReset = 0x00420A70;
+constexpr std::uint32_t kScoreFoldPlayerTwo = 0x00422DA0, kScoreRecordReset = 0x00420A70;
 constexpr std::uint32_t kCheckpointOffset = 0x180;                       // offset of the checkpoint copies inside kStatsBlocks (and of the checkpoint records in the object)
 constexpr std::uint32_t kExtraRecords = kMaxPlayers - kOriginalPlayers;
 constexpr std::uint32_t kNoPanel = 0;
@@ -33,7 +33,7 @@ bool extra_panel(std::uint32_t panel) { return panel >= kOriginalPlayers && pane
 
 }
 
-bool stats_get_player(ps2::Cpu &c) {
+bool score_record_of_player(ps2::Cpu &c) {
     if (c.r[4].w[0] != kStatsObject) return false;
     const std::uint32_t panel = ps2::ld32(c.r[5].w[0] + kStatsHumanPanel);
     if (!extra_panel(panel)) return false;
@@ -42,30 +42,30 @@ bool stats_get_player(ps2::Cpu &c) {
     return true;
 }
 
-bool stats_save_checkpoint(ps2::Cpu &c) {
+bool score_checkpoint_store(ps2::Cpu &c) {
     if (c.r[4].w[0] == kStatsObject) copy_bytes(kStatsBlocks + kCheckpointOffset, kStatsBlocks, kExtraRecords * kPlayerStatsBytes);
     return false;
 }
 
-bool stats_restore_checkpoint(ps2::Cpu &c) {
+bool score_checkpoint_load(ps2::Cpu &c) {
     if (c.r[4].w[0] == kStatsObject) copy_bytes(kStatsBlocks, kStatsBlocks + kCheckpointOffset, kExtraRecords * kPlayerStatsBytes);
     return false;
 }
 
-bool stats_reset_players(ps2::Cpu &c) {
+bool score_records_clear(ps2::Cpu &c) {
     if (c.r[4].w[0] != kStatsObject || panel_count() != kMaxPlayers) return false;
-    for (std::uint32_t panel = kOriginalPlayers; panel < kMaxPlayers; ++panel) ps2::call_guest(c, kPlayerStatsReset, record_of(panel));
+    for (std::uint32_t panel = kOriginalPlayers; panel < kMaxPlayers; ++panel) ps2::call_guest(c, kScoreRecordReset, record_of(panel));
     return false;
 }
 
 void set_leaving_panel(std::uint32_t panel) { g_leaving_panel = panel; }
 
-bool stats_merge_player2(ps2::Cpu &c) {
+bool score_fold_player_two(ps2::Cpu &c) {
     if (c.r[4].w[0] != kStatsObject || !extra_panel(g_leaving_panel)) return false;
     const std::uint32_t leaver = record_of(g_leaving_panel), second = kStatsObject + kPlayerStatsBytes;
     g_leaving_panel = kNoPanel;
     swap_bytes(second, leaver, kPlayerStatsBytes);
-    ps2::call_guest(c, kStatsMergePlayer2, kStatsObject);
+    ps2::call_guest(c, kScoreFoldPlayerTwo, kStatsObject);
     swap_bytes(second, leaver, kPlayerStatsBytes);
     c.pc = c.r[31].w[0];
     return true;

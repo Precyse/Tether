@@ -9,9 +9,9 @@
 // Enemy strength for 3 and 4 players, plus the host's friendly fire switch. The original has no co-op scaling: the same enemies face twice the targets. Two levers, both through the game's own numbers (the difficulty step is ai_difficulty.cpp):
 //  * how many enemies the spawners keep alive (the limit a spawner compares its living members with, and the global spawn maximum), read where the game reads them, so a
 //    level script's own caps (GangSetMaxConcurrent, SetSpawnMax) are scaled whenever they were set and whoever joined later;
-//  * how much damage takes an enemy's health down: Human_ApplyPendingDamage subtracts the pending damage from the health, so dividing it by the health percentage is the same as
+//  * how much damage takes an enemy's health down: damage_commit subtracts the pending damage from the health, so dividing it by the health percentage is the same as
 //    that much more health (the part that does not fit a whole point is carried per human in guest RAM). Bosses (character category 13) get their own, larger, percentage.
-// The percentages are per player count, in one table. The attackers per target need nothing: a target allows its own places for attackers (Brain_ClaimActiveAttacker), so
+// The percentages are per player count, in one table. The attackers per target need nothing: a target allows its own places for attackers (ai_reserve_attack_slot), so
 // each further player brings his own.
 namespace warriors::ai {
 

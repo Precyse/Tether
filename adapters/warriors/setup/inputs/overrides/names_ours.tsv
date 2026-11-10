@@ -1,0 +1,256 @@
+addr	name	purpose
+0x0010C100	ambience_emitter_pass	per-frame pass over ambient sound emitters (who can hear each)
+0x0010F810	sound_system_tick	per-frame sound system update, takes the listener array
+0x0010FC30	play_menu_cue	plays a menu/interface sound cue by id
+0x00111130	sound_cue_table	returns the sound system's interface cue table
+0x00112B10	task_list_step	runs the task list each frame (cutscene listener array)
+0x00113188	listener_closest_range	distance from an emitter to the nearest listener
+0x0011A170	sound_task_step	per-frame sound task (volume pairs per listener)
+0x0011E440	view_camera_drop	releases a view's camera
+0x0011E878	views_frame_tick	camera manager's once-per-frame update
+0x0011E9C0	views_wipe_slots	clears every camera slot at level start
+0x0011EAF0	views_attach_player	gives a joining player a camera and view slot
+0x0011ED60	views_detach_player	removes a leaving player's camera and view slot
+0x0011F9B0	view_camera_lookup	camera shown in a given view, 0 when none
+0x00121888	views_choose_sharing	decides which players share a view
+0x00122248	view_target_list_holds	whether a camera target list holds a handle
+0x00122438	view_target_list_remove	removes a handle from a camera target list
+0x00122B80	views_reset_for_level	resets the per-view switch arrays at level start
+0x00122CA0	views_apply_aspect	applies the screen aspect ratio to every camera
+0x00122ED0	views_arrange_grid	lays the views out on screen (full, halves, grid)
+0x00123500	view_player_counts	whether a player still counts for the view layout
+0x00126C40	follow_cam_share_or_split	decides whether the two follow cameras share one view or split
+0x00127C10	follow_cam_prime	first-frame set-up of a follow camera's state
+0x00127D48	follow_cam_aim_refresh	recomputes the look-at point after the targets changed
+0x00127D88	follow_cam_aim_point	computes the follow camera's look-at point from its targets
+0x001282A0	follow_cam_collect_targets	collects the humans a follow camera frames
+0x0012AAE0	follow_cam_zoom_ease	eases the near edge of the follow camera's distance band toward a wanted value
+0x0012AE58	follow_cam_step	per-frame follow camera update (position, field of view)
+0x001446D0	boot_sequence	program main: startup movies, then the front end
+0x00144A08	button_history_fetch	returns a pad's button history
+0x00144B88	button_down_query	whether a button is held
+0x00144BF0	button_edge_query	whether a button was newly pressed
+0x00144F98	button_state_set	writes a pad's current button state
+0x001454A8	pads_frame_step	per-frame pad update
+0x00145670	pads_state_reset	resets the pads' state machines
+0x001490B8	archive_index_lookup	looks a file name up in the archive index
+0x00149668	rumble_set	sets a pad's rumble motors
+0x00149770	pad_port_poll	polls one pad port
+0x00149E58	pad_port_decode_stick	decodes a pad record's stick and button bytes
+0x00158728	level_driver_step	per-frame level driver (builds the listener array)
+0x0015FE90	level_setup	level set-up entry (rebuilds the players)
+0x00160D78	level_enter_named	loads a level by name
+0x001612B0	loading_screen_open	a level load starts
+0x00161378	loading_screen_close	a level load ends
+0x00166308	crew_take_member	recruits a member into a gang or crew
+0x00166708	crew_player_info_refresh	caches a crew's player info each frame (spawn maximum)
+0x001681A0	crew_spawner_step	per-frame gang spawner update
+0x00174320	person_model_draw	draws a human's model
+0x00179808	text_measure	measures a string at a scale
+0x0017FD78	object_model_draw	draws an object's model
+0x00181170	on_object_list_read	the object list has been read
+0x00181B20	on_sprite_page_read	a sprite page's rectangle array has been read
+0x00182820	on_sprite_sheet_table_read	the sprite sheet table has been read
+0x00182DE0	sprite_submit	submits a sprite to the draw list
+0x00186710	on_file_read	a resource file has finished loading
+0x0018F230	throw_arc_wipe	clears a throw arc
+0x0018F268	throw_arc_build	builds a throw arc object
+0x0018FEE0	throw_arc_trace	traces a throw's aim path
+0x00194E28	display_wide_flag_set	sets the 4:3 / 16:9 flag
+0x00195238	screen_to_overlay_convert	converts a widget place to overlay sprite coordinates
+0x0019EE70	localized_text_get	returns a text string by id
+0x0019FBB0	crew_panel_init	crew panel set-up
+0x001A2060	widget_place	places a widget
+0x001AA290	wanted_panel_init	wanted-level panel set-up
+0x001AA5C0	wanted_panel_free	wanted-level panel tear-down
+0x001AA630	wanted_panel_place	places the wanted-level panel
+0x001AA6B8	wanted_panel_active	whether the wanted-level panel is on
+0x001AA6C0	wanted_panel_hide	hides the wanted-level panel
+0x001AA9B0	wanted_panel_step	per-frame wanted-level panel update
+0x001AABA8	wanted_panel_draw	draws the wanted-level panel
+0x001ACEE0	overlay_build	builds the HUD object
+0x001AD588	overlay_level_start	HUD set-up at level start
+0x001AE4D8	overlay_pads_prepare	makes sure the panels' virtual pads exist
+0x001AE5A0	overlay_pad_clear	clears the panels' pad assignments
+0x001AE898	overlay_pad_fetch	returns a panel's virtual pad
+0x001AE8D8	overlay_pad_assign	assigns a pad to a panel
+0x001AE980	overlay_level_end	HUD tear-down at level end
+0x001AF010	overlay_step	per-frame HUD update
+0x001B1688	overlay_draw	draws the HUD
+0x001B1F38	overlay_conceal	hides the HUD
+0x001B2030	overlay_conceal_panels	hides both player panels
+0x001B2088	overlay_reveal_panels	shows both player panels
+0x001B20F8	overlay_restore	restores the HUD after a hide
+0x001B21A8	overlay_conceal_for_menu	hides the HUD while a menu is up
+0x001B2200	overlay_bind_player	binds a player to a panel
+0x001B2330	overlay_panels_after_scene	shows the panels again after a cutscene
+0x001B2380	overlay_panels_apply_hide	applies a pending panel hide
+0x001B2520	overlay_wanted_set	sets the wanted level display
+0x001B2610	minimap_enable	turns a minimap on
+0x001B2658	minimap_disable	turns a minimap off
+0x001B26A8	minimap_tint_blue	tints the minimap blue
+0x001B2790	minimap_tint_grey	tints the minimap grey
+0x001B28A0	overlay_ring_request	requests a ground ring for a panel
+0x001B2950	overlay_stereo_theft_set	sets the stereo theft gauge
+0x001B2990	minimap_blip_add	adds a blip to the minimap
+0x001B2B18	minimap_blip_drop_by_item	removes a blip by item
+0x001B2B58	minimap_blip_drop_by_handle	removes a blip by object handle
+0x001B2BF0	minimap_blip_glyph_pin	pins a blip's glyph
+0x001B2C40	minimap_blip_size	sets a blip's size
+0x001B2CA0	minimap_blip_glyph	sets a blip's glyph
+0x001B2D80	minimap_blip_blink	sets a blip to blink
+0x001B2E10	minimap_range_set	sets the minimap range
+0x001B2E98	minimap_blip_modify	changes an existing blip
+0x001B2EE8	minimap_blip_add_person	adds a plain human blip
+0x001B3020	minimap_person_glyph_refresh	refreshes a human blip's glyph and arrow
+0x001B32E0	minimap_blip_style	sets a blip's display style
+0x001B3610	minimap_mark_hostiles	marks hostile humans on the minimap
+0x001B3918	overlay_post_banner_text	queues a scrolling banner line with a cue
+0x001B3960	overlay_name_tag_add	adds a name tag for a human
+0x001B39A0	overlay_name_tag_remove	removes a human's name tag
+0x001B3B68	overlay_mash_gauge_show	shows the button-mash gauge
+0x001B3BA8	overlay_mash_gauge_hide	hides the button-mash gauge
+0x001B3C78	overlay_mash_gauge_step	updates the button-mash gauge
+0x001B40E0	minimap_zoom_set	sets the minimap zoom
+0x001B4328	minimap_show_all	shows every minimap
+0x001B43A8	minimap_hide_all	hides every minimap
+0x001C3DE0	minimap_widget_init	minimap widget set-up
+0x001C41A0	minimap_widget_free	minimap widget tear-down
+0x001C42E0	minimap_widget_exists	whether the widget exists
+0x001C42E8	minimap_widget_blips_off	hides every blip of a widget
+0x001C4388	minimap_widget_show	shows a minimap widget
+0x001C4448	minimap_widget_hide	hides a minimap widget
+0x001C4A40	minimap_widget_blip_kind	sets a widget blip's kind
+0x001C5210	minimap_widget_step	per-frame minimap widget update
+0x001C60B0	minimap_widget_draw	draws a minimap widget
+0x001C8628	screen_stack_top	topmost screen of the screen stack
+0x001CB010	caption_kind_set	selects the caption style
+0x001CCF88	label_init	text label set-up
+0x001CD060	label_configure	configures a label (position, flags)
+0x001CD188	label_free	releases a text label
+0x001CD1C0	label_show	shows or hides a label
+0x001CD1C8	label_tint	sets a label's colour
+0x001CD1E0	label_text_set	sets a label's text (copies)
+0x001CE718	hint_box_retract	withdraws the game hint box
+0x001CEA70	hint_row_init	hint row set-up
+0x001CEB40	hint_row_configure	configures a hint row
+0x001CEC28	hint_row_text	sets a hint row's text
+0x001D3EF0	option_list_init	option list set-up
+0x001D4110	option_list_configure	configures an option list
+0x001D4230	option_list_add_row	adds a row to an option list
+0x001D43E8	option_list_selected	index of the selected row
+0x001D43F0	option_list_row_code	command code of a row
+0x001D4D28	option_list_focus_row	focuses the selected row
+0x001DAD88	overlay_show_objective	shows the mission objective line
+0x001DBEE0	pause_screen_open	pause menu opens
+0x001DCB20	pause_screen_close	pause menu closes
+0x00203300	continue_page_open	front-end page opens
+0x002036D8	continue_page_close	front-end page closes
+0x00203800	continue_page_command	front-end page receives a command
+0x002039C0	continue_page_step	front-end page per-frame update
+0x00203A58	continue_page_draw	front-end page draws
+0x00203B98	page_layout_choose	picks a page's layout table
+0x00204078	profile_slot_select	selects the profile slot
+0x00204BA0	controller_page_step	controller-setup page per-frame update
+0x00207E28	greet_page_step	greeting page per-frame update
+0x00209DA8	mode_page_open	mode-select page opens
+0x0020A268	mode_page_command	mode-select page receives a command
+0x0020A4B8	mode_page_step	mode-select page per-frame update
+0x0020DC98	player_panel_set_title	sets a panel's PLAYER n banner
+0x0020E028	player_panel_reveal	shows a player panel
+0x0020E058	player_panel_conceal	hides a player panel
+0x00212840	player_panel_init	player panel set-up
+0x00213290	player_panel_draw	draws a player panel
+0x00214138	player_panel_layout	lays a panel's parts out from its base place
+0x00214BC8	player_panel_redraw_tally	redraws a panel's tally marks
+0x00218008	person_init	builds a human
+0x00222B18	player_slot_state	returns a panel's player state record
+0x002271F0	overhead_marker_show	shows the overhead marker
+0x00227428	overhead_marker_present	whether an overhead marker of a type is set
+0x00227D28	person_in_scene	whether a human is in a scene state
+0x00227EB0	person_in_scene_bit	tests the state bit 0x100000000
+0x00229C40	spawn_player_human	turns a human into a player
+0x0022A2A8	demote_player_human	releases a player's pad, panel, list slot and inventory
+0x0022A770	crew_next_playable	picks the next crew member a joining player controls
+0x0022EB40	restore_health	restores a human's health
+0x002384F8	person_attach_input	hands a human to a pad
+0x00238A88	marker_attach_spinning	attaches a spinning marker above a human
+0x00238AE0	marker_detach_spinning	removes a human's spinning marker
+0x00238B18	marker_spinning_tint	sets the spinning marker's colour fade
+0x0023B138	warp_person_beside	moves a human next to another
+0x00244770	throw_aim_step	moves a human's throw aim
+0x0024A230	ring_queue_health	queues the health rings
+0x0024B190	ring_find_fresh_fade	finds a recent entry of the ring fade-in list
+0x0024B2A8	marker_attach_on_respawn	respawn variant that attaches the spinning marker
+0x0024B3D8	rings_target_step	ring update for the current target
+0x0024B780	rings_step	per-frame ground ring update
+0x00254E78	person_action_step	per-frame action update of a human
+0x00258A88	person_unlink_partner	breaks the partner pair of a human
+0x00264CF8	fury_add	adds to a human's fury meter
+0x00265DD0	fury_register_hit	records a hit on the fury meter
+0x00265F70	damage_commit	applies queued damage and reactions
+0x0028A360	ai_install_type_handlers	installs the per-type AI handlers (player, cop, gang soldier, ...)
+0x0028AC80	ai_scan_for_players	AI scan for players in view
+0x0028BF40	ai_sight_test	line-of-sight test from an AI to a player
+0x0028BF88	ai_remembers_player	whether an AI has spotted a player before
+0x00291008	ai_reserve_attack_slot	reserves an attacker place on a target
+0x002F0318	turret_goal_choose_victim	a stationary shooter's random target pick
+0x00303260	player_ai_step	think step of a player-controlled human's brain (weapon swap prompt)
+0x003579A0	run_script_file	runs a script file (needs the thread scheduler)
+0x00385BB8	warp_object	moves an object to a place and heading
+0x00385DB0	warp_object_to_marker	moves an object to a placed marker
+0x00390268	handle_to_object	resolves a handle to its object address
+0x00390F18	object_type_register	adds a new object type record to the type table
+0x00391340	type_list_append	appends a record to the object type list
+0x00391378	type_list_extend	grows the object type list
+0x0039CBF0	cutscene_task_step	per-frame cutscene task
+0x003E8FA0	floating_marker_setup	creates a floating (spinning) marker
+0x0040C5E0	archive_open	opens the archive and builds its index
+0x004129C0	trigger_box_holds_object	whether an object is inside a box
+0x00413218	trigger_box_pool_init	builds the pool of trigger boxes
+0x004134F8	trigger_box_step	per-frame trigger box update
+0x00418588	session_state_init	builds the session state object
+0x00418C68	session_level_reset	resets session state for a level
+0x004197A8	session_failure_check	game-over check, runs every frame
+0x00419AC0	session_set_two_player	switches the two-player flag
+0x00419B10	session_add_player	adds a player to the session's list
+0x00419DA0	throw_arcs_draw	draws every throw arc
+0x0041A370	session_step	per-frame session update
+0x0041A460	session_match_player_count	creates or removes players to match the pad count
+0x0041B148	session_run_coop_callback	calls the level script's multiplayer join callback
+0x0041B7A0	session_raise_scripted_wanted	starts a scripted crime/wanted event
+0x0041CEF0	session_set_chapter	selects the current chapter/section
+0x0041D110	session_is_armies_level	whether the level is an Armies of the Night level
+0x0041D820	session_difficulty_read	reads the profile's difficulty
+0x0041DF40	loadout_init	builds the carried-items object
+0x0041E040	loadout_empty	empties all carried items
+0x0041E0B8	loadout_snapshot_store	copies carried items into the checkpoint copy
+0x0041E168	loadout_snapshot_load	restores carried items from the checkpoint copy
+0x0041E250	loadout_set_item	sets one carried item entry
+0x0041E3D8	loadout_has_item	whether an item is carried
+0x0041E420	loadout_amount	count of one carried item
+0x0041E5B0	loadout_give_item	adds an item to a player's carried items
+0x0041E9D8	loadout_set_amount	sets the count of one carried item
+0x0041EC60	loadout_clear_for_player	clears a player's carried items with checks
+0x00420A70	score_record_reset	resets a player's score record
+0x00422630	script_score_query	the score query scripts call for a player
+0x004228A0	score_record_of_player	returns a player's score record
+0x00422930	score_records_clear	clears the players' records
+0x00422998	score_value_of	running score of a human's record
+0x00422C60	score_checkpoint_store	stores records into the checkpoint copy
+0x00422D00	score_checkpoint_load	restores records from the checkpoint copy
+0x00422DA0	score_fold_player_two	folds player 2's record into the shared one
+0x00424130	unlock_is_set	whether a data unlock is set
+0x00429FE8	video_session_run	runs the video playback loop
+0x0042A6C0	video_session_close	closes a video playback session
+0x0042A820	video_skip_poll	polls the pads for a skip press during a movie
+0x0042A938	video_play_clip	plays a named movie clip
+0x004DAD40	handle_list4_compact	compacts a four-handle list
+0x004E44E0	delete_checked	the game's checked delete of an object
+-	PlayerPanel	structure: one player's HUD panel (layout tables, tally marks, banner)
+-	CrewPanel	structure: the crew widget at the start of the HUD object
+-	OverlaySwitch	structure: the HUD on/off toggle inside the crew widget
+-	ScoreRecord	structure: one player's score record (0xC0 bytes)
+-	PadSeatRecord	structure: the per-pad record that seats a player
+-	HandleList16	structure: list of up to 16 object handles
+-	ThrowPath	structure: one throw arc (0x30 bytes)

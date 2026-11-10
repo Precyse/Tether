@@ -7,7 +7,7 @@
 // (game state +0x43c), once, when the level loads; the scripts set every power class (attack delay, hurt threshold, weapon stun) and re-run CfgChar. So the step is taken where the
 // game reads it: GetProfileDifficulty answers one step higher for a session of three players and two for four, and the level then loads the harder script itself. The size of the
 // session is what the launcher's roster says (the same on every machine, known at level load, unlike the players who have joined by then). Levels that force their own difficulty in
-// global.lua (the lessons) never ask. Running the next script in the middle of a level is not possible from a hook (ScriptSystem_DoFileLua needs the thread scheduler).
+// global.lua (the lessons) never ask. Running the next script in the middle of a level is not possible from a hook (run_script_file needs the thread scheduler).
 namespace warriors::ai {
 
 namespace {

@@ -9,32 +9,36 @@
 // Entry points the edited camera code calls (p9_edits_cam.py). The camera manager's per-player arrays hold four entries in extra RAM (p9_game.hpp, kCam).
 namespace warriors::p9 {
 
+constexpr float kHeadHeight = 1.9f;               // metres above a player's feet to the top of his head: what must stay in the picture, and what a camera must not get close to
+
 // Takes over the words of a snapshot made before the arrays moved; the first thing every function that reads them does.
 void ensure_cameras(ps2::Cpu &c);
-// Cameras_AddPlayer(slot): a player beyond the original two gets the camera switches of player 2 and widens the loops over the slots.
-void cameras_add_player(ps2::Cpu &c);
-// The camera shown in view `view` (Camera_GetPlayerCamera), 0 when there is none.
+// views_attach_player(slot): a player beyond the original two gets the camera switches of player 2 and widens the loops over the slots.
+void views_attach_player(ps2::Cpu &c);
+// The camera shown in view `view` (view_camera_lookup), 0 when there is none.
 std::uint32_t player_view_camera(std::uint32_t view);
 // How many slots the manager's two-entry loops cover, as the last index: 1 until a third player has a camera.
 std::uint32_t cam_last_slot();
-// Cameras_ClearSlots: the slot count its loop clears; afterwards only the original two slots are in use.
+// views_wipe_slots: the slot count its loop clears; afterwards only the original two slots are in use.
 std::uint32_t release_cam_slots();
-// Camera_Release(camera, force): a camera that is a further player's base camera is not released unless forced.
+// view_camera_drop(camera, force): a camera that is a further player's base camera is not released unless forced.
 bool release_blocked(ps2::Cpu &c);
-// The end of Camera_Release: the further players' base and view entries that held the camera are cleared.
+// The end of view_camera_drop: the further players' base and view entries that held the camera are cleared.
 void release_extra_slots(std::uint32_t camera);
 
-// Cameras_DecideViews: with three or more players in normal play the views follow the clusters of players who stay together. True when handled.
+// views_choose_sharing: with three or more players in normal play the views are one combined view or one view per player (p9_views.cpp). True when handled.
 bool decide_views(ps2::Cpu &c);
-// Cam_Follow_GatherTargets(camera): the targets of a follow camera under those views. True when handled.
+// follow_cam_collect_targets(camera): the targets of a follow camera under those views. True when handled.
 bool gather_targets(ps2::Cpu &c);
 
-// The cap on the follow camera's field of view easing (float bits, degrees per second): the game's 7.5, or 30 with three or more players, whose framing widens the
-// field of view when a wall keeps the camera from standing back (p9_framing.cpp).
-std::uint32_t fov_rate_cap();
+// The split screen setting (p9_split_mode.cpp): true when the layout is held on one view per player. poll_split_request, once a frame, changes the setting when a pad
+// holds the request chord (SELECT, L3 and R3) that was not held the frame before.
+bool split_always();
+void poll_split_request();
+
 // The view (in view order) that player `slot` is shown in and his place among the players sharing it. False outside normal play with three or more players.
 bool view_place(std::uint32_t slot, std::uint32_t &view, std::uint32_t &stack);
-// PlayerHUD_Update: with the screen split, a panel sits at the corner of its player's view (p9_panels.cpp).
+// player_panel_layout: with the screen split, a panel sits at the corner of its player's view (p9_panels.cpp).
 void split_panel_base(ps2::Cpu &c, std::uint32_t player_hud);
 
 // Once a frame: works out which part of the split screen the player of this machine sees in an online session and tells the window (ps2::set_view_probe, display
@@ -43,7 +47,7 @@ void publish_local_view();
 // The window's probe: the rectangle published by publish_local_view; false while the whole picture is to be shown.
 bool local_view(ps2::ViewRect &view);
 
-// Cam_Follow_LookAt, after it averaged the targets: a camera that frames a cluster looks at the centre of the whole cluster (p9_framing.cpp).
+// follow_cam_aim_point, after it averaged the targets: the combined camera looks at the centre of all the players it frames (p9_framing.cpp).
 void cluster_look_at(std::uint32_t camera);
 
 }

@@ -31,11 +31,11 @@ std::string mission_number() {
 
 }
 
-void load_screen_begin(ps2::Cpu &) {
+void loading_screen_open(ps2::Cpu &) {
     if (coop_session()) ps2::netplay::load_begin(level_name(), mission_number());
 }
 
-void load_screen_end(ps2::Cpu &) {
+void loading_screen_close(ps2::Cpu &) {
     ps2::netplay::load_end();
 }
 

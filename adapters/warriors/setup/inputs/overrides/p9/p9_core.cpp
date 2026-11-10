@@ -11,7 +11,7 @@ namespace warriors::p9 {
 
 namespace {
 
-constexpr std::uint32_t kThrowArcClear = 0x0018F230, kThrowArcCreate = 0x0018F268;   // ThrowArc_Clear / ThrowArc_Create(arc)
+constexpr std::uint32_t kThrowArcWipe = 0x0018F230, kThrowArcBuild = 0x0018F268;   // throw_arc_wipe / throw_arc_build(arc)
 constexpr std::uint32_t kAreaSize = 0x2000;
 
 void zero(std::uint32_t at, std::uint32_t bytes) {
@@ -58,15 +58,15 @@ void frame_start(ps2::Cpu &c) {
     }
 }
 
-// The arc of list slot 2 or 3 is built the way GameState_Construct builds the first two (cleared, then created), when its player is added.
-bool player_list_add(ps2::Cpu &c) {
+// The arc of list slot 2 or 3 is built the way session_state_init builds the first two (cleared, then created), when its player is added.
+bool session_add_player(ps2::Cpu &c) {
     const std::uint32_t slot = ps2::ld16(c.r[4].w[0] + kPlayerCountOffset);
     if (slot < kOriginalPlayers || slot >= kMaxPlayers) return false;
     build_hud2(c);
     const std::uint32_t arc = kThrowArcs + slot * kThrowArcSize;
     if (ps2::ld32(arc)) return false;   // already built for this game state
-    ps2::call_guest(c, kThrowArcClear, arc);
-    ps2::call_guest(c, kThrowArcCreate, arc);
+    ps2::call_guest(c, kThrowArcWipe, arc);
+    ps2::call_guest(c, kThrowArcBuild, arc);
     inventory_init_slot(slot);
     return false;
 }
@@ -92,7 +92,7 @@ void trace_call(ps2::Cpu &c, const char *name) {
 
 std::uint32_t throw_arc_offset() { return kThrowArcs - game(); }
 
-// `list slot * 0x5c` of the functions that address the player state blocks inline (Human_UpdateActions, Human_AddRage, Rage_NoteHit, GameState_ResetForLevel): the
+// `list slot * 0x5c` of the functions that address the player state blocks inline (person_action_step, fury_add, fury_register_hit, session_level_reset): the
 // blocks of slots 2 and 3 are not at game + 0x168 + slot * 0x5c (that is the handle list) but in the phase 9 area.
 void state_mult(ps2::Cpu &c, int pipe, std::uint32_t slot, std::uint32_t stride) {
     ps2::mmi::mult(c, pipe, slot, stride);

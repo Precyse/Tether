@@ -14,11 +14,11 @@ namespace {
 
 constexpr std::uint32_t kLobbyControllerWord = kLobbyState + 0x2C;   // the flow controller the lobby's transitions were added to
 constexpr std::uint32_t kTransitionContinueProfile = 0, kTransitionContinueCreate = 2, kTransitionModeContinue = 4;
-constexpr std::uint32_t kFadeObject = 0x005FDEB8, kFadeOffset = 0x1D8;   // PM_Mode_OnCommand ignores input while this float is not zero
+constexpr std::uint32_t kFadeObject = 0x005FDEB8, kFadeOffset = 0x1D8;   // mode_page_command ignores input while this float is not zero
 constexpr std::uint32_t kCoopCode = 4, kCoopIndex = 1;   // CO-OP is the second item
 constexpr std::uint32_t kStringQuickRumble = 0x79, kStringExtras = 0x8A, kCodeQuickRumble = 1, kCodeExtras = 5;
 constexpr std::uint32_t kGridItemFont = 6, kGridItemSpacing = 4, kGridItemFlag = 1, kGridStackFlag = 1;
-constexpr std::uint32_t kGridSelectionOffset = 0xA4;   // the selected item; OptionGrid_Focus (run next, by the original) focuses it
+constexpr std::uint32_t kGridSelectionOffset = 0xA4;   // the selected item; option_list_focus_row (run next, by the original) focuses it
 constexpr float kMenuItemSize = 1.15f;
 constexpr std::uint64_t kRowsWithCoop = 0x200000002ull;   // items per row, one 32-bit word per row: two rows of two (the game's own is 2 and 1)
 constexpr std::uint32_t kGreetStartPressed = 0x94;   // PM_Greet: START was pressed (the game's own Update reads it, then leaves for the menu)
@@ -67,7 +67,7 @@ void controller_update(ps2::Cpu &c) {
     }();
     (void)installed;
     const std::uint32_t controller = c.r[4].w[0];
-    const std::uint32_t top = guest(c, kFlowGetTop, {controller});
+    const std::uint32_t top = guest(c, kScreenStackTop, {controller});
     if (top && top == ps2::ld32(controller + kControllerGreet) + kScreenSubobject) g_title_frame = ps2::frame_count();
     if (coop_session() && ps2::ld32(kLobbyControllerWord) != controller) add_lobby_transitions(c, controller);
 }
@@ -83,11 +83,11 @@ bool menu_add_coop_items(ps2::Cpu &c) {
     const std::uint32_t grid = ps2::ld32(screen + kScreenGrid);
     const std::uint32_t colour = ps2::ld32(kColourRed);
     const auto add = [&](std::uint32_t text, std::uint32_t colon_after, std::uint32_t code) {
-        guest(c, kGridAddItem, {grid, text, colon_after, code, kGridItemSpacing, kGridItemFlag, colour, kGridItemFont}, float_bits(kMenuItemSize), {kGridStackFlag});
+        guest(c, kOptionListAddRow, {grid, text, colon_after, code, kGridItemSpacing, kGridItemFlag, colour, kGridItemFont}, float_bits(kMenuItemSize), {kGridStackFlag});
     };
     add(put_text(kTempText, "CO-OP"), 0, kCoopCode);
-    add(guest(c, kGlobalStringGet, {kStringQuickRumble}), 1, kCodeQuickRumble);
-    add(guest(c, kGlobalStringGet, {kStringExtras}), 0, kCodeExtras);
+    add(guest(c, kLocalizedTextGet, {kStringQuickRumble}), 1, kCodeQuickRumble);
+    add(guest(c, kLocalizedTextGet, {kStringExtras}), 0, kCodeExtras);
     ps2::st32(grid + kGridSelectionOffset, kCoopIndex);
     return true;
 }
@@ -105,7 +105,7 @@ void menu_update(ps2::Cpu &c) {
     const std::uint32_t screen = c.r[4].w[0];
     if (ps2::ld32(screen + kScreenCreated) == 0 || ps2::ld32(screen + kScreenGrid) == 0 || ps2::ld32(ps2::ld32(kFadeObject) + kFadeOffset) != 0) return;
     ps2::st32(kAutoEntry, kEntryMenuPassed);
-    guest(c, kHudBindPad, {kHudPads, 0, 0});   // the front end listens to the pad that pressed START (the game binds it then); here it is the host's
+    guest(c, kOverlayPadAssign, {kHudPads, 0, 0});   // the front end listens to the pad that pressed START (the game binds it then); here it is the host's
     ps2::st32(screen + kScreenResult, kTransitionModeContinue);
 }
 
@@ -114,7 +114,7 @@ bool menu_command(ps2::Cpu &c) {
     const std::uint32_t screen = c.r[4].w[0];
     if (c.r[5].w[0] != kAccept || ps2::ld32(ps2::ld32(kFadeObject) + kFadeOffset) != 0) return false;
     const std::uint32_t grid = ps2::ld32(screen + kScreenGrid);
-    if (guest(c, kGridItemCode, {grid, guest(c, kGridSelected, {grid})}) != kCoopCode) return false;
+    if (guest(c, kOptionListRowCode, {grid, guest(c, kOptionListSelected, {grid})}) != kCoopCode) return false;
     play_cue(c, kCueAccept);
     ps2::st32(screen + kScreenResult, kTransitionModeContinue);
     handled(c, 1);

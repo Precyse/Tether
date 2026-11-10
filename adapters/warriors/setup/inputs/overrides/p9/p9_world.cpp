@@ -11,9 +11,9 @@ namespace warriors::p9 {
 
 namespace {
 
-constexpr std::uint32_t kIsInScene = 0x00227D28, kHandleResolve = 0x00390268;
+constexpr std::uint32_t kPersonInScene = 0x00227D28, kHandleToObject = 0x00390268;
 constexpr std::uint32_t kFollowCamera = 2, kRailCamera = 9, kPlainCamera = 0, kLevelFlowOffset = 0x14C, kViewCount = 0x0050B198;
-constexpr std::uint32_t kHandleScratch = kBase + 0x14;    // a handle in guest memory for Handle_ResolveThunk
+constexpr std::uint32_t kHandleScratch = kBase + 0x14;    // a handle in guest memory for handle_to_object
 constexpr std::uint32_t kCameraTypeSlot = 0x1EC, kCameraAdjustSlot = 0x1E8;   // vtable: type function, and the s16 `this` adjustment before it
 
 }
@@ -34,11 +34,11 @@ float human_distance(std::uint32_t a, std::uint32_t b) {
     return std::sqrt(dx * dx + dy * dy + dz * dz);
 }
 
-bool in_scene(ps2::Cpu &c, std::uint32_t human) { return ps2::call_guest(c, kIsInScene, human) != 0; }
+bool in_scene(ps2::Cpu &c, std::uint32_t human) { return ps2::call_guest(c, kPersonInScene, human) != 0; }
 
 std::uint32_t resolve_handle(ps2::Cpu &c, std::uint32_t handle) {
     ps2::st32(kHandleScratch, handle);
-    return ps2::call_guest(c, kHandleResolve, kHandleScratch);
+    return ps2::call_guest(c, kHandleToObject, kHandleScratch);
 }
 
 std::uint32_t camera_type(ps2::Cpu &c) {
@@ -48,7 +48,7 @@ std::uint32_t camera_type(ps2::Cpu &c) {
     return ps2::call_guest(c, ps2::ld32(table + kCameraTypeSlot), camera + static_cast<std::uint32_t>(static_cast<std::int16_t>(ps2::ld16(table + kCameraAdjustSlot))));
 }
 
-// The game's own gate of a START join (Gm_Level_Update): the level flow is idle and some view shows a follow, a rail or a plain camera. A rail section (a chase) allows
+// The game's own gate of a START join (level_driver_step): the level flow is idle and some view shows a follow, a rail or a plain camera. A rail section (a chase) allows
 // it as well; the leader stands in no scene, so the join's own scene starts cleanly.
 bool join_gate_open(ps2::Cpu &c) {
     if (!game() || ps2::ld32(game() + kLevelFlowOffset) != 0) return false;

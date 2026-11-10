@@ -13,28 +13,28 @@
 namespace warriors::ui {
 
 // Guest functions.
-constexpr std::uint32_t kGlobalStringGet = 0x0019EE70;        // GlobalString_Get(id) -> char *
-constexpr std::uint32_t kPlayCue = 0x0010FC30;                // Sound_PlayInterfaceCue(*kCueTablePointer, id)
-constexpr std::uint32_t kFontSize = 0x00179808;               // Font_Size(f12 = scale, out[16])
-constexpr std::uint32_t kTextConstruct = 0x001CCF88;          // TextWidget_Construct(widget)
-constexpr std::uint32_t kTextRelease = 0x001CD188;            // TextWidget_Release(widget)
-constexpr std::uint32_t kTextSetVisible = 0x001CD1C0;         // TextWidget_SetVisible(widget, flag)
-constexpr std::uint32_t kTextSetColour = 0x001CD1C8;          // TextWidget_SetColour(widget, &rgba)
-constexpr std::uint32_t kTextSetText = 0x001CD1E0;            // TextWidget_SetText(widget, char *) (copies)
-constexpr std::uint32_t kDeleteText = 0x004E44E0;             // SafeDelete_CreditsShutdown(widget, file, line): the game's delete of a TextWidget
-constexpr std::uint32_t kGridConstruct = 0x001D3EF0;          // OptionGrid_Construct(grid)
-constexpr std::uint32_t kGridSetup = 0x001D4110;              // OptionGrid_Setup(grid, rows[16], 1, pad, f12 = y)
-constexpr std::uint32_t kGridAddItem = 0x001D4230;            // OptionGrid_AddItem(grid, text, colon_after, code, 4, 1, colour, font, [sp] 1, f12 = size): colon_after 1 draws " :" after the item (the first of a row)
-constexpr std::uint32_t kGridSelected = 0x001D43E8;           // OptionGrid_GetSelected(grid)
-constexpr std::uint32_t kGridItemCode = 0x001D43F0;           // OptionGrid_GetItemCode(grid, index)
-constexpr std::uint32_t kUsageConstruct = 0x001CEA70;         // UsageInfo_Construct(usage)
-constexpr std::uint32_t kUsageSetup = 0x001CEB40;             // UsageInfo_Setup(usage, &pos, 1)
-constexpr std::uint32_t kUsageSetText = 0x001CEC28;           // UsageInfo_SetText(usage, char *)
-constexpr std::uint32_t kFlowGetTop = 0x001C8628;             // ScreenFlowController_GetTop(controller) -> screen + 0x70
-constexpr std::uint32_t kSetTwoPlayerActive = 0x00419AC0;     // GameState_SetTwoPlayerActive(game, flag)
-constexpr std::uint32_t kSetProfileSlot = 0x00204078;         // PM_SetProfileSlot(slot)
-constexpr std::uint32_t kHudBindPad = 0x001AE8D8;             // HUD_BindPad(pads, virtual pad, physical pad): the pad the front end listens to
-constexpr std::uint32_t kContinueOnCommand = 0x00203800;      // PM_Continue_OnCommand(screen, command)
+constexpr std::uint32_t kLocalizedTextGet = 0x0019EE70;        // localized_text_get(id) -> char *
+constexpr std::uint32_t kPlayMenuCue = 0x0010FC30;                // play_menu_cue(*kCueTablePointer, id)
+constexpr std::uint32_t kTextMeasure = 0x00179808;               // text_measure(f12 = scale, out[16])
+constexpr std::uint32_t kLabelInit = 0x001CCF88;          // label_init(widget)
+constexpr std::uint32_t kLabelFree = 0x001CD188;            // label_free(widget)
+constexpr std::uint32_t kLabelShow = 0x001CD1C0;         // label_show(widget, flag)
+constexpr std::uint32_t kLabelTint = 0x001CD1C8;          // label_tint(widget, &rgba)
+constexpr std::uint32_t kLabelTextSet = 0x001CD1E0;            // label_text_set(widget, char *) (copies)
+constexpr std::uint32_t kDeleteChecked = 0x004E44E0;             // delete_checked(widget, file, line): the game's delete of a TextWidget
+constexpr std::uint32_t kOptionListInit = 0x001D3EF0;          // option_list_init(grid)
+constexpr std::uint32_t kOptionListConfigure = 0x001D4110;              // option_list_configure(grid, rows[16], 1, pad, f12 = y)
+constexpr std::uint32_t kOptionListAddRow = 0x001D4230;            // option_list_add_row(grid, text, colon_after, code, 4, 1, colour, font, [sp] 1, f12 = size): colon_after 1 draws " :" after the item (the first of a row)
+constexpr std::uint32_t kOptionListSelected = 0x001D43E8;           // option_list_selected(grid)
+constexpr std::uint32_t kOptionListRowCode = 0x001D43F0;           // option_list_row_code(grid, index)
+constexpr std::uint32_t kHintRowInit = 0x001CEA70;         // hint_row_init(usage)
+constexpr std::uint32_t kHintRowConfigure = 0x001CEB40;             // hint_row_configure(usage, &pos, 1)
+constexpr std::uint32_t kHintRowText = 0x001CEC28;           // hint_row_text(usage, char *)
+constexpr std::uint32_t kScreenStackTop = 0x001C8628;             // screen_stack_top(controller) -> screen + 0x70
+constexpr std::uint32_t kSessionSetTwoPlayer = 0x00419AC0;     // session_set_two_player(game, flag)
+constexpr std::uint32_t kProfileSlotSelect = 0x00204078;         // profile_slot_select(slot)
+constexpr std::uint32_t kOverlayPadAssign = 0x001AE8D8;             // overlay_pad_assign(pads, virtual pad, physical pad): the pad the front end listens to
+constexpr std::uint32_t kContinuePageCommand = 0x00203800;      // continue_page_command(screen, command)
 
 // Game data.
 constexpr std::uint32_t kLevelNameOffset = 0x124, kLevelNameBytes = 32, kLevelIndexOffset = 0x56DC;   // the level being loaded, a string in the game state
@@ -42,16 +42,16 @@ constexpr std::uint32_t kHudPads = 0x00600840;                // the HUD's table
 constexpr std::uint32_t kHeapPointer = 0x005127E4;            // the heap object every widget is allocated from
 constexpr std::uint32_t kCueTablePointer = 0x0050AA84;
 constexpr std::uint32_t kGameStatePointer = 0x0051489C;
-constexpr std::uint32_t kLayoutFloats = 0x0050F5C4;           // PM_PickLayout's table: x, then the grid and title rows, usage row at +0x24
+constexpr std::uint32_t kLayoutFloats = 0x0050F5C4;           // page_layout_choose's table: x, then the grid and title rows, usage row at +0x24
 constexpr std::uint32_t kTagWidget = 0x00558498, kTagFile = 0x005584A8;   // names the heap records for its debugging; any string will do
 constexpr std::uint32_t kColourRed = 0x005FD328, kColourGrey = 0x005FD310, kColourDim = 0x005FD320;   // front-end colours (words in memory, ABGR)
 
 // The game's player list: the count and the handles in the game state, each human's record (the pad record it is bound to at +0x19, -1 for none).
-constexpr std::uint32_t kPlayerCountOffset = 0x224, kPlayerHandlesOffset = 0x228, kHandleResolve = 0x00390268;
+constexpr std::uint32_t kPlayerCountOffset = 0x224, kPlayerHandlesOffset = 0x228, kHandleToObject = 0x00390268;
 constexpr std::uint32_t kPlayerRecords = 0x00660F50, kPlayerRecordBytes = 0x2C, kHumanRecordIndex = 0x92, kRecordPad = 0x19;
 constexpr std::uint32_t kPlayerSlots = 4;
 
-// Cues of Sound_PlayInterfaceCue.
+// Cues of play_menu_cue.
 constexpr std::uint32_t kCueAccept = 9, kCueRefused = 0xE;
 
 // PM screen objects (the flow controller's fields) and the PM_Continue object.
@@ -59,16 +59,16 @@ constexpr std::uint32_t kControllerGreet = 0x64, kControllerContinue = 0x88, kCo
 constexpr std::uint32_t kScreenSubobject = 0x70;              // the flow stores screen + 0x70
 constexpr std::uint32_t kScreenCreated = 0x0C, kScreenResult = 0x74, kScreenGrid = 0x8C, kScreenUsage = 0x90, kScreenText = 0x94, kScreenPad = 0x50;
 
-// Text widget flags (TextWidget_Setup's last argument): 4 is the front end's spacing, plus 1 right-aligned.
+// Text widget flags (label_configure's last argument): 4 is the front end's spacing, plus 1 right-aligned.
 constexpr std::uint32_t kTextLeft = 4, kTextRight = 5;
 constexpr std::uint32_t kTextWidgetSize = 0xD0;
-constexpr std::uint32_t kFrontEndFont = 6;     // TextWidget_Setup's ninth argument (on the stack): big_font
+constexpr std::uint32_t kFrontEndFont = 6;     // label_configure's ninth argument (on the stack): big_font
 
 // Words of guest RAM the front end keeps (they are in every snapshot and digest): the bytes above the main thread's stack, after the seats' words
 // (coop_game.hpp kScratch + 0x00 to 0x7F).
 constexpr std::uint32_t kScratch = 0x01FFFE00;
 constexpr std::uint32_t kLobbyState = kScratch + 0x80;        // 0x30 bytes: the lobby's words (ui_lobby.cpp, cleared when it opens) and the front end's own (below)
-constexpr std::uint32_t kSkipNextMovie = kLobbyState + 0x24;   // 1 between Movie_Play and BinkMovie_Play of a movie to skip, ui_boot.cpp
+constexpr std::uint32_t kSkipNextMovie = kLobbyState + 0x24;   // 1 between video_play_clip and video_session_run of a movie to skip, ui_boot.cpp
 constexpr std::uint32_t kAutoEntry = kLobbyState + 0x28;       // the launcher's boot into the lobby: 0 not started, 1 the title is passed, 2 the menu is passed, ui_front.cpp
 constexpr std::uint32_t kWidgetTable = kScratch + 0xB0;       // 20 widget pointers
 constexpr std::uint32_t kTemp = kScratch + 0x100;             // pos[16], size[16], text[0x60]
@@ -126,7 +126,7 @@ inline std::uint32_t put_text(std::uint32_t address, const std::string &text, st
 inline int player_pad(ps2::Cpu &c, std::uint32_t slot) {
     const std::uint32_t game = ps2::ld32(kGameStatePointer);
     if (!game || slot >= kPlayerSlots) return -1;
-    const std::uint32_t human = guest(c, kHandleResolve, {game + kPlayerHandlesOffset + slot * 4});
+    const std::uint32_t human = guest(c, kHandleToObject, {game + kPlayerHandlesOffset + slot * 4});
     return human ? static_cast<std::int8_t>(ps2::ld8(kPlayerRecords + signed_half(human + kHumanRecordIndex) * kPlayerRecordBytes + kRecordPad)) : -1;
 }
 
@@ -143,6 +143,6 @@ inline std::uint32_t allocate(ps2::Cpu &c, std::uint32_t bytes, std::uint32_t li
     return ps2::call_guest(c, ps2::ld32(table + 0x54), call);
 }
 
-inline void play_cue(ps2::Cpu &c, std::uint32_t cue) { guest(c, kPlayCue, {ps2::ld32(kCueTablePointer), cue}); }
+inline void play_cue(ps2::Cpu &c, std::uint32_t cue) { guest(c, kPlayMenuCue, {ps2::ld32(kCueTablePointer), cue}); }
 
 }

@@ -8,7 +8,7 @@
 
 // Whose pause menu it is. The game's pause menu answers to the player who opened it (the menu's +0x1bc0 is that player's slot, written before the menu opens); with
 // four players nobody else can tell who holds it. The overlay shows "PAUSED BY <name>" on every machine while it is open: the name is the roster name of the pad of
-// that player, read from guest memory at the entry of PauseMenu_Open and cleared at the entry of PauseMenu_Close. Display only, nothing is written to the game.
+// that player, read from guest memory at the entry of pause_screen_open and cleared at the entry of pause_screen_close. Display only, nothing is written to the game.
 namespace warriors::ui {
 
 namespace {

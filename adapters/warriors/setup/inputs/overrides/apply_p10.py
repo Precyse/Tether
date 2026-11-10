@@ -37,8 +37,8 @@ import p9_edits_core as core  # noqa: E402
 import p9_edits_hud as hud  # noqa: E402
 
 # Edit tables of the further areas, each its own file and imported when present (each defines any of ENTRY_HOOKS, EDITS, FUNC_EDITS and HEADER, a hook header
-# every edited unit includes): textures and object list, ground rings and radars, cameras and split screen, leave and revive.
-AREA_MODULES = ["p9_edits_tex", "p9_edits_ring", "p9_edits_cam", "p9_edits_leave", "p9_edits_flow", "ui_edits", "ai_edits"]
+# every edited unit includes): textures and object list, ground rings and radars, cameras and split screen, leave and revive, display-only changes (panel scale, near fade).
+AREA_MODULES = ["p9_edits_tex", "p9_edits_ring", "p9_edits_cam", "p9_edits_leave", "p9_edits_flow", "p9_edits_display", "ui_edits", "ai_edits"]
 SELECTED = os.environ["P9_AREAS"].split(",") if "P9_AREAS" in os.environ else AREA_MODULES   # P9_AREAS=a,b builds only those areas (an agent's tree without the others' unfinished work)
 HOOK_DIRS = [os.path.join(HERE, "p9"), os.path.join(HERE, "ui"), os.path.join(HERE, "ai")]   # p9 hooks, the co-op front end (ui_*), enemy scaling and rules (ai_*)
 sys.path.extend(HOOK_DIRS[1:])

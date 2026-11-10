@@ -4,11 +4,17 @@
 
 #include <cstdint>
 
-// The players the view code looks at in one frame (p9_views.cpp reads them, p9_framing.cpp frames them).
+// The players the view code looks at in one frame (p9_views.cpp reads them, p9_framing.cpp frames them). `joined` are the players the game has (each has a view in a split
+// screen); `viewable` those among them that a camera shows (a downed player does not count for the combined camera).
 namespace warriors::p9 {
 
+// The farthest the combined camera stands from its look-at point (metres): the game's own field of view stays, so this is how many players fit one picture. In a fight
+// (a viewable player is engaged) the cap is kFightMaxDistance: a character is 1.9 m tall, and the picture is 2 * distance * 0.48 m high at that distance, so at 12.5 m he fills
+// 15 % of it, the same as in the quarter of a split screen at the game's standing distance of 6.3 m (31 % of a quarter), where the view would otherwise go.
+constexpr float kMaxCombinedDistance = 10.0f, kFightMaxDistance = 12.5f;
+
 struct Players {
-    std::uint32_t count = 0, viewable = 0;      // list slots in the game, and the bit of each one a camera shows
+    std::uint32_t count = 0, joined = 0, viewable = 0;   // list slots in the game, and the bit of each one that is a player / that a camera shows
     std::uint32_t human[kMaxPlayers] = {};
     float position[kMaxPlayers][3] = {};        // feet, x y z (z up)
 };

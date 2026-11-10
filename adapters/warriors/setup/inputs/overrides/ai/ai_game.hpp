@@ -13,12 +13,12 @@ namespace warriors::ai {
 
 constexpr int kScaledFrom = 3;                         // players from which anything is scaled
 
-// Human (Human_Init): player slot s8 (-1 for AI), the character type s16, the combat record (health at +0x144, maximum +0x146, pending damage +0x118).
+// Human (person_init): player slot s8 (-1 for AI), the character type s16, the combat record (health at +0x144, maximum +0x146, pending damage +0x118).
 constexpr std::uint32_t kSlotOffset = 0x1B0, kTypeOffset = 0xCC, kCombatRecordOffset = 0xD4, kPositionIndexOffset = 0x92;
-constexpr std::uint32_t kDamageOffset = 0x118;         // s16 of the combat record: the damage Human_ApplyPendingDamage is about to take off
+constexpr std::uint32_t kDamageOffset = 0x118;         // s16 of the combat record: the damage damage_commit is about to take off
 constexpr std::uint32_t kPositions = 0x00714B00, kPositionStride = 0x20;   // x, y, z, w floats by position index
 
-// Brains (Brains_RegisterTypeHandlers): 0x6D53F0 + human index * 0x2F0, type at +4 (0 player, 1 cop, 2 gang soldier, 3 Warrior, 4 civilian).
+// Brains (ai_install_type_handlers): 0x6D53F0 + human index * 0x2F0, type at +4 (0 player, 1 cop, 2 gang soldier, 3 Warrior, 4 civilian).
 constexpr std::uint32_t kBrains = 0x006D53F0, kBrainStride = 0x2F0, kBrainTypeOffset = 4;
 enum BrainType : std::uint32_t { kBrainPlayer = 0, kBrainCop = 1, kBrainGangSoldier = 2, kBrainWarrior = 3 };
 
@@ -26,10 +26,10 @@ enum BrainType : std::uint32_t { kBrainPlayer = 0, kBrainCop = 1, kBrainGangSold
 constexpr std::uint32_t kCharClasses = 0x00684620, kCharClassSize = 0x1AC, kCategoryOffset = 0x11B;
 constexpr std::uint32_t kBossCategory = 13;
 
-// Gangs (Gang_Update, GangSpawner_Update): the gang's kind at +0x2c (1: police); spawner records follow at +0x640, 0x130 bytes each.
+// Gangs (crew_player_info_refresh, crew_spawner_step): the gang's kind at +0x2c (1: police); spawner records follow at +0x640, 0x130 bytes each.
 constexpr std::uint32_t kGangKindOffset = 0x2C, kPoliceKind = 1;
 constexpr std::int32_t kMaxSpawnMax = 48;              // the human pool holds 60 (players, Warriors and scripted cast included)
-constexpr std::int32_t kMaxGangMembers = 16;           // a gang's member list (HandleArray16)
+constexpr std::int32_t kMaxGangMembers = 16;           // a gang's member list (HandleList16)
 
 // Guest RAM of the hooks (the runtime's extra RAM above the PS2's 32 MB; part of every state file, digest and netplay snapshot). 0x02300000 to 0x0230ffff.
 constexpr std::uint32_t kAiBase = 0x02300000;

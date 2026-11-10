@@ -14,7 +14,6 @@ constexpr std::uint32_t kOldViewEnable = 0x0050B1E8, kOldStickSwitch = 0x0050B1B
 constexpr std::uint32_t kOldOptionA = 0x0050B1F0, kOldOptionB = 0x0050B1F8, kOldAutoAdjust = 0x0050B240, kOldAutoFollow = 0x0050B248;   // two words, two words, two bytes, two bytes
 constexpr std::uint32_t kOldEntries = kOriginalPlayers;
 constexpr std::uint32_t kWord = 4;
-constexpr std::uint32_t kStockFovRateCap = 0x40F00000, kFramingFovRateCap = 0x41F00000;   // 7.5 and 30.0 as floats
 
 void take_over(std::uint32_t to, std::uint32_t from) {
     for (std::uint32_t i = 0; i < kOldEntries; ++i) ps2::st32(to + i * kWord, ps2::ld32(from + i * kWord));
@@ -48,7 +47,7 @@ void ensure_cameras(ps2::Cpu &) {
 }
 
 // A player beyond the first two starts with the camera switches and options of the second one (scripts and the options menu set them for the original two only).
-void cameras_add_player(ps2::Cpu &c) {
+void views_attach_player(ps2::Cpu &c) {
     const std::uint32_t slot = c.r[4].w[0];
     if (slot < kOriginalPlayers || slot >= kMaxPlayers) return;
     if (ps2::ld32(kCamSlots) < slot + 1) ps2::st32(kCamSlots, slot + 1);
@@ -63,8 +62,6 @@ void cameras_add_player(ps2::Cpu &c) {
 }
 
 std::uint32_t player_view_camera(std::uint32_t view) { return view < kMaxPlayers ? ps2::ld32(kCamViews + view * kWord) : 0; }
-
-std::uint32_t fov_rate_cap() { return player_count() > kOriginalPlayers ? kFramingFovRateCap : kStockFovRateCap; }
 
 std::uint32_t cam_last_slot() { return slot_count() - 1; }
 

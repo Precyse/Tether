@@ -6,26 +6,26 @@
 #include "ps2/pad.hpp"
 #include "ps2/system.hpp"
 
-// How players 3 and 4 live through the game's level flows. The game rebuilds its players with every level load (InitLevel -> GameState_SyncPlayers(-1) makes player 2 from
+// How players 3 and 4 live through the game's level flows. The game rebuilds its players with every level load (level_setup -> session_match_player_count(-1) makes player 2 from
 // the game mode's two-player flag); nothing remembers players 3 and 4, so carry_players brings back the ones that were in. The level scripts move player 1 and player 2
 // only (Teleport, TeleportToFlag, HuTeleportNearHuman); the hooks put players 3 and 4 beside whoever moved.
 namespace warriors::p9 {
 
 namespace {
 
-constexpr std::uint32_t kSyncPlayers = 0x0041A460, kTeleportNear = 0x0023B138, kHeal = 0x0022EB40;
-constexpr std::uint32_t kObjectTeleport = 0x00385BB8, kObjectTeleportToFlag = 0x00385DB0;
+constexpr std::uint32_t kSessionMatchPlayerCount = 0x0041A460, kWarpPersonBeside = 0x0023B138, kRestoreHealth = 0x0022EB40;
+constexpr std::uint32_t kWarpObject = 0x00385BB8, kWarpObjectToMarker = 0x00385DB0;
 constexpr std::uint32_t kJoinAllowedOffset = 0x56E8, kGameModeOffset = 0x158;   // CfgMultiplayerJoin's flag; the game mode
 constexpr std::uint32_t kStoryMode = 0, kArmiesMode = 3;                        // the modes that take a drop-in player
 constexpr std::uint32_t kFlowStateOffset = 0x14C, kFlowRunning = 0, kFlowFailed = 1;   // the level flow state of the game: idle, mission failed screen up
 constexpr std::uint32_t kPreviousFlow = kFlow + 0x10;     // the flow state of the last frame
-constexpr std::uint32_t kFullHealth = 1;                  // Human_Heal's second argument
+constexpr std::uint32_t kFullHealth = 1;                  // restore_health's second argument
 constexpr std::uint32_t kFirstExtraRecord = 1;            // pad record indexes 1 and 2 are the runtime's pads 3 and 4
 constexpr float kFollowDistance = 8.0f;                   // an extra player closer than this to player 1 or 2 stays where he is when one of them is moved
 
 bool g_following = false;   // the teleport the hook runs itself is not hooked again
 
-// The game's own gate of a join (GameState_SyncPlayers): the script allows joining in this section and the mode is one that takes drop-in players.
+// The game's own gate of a join (session_match_player_count): the script allows joining in this section and the mode is one that takes drop-in players.
 bool join_allowed() {
     const std::uint32_t mode = ps2::ld32(game() + kGameModeOffset);
     return ps2::ld32(game() + kJoinAllowedOffset) != 0 && (mode == kStoryMode || mode == kArmiesMode);
@@ -59,7 +59,7 @@ void gather_extras(ps2::Cpu &c, std::uint32_t mover_handle) {
         bool beside = false;
         for (std::uint32_t original : originals) beside = beside || (original && human_distance(human, original) <= kFollowDistance);
         if (beside) continue;
-        ps2::call_guest(c, kTeleportNear, handle, mover_handle);
+        ps2::call_guest(c, kWarpPersonBeside, handle, mover_handle);
         P9_TRACE("[p9] %llu player %u follows the move of %08x", static_cast<unsigned long long>(ps2::frame_count()), slot, mover_handle);
     }
 }
@@ -83,13 +83,13 @@ void revive_extras(ps2::Cpu &c) {
     const std::uint32_t leader = ps2::ld32(game() + kPlayerHandlesOffset);
     for (std::uint32_t slot = kOriginalPlayers; slot < player_count(); ++slot) {
         const std::uint32_t human = resolve_handle(c, ps2::ld32(game() + kPlayerHandlesOffset + slot * 4));
-        if (human) ps2::call_guest(c, kHeal, human, kFullHealth);
+        if (human) ps2::call_guest(c, kRestoreHealth, human, kFullHealth);
     }
     gather_extras(c, leader);
     P9_TRACE("[p9] %llu chapter restarted in place: players 3 and 4 stand up", static_cast<unsigned long long>(ps2::frame_count()));
 }
 
-// After a level change, a checkpoint reload or a restart the game builds a new player list. Players 3 and 4 who were in come back by the game's own join, SyncPlayers on their
+// After a level change, a checkpoint reload or a restart the game builds a new player list. Players 3 and 4 who were in come back by the game's own join, session_match_player_count on their
 // pad (what their START would do), one per frame, once the second player is in, the section allows joining and the game's own join gate is open (plain play or a rail section): the join and its scene are the game's.
 void carry_players(ps2::Cpu &c) {
     const std::uint32_t mask = ps2::ld32(kCarryMask);
@@ -100,16 +100,16 @@ void carry_players(ps2::Cpu &c) {
         if (!ps2::read_pad_sample(kFirstExtraPad + static_cast<int>(record - kFirstExtraRecord), sample)) { ps2::st32(kCarryMask, mask & ~(1u << record)); continue; }
         if (pad_is_player(c, record)) continue;
         P9_TRACE("[p9] %llu pad record %u comes back (carried over)", static_cast<unsigned long long>(ps2::frame_count()), record);
-        ps2::call_guest(c, kSyncPlayers, game(), record);
+        ps2::call_guest(c, kSessionMatchPlayerCount, game(), record);
         return;
     }
 }
 
 }
 
-bool teleport_object(ps2::Cpu &c) { return follow_teleport(c, kObjectTeleport); }
-bool teleport_to_flag(ps2::Cpu &c) { return follow_teleport(c, kObjectTeleportToFlag); }
-bool teleport_near(ps2::Cpu &c) { return follow_teleport(c, kTeleportNear); }
+bool warp_object(ps2::Cpu &c) { return follow_teleport(c, kWarpObject); }
+bool warp_object_to_marker(ps2::Cpu &c) { return follow_teleport(c, kWarpObjectToMarker); }
+bool warp_person_beside(ps2::Cpu &c) { return follow_teleport(c, kWarpPersonBeside); }
 
 // Once per frame: the flows that rebuild or restart the level.
 void flow_frame(ps2::Cpu &c) {

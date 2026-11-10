@@ -15,7 +15,7 @@ constexpr std::uint32_t kOriginalSlotWords = 2;
 constexpr std::uint32_t kOldQueued = 0x00510530, kOldRageFull = 0x00510538, kOldFlashCount = 0x00510540, kOldFlashStamp = 0x006C72C8;
 constexpr std::uint32_t kOldFlashStampReady = 0x006C72D0, kOldFadeList = 0x006C72D8, kOldFadeReady = 0x006C7308;
 
-constexpr std::uint32_t kRequestBytesOffset = 0x225D0;   // HUD_SetReticuleRequest: hud + 0x225d0 + panel
+constexpr std::uint32_t kRequestBytesOffset = 0x225D0;   // overlay_ring_request: hud + 0x225d0 + panel
 
 void zero(std::uint32_t at, std::uint32_t bytes) {
     for (std::uint32_t i = 0; i < bytes; i += 4) ps2::st32(at + i, 0);

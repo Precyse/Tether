@@ -3,19 +3,22 @@
 #include "p9_world.hpp"
 #include "ps2/system.hpp"
 
-// Joining and leaving as players 3 and 4. The game's own join (GameState_SyncPlayers, started by a pad's START in Gm_Level_Update) takes the next free member of
-// player 1's gang (Gang_PickNextPlayer) and makes him a player on that pad (Human_MakePlayer). The original game has exactly one such member, Ash. For the third and
-// fourth player the Warriors' crew has no free member in most missions, so the game's own Gang_AddMember recruits one of the mission's other Warriors (Vermin, Cleon:
+// Joining and leaving as players 3 and 4. The game's own join (session_match_player_count, started by a pad's START in level_driver_step) takes the next free member of
+// player 1's gang (crew_next_playable) and makes him a player on that pad (spawn_player_human). The original game has exactly one such member, Ash. For the third and
+// fourth player the Warriors' crew has no free member in most missions, so the game's own crew_take_member recruits one of the mission's other Warriors (Vermin, Cleon:
 // brain type 3, no pad, no player slot) into player 1's gang first; the game's code does the rest.
 namespace warriors::p9 {
 
 namespace {
 
-constexpr std::uint32_t kGangPickNextPlayer = 0x0022A770, kMakePlayer = 0x00229C40, kGangAddMember = 0x00166308;
-constexpr std::uint32_t kEnableController = 0x002384F8, kTeleportNear = 0x0023B138;
+constexpr std::uint32_t kCrewNextPlayable = 0x0022A770, kSpawnPlayerHuman = 0x00229C40, kCrewTakeMember = 0x00166308;
+constexpr std::uint32_t kPersonAttachInput = 0x002384F8, kWarpPersonBeside = 0x0023B138;
 constexpr std::uint32_t kBrains = 0x006D53F0, kBrainStride = 0x2F0, kBrainTypeOffset = 4, kBrainActiveOffset = 8, kBrainGangOffset = 0x20C;
 constexpr std::uint32_t kGangWarriorBrain = 3;
 constexpr std::uint32_t kFirstExtraRecord = 1;            // pad record indexes 1 and 2 are the runtime's pads 3 and 4
+constexpr std::uint32_t kAnyRecord = 0xFFFFFFFF;          // spawn_player_human's pad record when the join names no pad (the lobby's two-player mode)
+constexpr std::uint32_t kSecondPlayerRecord = 4;          // port 1 slot 0: pad 2's record, the original game's second player
+constexpr int kSecondPlayerPad = 1;                       // the runtime's pad index of pad 2
 constexpr std::uint32_t kSceneStartFrames = 20;           // the join scene has started by then (a teleport before it makes the game see a player in a state that ends the game)
 
 std::uint32_t brain_at(std::uint32_t i) { return kBrains + i * kBrainStride; }
@@ -44,18 +47,18 @@ bool g_in_pick = false, g_in_make = false;
 
 }
 
-// Gang_PickNextPlayer(gang, only_standing): with nobody free in a crew whose leader has room for more players, one of the mission's Warriors joins the crew.
+// crew_next_playable(gang, only_standing): with nobody free in a crew whose leader has room for more players, one of the mission's Warriors joins the crew.
 bool pick_next_player(ps2::Cpu &c) {
     const std::uint32_t crew = c.r[4].w[0], standing = c.r[5].w[0];
     if (g_in_pick || standing || player_count() < kOriginalPlayers || player_count() >= kMaxPlayers) return false;
     g_in_pick = true;
-    std::uint32_t pick = ps2::call_guest(c, kGangPickNextPlayer, crew, standing);
+    std::uint32_t pick = ps2::call_guest(c, kCrewNextPlayable, crew, standing);
     if (!pick) {
         const std::uint32_t human = recruit_candidate(crew);
         if (human) {
             P9_TRACE("[p9] recruit human %08x into gang %08x", human, crew);
-            ps2::call_guest(c, kGangAddMember, crew, human);
-            pick = ps2::call_guest(c, kGangPickNextPlayer, crew, standing);
+            ps2::call_guest(c, kCrewTakeMember, crew, human);
+            pick = ps2::call_guest(c, kCrewNextPlayable, crew, standing);
         }
     }
     g_in_pick = false;
@@ -64,15 +67,19 @@ bool pick_next_player(ps2::Cpu &c) {
     return true;
 }
 
-// Human_MakePlayer(human, pad record, panel, list position): a player after the second appears beside the leader, as Ash does in the original co-op.
-bool make_player(ps2::Cpu &c) {
+// spawn_player_human(human, pad record, panel, list position): a player after the second appears beside the leader, as Ash does in the original co-op. A second player who
+// joins without a pad of his own (the lobby's two-player mode) gets the first ready pad record, which is a third or fourth player's once pad 3 or 4 is plugged: pad 2's record
+// is named instead when pad 2 is there.
+bool spawn_player_human(ps2::Cpu &c) {
+    ps2::PadSample sample;
+    if (player_count() == 1 && c.r[5].w[0] == kAnyRecord && ps2::read_pad_sample(kSecondPlayerPad, sample)) c.r[5].w[0] = kSecondPlayerRecord;
     if (g_in_make || player_count() < kOriginalPlayers || player_count() >= kMaxPlayers) return false;
     g_in_make = true;
     const std::uint32_t human = c.r[4].w[0];
-    const std::uint32_t joined = ps2::call_guest(c, kMakePlayer, human, c.r[5].w[0], c.r[6].w[0], c.r[7].w[0]);
+    const std::uint32_t joined = ps2::call_guest(c, kSpawnPlayerHuman, human, c.r[5].w[0], c.r[6].w[0], c.r[7].w[0]);
     g_in_make = false;
     if (joined) {
-        ps2::call_guest(c, kEnableController, handle_of(human), 1);
+        ps2::call_guest(c, kPersonAttachInput, handle_of(human), 1);
         std::uint32_t pending = 0;
         for (std::uint32_t slot = kOriginalPlayers; slot < player_count(); ++slot) pending |= 1u << slot;
         ps2::st32(kArrivalWord, pending);
@@ -89,7 +96,7 @@ bool make_player(ps2::Cpu &c) {
 
 namespace warriors::p9 {
 
-// GameState_CallMultiplayerCallback(game, human, joined): the level scripts know one second player, and their callback for a join (the lesson's wakes Ash, adds his blip and
+// session_run_coop_callback(game, human, joined): the level scripts know one second player, and their callback for a join (the lesson's wakes Ash, adds his blip and
 // puts him at the join spot) would do that again for every extra player. It is left out for players 3 and 4, as it is for their leaving.
 bool skip_extra_player_callback(ps2::Cpu &c) {
     const std::uint32_t slot = ps2::ld8(c.r[5].w[0] + kPlayerSlotOffset);
@@ -109,7 +116,7 @@ void place_new_players(ps2::Cpu &c) {
     for (std::uint32_t slot = kOriginalPlayers; slot < kMaxPlayers; ++slot) {
         if (!(pending & (1u << slot))) continue;
         const std::uint32_t handle = ps2::ld32(game() + kPlayerHandlesOffset + slot * 4);
-        const std::uint32_t result = ps2::call_guest(c, kTeleportNear, handle, leader_handle);
+        const std::uint32_t result = ps2::call_guest(c, kWarpPersonBeside, handle, leader_handle);
         P9_TRACE("[p9] player %u placed beside the leader (%u)", slot, result);
     }
 }

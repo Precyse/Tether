@@ -20,8 +20,8 @@ constexpr int kOriginalPlayers = 2;
 constexpr std::uint32_t kGameStatePointer = 0x0051489C;
 constexpr std::uint32_t kPlayerCountOffset = 0x224;      // s16
 constexpr std::uint32_t kPlayerHandlesOffset = 0x228;    // four handles after the move of the tick counter
-constexpr std::uint32_t kTickOffset = 0x230;             // GameState_Tick's counter: moved to kTick so the handle list can grow in place
-constexpr std::uint32_t kPlayerStatesOffset = 0x168, kPlayerStateSize = 0x5C;   // Human_GetPlayerState: per HUD panel
+constexpr std::uint32_t kTickOffset = 0x230;             // session_step's counter: moved to kTick so the handle list can grow in place
+constexpr std::uint32_t kPlayerStatesOffset = 0x168, kPlayerStateSize = 0x5C;   // player_slot_state: per HUD panel
 constexpr std::uint32_t kInventoryOffset = 0x480;        // Inventory object: live blocks, checkpoint blocks, callback names
 constexpr std::uint32_t kThrowArcsOffset = 0x5740, kThrowArcSize = 0x30;
 
@@ -48,29 +48,33 @@ constexpr std::uint32_t kInventoryCheckpoint = kBase + 0xC00;
 constexpr std::uint32_t kMagicValue = 0x50393031;
 constexpr std::uint32_t kCarryMask = kBase + 0x1C;       // bit per pad record (1 and 2): the extra players who are in the game, kept across level changes (below kExtraStart: a new game state does not clear it)
 constexpr std::uint32_t kBrainSpot = kBase + 0x3000;     // per brain (60): the 'has seen player' and sticky bytes of panels 2 and 3 (p9_brain.cpp), 4 bytes each
-constexpr std::uint32_t kStatsBlocks = kBase + 0x2000;   // PlayerStats records (0xc0 bytes) of panels 2 and 3 (p9_stats.cpp), then their checkpoint copies at +0x180
+constexpr std::uint32_t kStatsBlocks = kBase + 0x2000;   // ScoreRecord records (0xc0 bytes) of panels 2 and 3 (p9_stats.cpp), then their checkpoint copies at +0x180
 
 
 // The HUD (hud.md): one static object whose per-player arrays hold two entries each. Players 3 and 4 keep theirs in a second object of the same layout, built by the
-// game's own HUD_Construct (HUD2), so any address `hud + array + index * stride` reaches them with the index folded to 0 or 1 and the difference of the two objects added.
+// game's own overlay_build (HUD2), so any address `hud + array + index * stride` reaches them with the index folded to 0 or 1 and the difference of the two objects added.
 constexpr std::uint32_t kHud = 0x00600840, kHudSize = 0x22600;
-constexpr std::uint32_t kHudConstruct = 0x001ACEE0;
-constexpr std::uint32_t kHudPanelPointers = 8;           // offset of the PlayerHUD pointer array (four entries once the CrewStatus widget that sat at +0x10 has moved)
-constexpr std::uint32_t kCrewOffset = 0x10, kCrewBytes = 0x15A0;   // the CrewStatus widget: +0x10 to the HudToggle at +0x15b0 (its children end at +0x1300, its message text is at +0x13c0)
+constexpr std::uint32_t kOverlayBuild = 0x001ACEE0;
+constexpr std::uint32_t kHudPanelPointers = 8;           // offset of the PlayerPanel pointer array (four entries once the CrewPanel widget that sat at +0x10 has moved)
+constexpr std::uint32_t kCrewOffset = 0x10, kCrewBytes = 0x15A0;   // the CrewPanel widget: +0x10 to the OverlaySwitch at +0x15b0 (its children end at +0x1300, its message text is at +0x13c0)
 constexpr std::uint32_t kHud2 = kBase + 0x10000;         // HUD2: 0x22600 bytes, players 3 and 4 as entries 0 and 1 of every per-player array
 constexpr std::uint32_t kHud2Delta = kHud2 - kHud;
-constexpr std::uint32_t kCrew = kBase + 0x40000;         // the CrewStatus widget once HUD2 exists
-constexpr std::uint32_t kTableFirst = 0x0050F900, kTableBytes = 0x800;   // PlayerHUD's layout tables: bases, 0x240 byte entries, tally marks, counter slots
+constexpr std::uint32_t kCrew = kBase + 0x40000;         // the CrewPanel widget once HUD2 exists
+constexpr std::uint32_t kTableFirst = 0x0050F900, kTableBytes = 0x800;   // PlayerPanel's layout tables: bases, 0x240 byte entries, tally marks, counter slots
 constexpr std::uint32_t kTableCopy = kBase + 0x42000;    // players 3 and 4's copy (entries 0 and 1 stand for panels 2 and 3)
 constexpr std::uint32_t kTableDelta = kTableCopy - kTableFirst;
+constexpr std::uint32_t kHudScaleScratch = kBase + 0x43000;   // 0x100 bytes: the scaled copy of the sprite being drawn and the converted pivot (p9_hud_scale.cpp), rewritten before every use
+constexpr std::uint32_t kRadarDrawNext = kBase + 0x43100;   // overlay_draw, split screen: the extra radar item to draw next (p9_radar.cpp radar_render_next)
 constexpr std::uint32_t kHudState = kBase + 0x0C;        // kHudReady once HUD2 is built (outside the area that a new game state clears)
 constexpr std::uint32_t kHudReady = 0x48554432;
 
-// Pad records (0x50 bytes, the game's view of a pad; index = port * 4 + slot) and the libpad port records (0x140 bytes) PadPort_Step fills.
+// Pad records (0x50 bytes, the game's view of a pad; index = port * 4 + slot) and the libpad port records (0x140 bytes) pad_port_poll fills.
 constexpr std::uint32_t kPortRecords = 0x005DE3C0, kPortRecordStride = 0x140;
 constexpr std::uint32_t kPortSlotOffset = 0x108, kPortReadyOffset = 0x10C;
-constexpr std::uint32_t kPortSmallMotorOffset = 0x122, kPortLargeMotorOffset = 0x123;   // Pad_SetVibration's two bytes: the small motor on or off, the large one's strength
+constexpr std::uint32_t kPortSmallMotorOffset = 0x122, kPortLargeMotorOffset = 0x123;   // rumble_set's two bytes: the small motor on or off, the large one's strength
 constexpr std::uint32_t kPortLeftXOffset = 0x110, kPortButtonsOffset = 0x114, kPortPressureOffset = 0x116;
+// libpad's two button bytes sit in wire order in a record (pad_port_decode_stick): the runtime's pressed mask with its bytes swapped (SELECT is 0x0100, SQUARE 0x0080).
+inline std::uint16_t swap_button_bytes(std::uint16_t buttons) { return static_cast<std::uint16_t>((buttons << 8) | (buttons >> 8)); }
 constexpr int kExtraPadRecords = 2;                      // records 1 and 2 (port 0 slots 1 and 2) are the runtime's pads 3 and 4
 constexpr int kFirstExtraPad = 2;                        // the runtime's pad index of record 1
 
@@ -85,6 +89,18 @@ inline bool tracing() {
 inline bool hook_off(const char *name) {
     static const char *list = std::getenv("PS2_P9_OFF");
     return list && std::strstr(list, name);
+}
+
+inline float read_float(std::uint32_t at) {
+    const std::uint32_t bits = ps2::ld32(at);
+    float value;
+    std::memcpy(&value, &bits, sizeof value);
+    return value;
+}
+inline void write_float(std::uint32_t at, float value) {
+    std::uint32_t bits;
+    std::memcpy(&bits, &value, sizeof bits);
+    ps2::st32(at, bits);
 }
 
 inline std::uint32_t game() { return ps2::ld32(kGameStatePointer); }
@@ -116,7 +132,13 @@ constexpr std::uint32_t kCamOptionA = kCam + 0xD0, kCamOptionB = kCam + 0xE0;   
 constexpr std::uint32_t kCamAutoAdjust = kCam + 0xF0, kCamAutoFollow = kCam + 0xF4;  // 0x0050b240, 0x0050b248: a player's auto-adjust option and auto-follow switch (bytes)
 constexpr std::uint32_t kCamMagic = kCam + 0xC0, kCamSlots = kCam + 0xC4;           // kCamMagicValue once taken over; list slots with cameras (at least two)
 constexpr std::uint32_t kCamMagicValue = 0x43414D34;
-constexpr std::uint32_t kCamViewState = kCam + 0x100;   // which players share a view (p9_views.cpp) and how their camera frames them (p9_framing.cpp), 0x100 bytes
+constexpr std::uint32_t kCamViewState = kCam + 0x100;   // the layout of the views (p9_views.cpp) and how the combined camera frames the players (p9_framing.cpp), 0x200 bytes
+// The words of kCamViewState that outlive a frame and the runtime (netplay.cpp) shares: the split screen setting (warriors.hpp kSplitScreenSwitch; 0 auto, 1 always split),
+// the layout in force (0 undecided, 1 split, 2 combined), the frames the players have fitted the combined frame, whether the settings chord was held last frame, the frames the combined
+// layout has lasted, the frames the lead camera has tried to frame everyone for, and the farthest the combined camera is expected to stand (float metres, 0: the cap; lowered where the world kept it close), and the slot + 1 of the camera that is zooming out ahead of a merge (0: none), the frame (plus one) a viewable player was last engaged in a fight (0: never) and the cap of the
+// combined camera now (float metres).
+constexpr std::uint32_t kSplitSwitchAt = kCamViewState + 0xF0, kLayoutAt = kCamViewState + 0xF4, kFitFramesAt = kCamViewState + 0xF8, kChordHeldAt = kCamViewState + 0xFC;
+constexpr std::uint32_t kLayoutFramesAt = kCamViewState + 0x100, kReachAt = kCamViewState + 0x104, kPrepareAt = kCamViewState + 0x108, kCombatAt = kCamViewState + 0x10C, kCapAt = kCamViewState + 0x110, kPrepareFramesAt = kCamViewState + 0x114;
 
 // Level flows of players 3 and 4 (p9_flow_boxes.cpp), extra RAM 0x02310000 to 0x0231ffff (0x02300000 to 0x0230ffff are the AI area's).
 constexpr std::uint32_t kFlow = kBase + 0x310000;

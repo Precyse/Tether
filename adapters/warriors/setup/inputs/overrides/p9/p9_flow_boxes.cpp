@@ -4,15 +4,15 @@
 #include "p9_world.hpp"
 #include "ps2/system.hpp"
 
-// Player boxes (the level scripts' trigger zones that only a player can set off: rail cameras, fixed cameras, jump hints, chase starts). PlayerBox_Update visits the two
+// Player boxes (the level scripts' trigger zones that only a player can set off: rail cameras, fixed cameras, jump hints, chase starts). trigger_box_step visits the two
 // handles at game + 0x228 and + 0x22c and keeps two occupants per box, so players 3 and 4 never set one off. They are visited here with the same rules (enter message 3, still
 // inside message 5 once per repeat period, left message 4), their occupancy in a table of its own beside the box pool.
 namespace warriors::p9 {
 
 namespace {
 
-constexpr std::uint32_t kPlayerBoxUpdate = 0x004134F8, kBoxContainsObject = 0x004129C0, kHasStateFlag100000000 = 0x00227EB0;
-constexpr std::uint32_t kBoxPool = 0x00514814, kBoxSize = 0x100;                   // PlayerBoxPool_Create: the pool object holds the box array and the count
+constexpr std::uint32_t kTriggerBoxStep = 0x004134F8, kTriggerBoxHoldsObject = 0x004129C0, kPersonInSceneBit = 0x00227EB0;
+constexpr std::uint32_t kBoxPool = 0x00514814, kBoxSize = 0x100;                   // trigger_box_pool_init: the pool object holds the box array and the count
 constexpr std::uint32_t kBoxEnabledOffset = 0x68, kBoxNextMessageOffset = 0xF8;   // the box's enabled byte; the time of the next message 5
 constexpr std::uint32_t kGameTimer = 0x0050B734, kTimerNowOffset = 0x48;
 constexpr std::uint32_t kHandlerCallOffset = 0x44, kHandlerAdjustOffset = 0x40;   // vtable: the message handler and the s16 `this` adjustment before it
@@ -40,13 +40,13 @@ void send(ps2::Cpu &c, std::uint32_t box, std::uint32_t message, std::uint32_t h
     ps2::call_guest(c, ps2::ld32(table + kHandlerCallOffset), self, kPlayerBoxMessage);
 }
 
-// One player of list slot 2 or 3 against one box: the body of PlayerBox_Update's loop. `due` is whether the repeat period of the box had passed before this update.
+// One player of list slot 2 or 3 against one box: the body of trigger_box_step's loop. `due` is whether the repeat period of the box had passed before this update.
 void visit(ps2::Cpu &c, std::uint32_t box, std::uint32_t slot, bool due) {
     const std::uint32_t occupant = kPlayerBoxOccupants + box_index(box) * kOccupantBytes + (slot - kOriginalPlayers) * 4;
     const std::uint32_t handle = ps2::ld32(game() + kPlayerHandlesOffset + slot * 4);
     const std::uint32_t human = resolve_handle(c, handle);
     if (!human) return;
-    const bool inside = !ps2::call_guest(c, kHasStateFlag100000000, human) && ps2::call_guest(c, kBoxContainsObject, box, human) == 1;
+    const bool inside = !ps2::call_guest(c, kPersonInSceneBit, human) && ps2::call_guest(c, kTriggerBoxHoldsObject, box, human) == 1;
     const bool known = ps2::ld32(occupant) == handle;
     if (inside && !known) {
         ps2::st32(occupant, handle);
@@ -61,12 +61,12 @@ void visit(ps2::Cpu &c, std::uint32_t box, std::uint32_t slot, bool due) {
 
 }
 
-bool player_box_update(ps2::Cpu &c) {
+bool trigger_box_step(ps2::Cpu &c) {
     const std::uint32_t box = c.r[4].w[0];
     if (g_in_update || player_count() <= kOriginalPlayers || box_index(box) == kPlayerBoxLimit || !ps2::ld8(box + kBoxEnabledOffset)) return false;
     const bool due = ps2::ld32(ps2::ld32(kGameTimer) + kTimerNowOffset) > ps2::ld32(box + kBoxNextMessageOffset);
     g_in_update = true;
-    ps2::call_guest(c, kPlayerBoxUpdate, box);
+    ps2::call_guest(c, kTriggerBoxStep, box);
     for (std::uint32_t slot = kOriginalPlayers; slot < player_count() && ps2::ld8(box + kBoxEnabledOffset); ++slot) visit(c, box, slot, due);
     g_in_update = false;
     c.pc = c.r[31].w[0];

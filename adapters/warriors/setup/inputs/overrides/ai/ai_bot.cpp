@@ -8,13 +8,13 @@
 
 // Test aid, off unless PS2_AI_BOT=<first frame> is set: from that frame every player is a brawler that closes with the nearest enemy and attacks, so fights with 2 to 4 players
 // can be compared (the random scripted pads of soak_args.py rarely reach anyone). A player more than a few metres from the nearest standing enemy is put beside it with the game's own
-// Human_TeleportNear, then his pad (the runtime's pad of his player slot) presses combinations of the attack buttons; the game's auto lock faces the enemy. Local runs only: it writes pads
+// warp_person_beside, then his pad (the runtime's pad of his player slot) presses combinations of the attack buttons; the game's auto lock faces the enemy. Local runs only: it writes pads
 // from inside the game, so it is for one process, never for a session.
 namespace warriors::ai {
 
 namespace {
 
-constexpr std::uint32_t kTeleportNear = 0x0023B138;
+constexpr std::uint32_t kWarpPersonBeside = 0x0023B138;
 constexpr float kReachSquared = 3.0f * 3.0f;
 constexpr std::uint64_t kTeleportEvery = 90, kTeleportSpread = 23, kCombo = 6, kPressFrames = 4;
 constexpr std::uint16_t kTriangle = 1u << 12, kCircle = 1u << 13, kCross = 1u << 14, kSquare = 1u << 15;
@@ -61,7 +61,7 @@ void bot_frame(ps2::Cpu &c) {
         if (!human) continue;
         const std::uint32_t enemy = nearest_enemy(human);
         if (enemy && distance_squared(human, enemy) > kReachSquared && (frame + static_cast<std::uint64_t>(slot) * kTeleportSpread) % kTeleportEvery == 0)
-            ps2::call_guest(c, kTeleportNear, ps2::ld32(human + p9::kHandleOffset), ps2::ld32(enemy + p9::kHandleOffset));
+            ps2::call_guest(c, kWarpPersonBeside, ps2::ld32(human + p9::kHandleOffset), ps2::ld32(enemy + p9::kHandleOffset));
         const bool press = enemy && frame % kCombo < kPressFrames;
         ps2::set_pad_buttons(press ? kCombos[(frame / kCombo + static_cast<std::uint64_t>(slot)) % (sizeof kCombos / sizeof kCombos[0])] : 0, slot);
     }

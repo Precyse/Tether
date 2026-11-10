@@ -31,7 +31,7 @@ engine arguments; anything on the `Warriors.exe` command line is passed to the e
 | 4 | downloads the pinned ps2-web-recomp commit `e026b97` from GitHub (the zip is not byte stable, so it is checked by a **tree hash** of its contents), applies `clone-vs-e026b97.patch` with a built-in strict patcher, checks the patched tree hash |
 | 5 | builds `eerecomp` and `vurecomp` |
 | 6 | extracts `SLUS_212.15` to `work\disc`, runs `eerecomp --entries ghidra_entries.txt`, rebuilds the 37 recorded VU1 program images from pieces of that executable (checked by SHA-256 each) and runs `vurecomp` |
-| 7 | `apply_p10.py` (given the recompiled tree and `ghidra_entries.txt`): 15 unit edits, 251 function edits and 126 entry hooks in the generated units plus 55 hook files (genuine players 3 and 4, the co-op front end, enemy scaling); each edit must match the stated number of times |
+| 7 | `apply_p10.py` (given the recompiled tree and `ghidra_entries.txt`): 15 unit edits, 250 function edits and 130 entry hooks in the generated units plus 60 hook files (genuine players 3 and 4, the co-op front end, enemy scaling); each edit must match the stated number of times |
 | 8 | builds the window `ps2run.exe` (ninja, Release, `-O3`), after giving every source whose content changed a fresh file time (no stale object, the PHASE7 bug) |
 | 9 | writes `Warriors.exe` (a small launcher compiled from `inputs\stub\warriors_launcher.cpp`), `engine\ps2run.exe` + `SDL2.dll` + `wgpu_native.dll`, `lockstep.patches`, `warriors.ini`, `build.json` (fingerprint, hashes including `engine_sha256` of the installed engine, toolchain versions) |
 

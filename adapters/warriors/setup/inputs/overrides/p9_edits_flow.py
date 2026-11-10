@@ -6,9 +6,9 @@ P9 = "warriors::p9::"
 HEADER = "p9_flow.hpp"
 
 ENTRY_HOOKS = [
-    (0x00385BB8, "if (%steleport_object(c)) return;" % P9),     # Object_Teleport
-    (0x00385DB0, "if (%steleport_to_flag(c)) return;" % P9),    # Object_TeleportToFlag
-    (0x0023B138, "if (%steleport_near(c)) return;" % P9),       # Human_TeleportNear
-    (0x004134F8, "if (%splayer_box_update(c)) return;" % P9),   # PlayerBox_Update
-    (0x00413218, P9 + "player_boxes_reset(c);"),                # PlayerBoxPool_Create
+    (0x00385BB8, "if (%swarp_object(c)) return;" % P9),     # warp_object
+    (0x00385DB0, "if (%swarp_object_to_marker(c)) return;" % P9),    # warp_object_to_marker
+    (0x0023B138, "if (%swarp_person_beside(c)) return;" % P9),       # warp_person_beside
+    (0x004134F8, "if (%strigger_box_step(c)) return;" % P9),   # trigger_box_step
+    (0x00413218, P9 + "player_boxes_reset(c);"),                # trigger_box_pool_init
 ]

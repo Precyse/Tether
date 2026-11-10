@@ -15,7 +15,7 @@
 | `inputs\pins.json` | every download: URL, version, SHA-256 (source: tree hashes) | |
 | `inputs\patches\clone-vs-e026b97.patch` | our runtime changes on ps2-web-recomp `e026b97` | |
 | `inputs\recipe\` | `ghidra_entries.txt` (function starts), `vu_images.json` (the 37 recorded VU1 programs as executable pieces), `lockstep.patches` | |
-| `inputs\overrides\` | `apply_p10.py` (`--source`, `--target`, `--entries`), the `p9_edits_*.py` tables, hook sources `p9\`, `ui\`, `ai\`, `warriors_display.*` (snapshot of `recomp\games\warriors\overrides`) | |
+| `inputs\overrides\` | `apply_p10.py` (`--source`, `--target`, `--entries`), the `p9_edits_*.py` tables, `names_ours.tsv` (our name for every function and structure the hooks mention, by address), hook sources `p9\`, `ui\`, `ai\`, `warriors_display.*` (snapshot of `recomp\games\warriors\overrides`) | |
 | `inputs\stub\warriors_launcher.cpp` | `Warriors.exe` | |
 | `proof\` | boot, digest and reference-build scripts and logs; `home2\` is a full local install (game data, never ship) | |
 | `REDISTRIBUTION.md`, `LAUNCHER_DESIGN.md`, `README.md` | what may ship; launcher hosting design; usage and measurements | |

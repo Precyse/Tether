@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 6765f07..b7e9faa 100644
+index 6765f07..57cd120 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -4,6 +4,12 @@ project(ps2-web-recomp CXX)
@@ -111,20 +111,18 @@ index 6765f07..b7e9faa 100644
      target_link_libraries(ps2run PRIVATE ps2game ps2runtime)
      if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
          target_sources(ps2run PRIVATE host/profile.cpp)
-@@ -118,7 +166,16 @@ if(PS2_GENERATED)
+@@ -118,7 +166,14 @@ if(PS2_GENERATED)
      endif()
      find_package(SDL2 QUIET)
      if(SDL2_FOUND AND NOT EMSCRIPTEN)
 -        target_sources(ps2run PRIVATE host/window.cpp)
-+        target_sources(ps2run PRIVATE host/window.cpp host/audio.cpp host/audio_engine.cpp host/audio_stretch.cpp)
++        target_sources(ps2run PRIVATE host/window.cpp host/pads.cpp host/virtual_pads.cpp host/audio.cpp host/audio_engine.cpp host/audio_stretch.cpp)
 +        if(WIN32)
-+            target_sources(ps2run PRIVATE host/pads_xinput.cpp host/profile_win.cpp)
++            target_sources(ps2run PRIVATE host/profile_win.cpp)
 +            option(PS2_LINK_MAP "write ps2run.map beside the executable (resolves the PS2_SAMPLE profile)" OFF)
 +            if(PS2_LINK_MAP)
 +                target_link_options(ps2run PRIVATE "LINKER:/MAP:${CMAKE_BINARY_DIR}/ps2run.map")
 +            endif()
-+        else()
-+            target_sources(ps2run PRIVATE host/pads_sdl.cpp)
 +        endif()
          target_compile_definitions(ps2run PRIVATE PS2_WINDOW)
          target_link_libraries(ps2run PRIVATE SDL2::SDL2)
@@ -715,7 +713,7 @@ index 0000000..653576d
 +
 +}
 diff --git a/host/main.cpp b/host/main.cpp
-index 2fdf426..9cf1728 100644
+index 2fdf426..c8bebdc 100644
 --- a/host/main.cpp
 +++ b/host/main.cpp
 @@ -1,12 +1,21 @@
@@ -785,7 +783,7 @@ index 2fdf426..9cf1728 100644
 +    unsigned pace_hz = 0;   // headless: hold the game to this many frames per second, as the window does (a test aid for netplay runs)
 +    bool sharpen = true;
 +    // Which of the options a session file's [local] section may set were given on the command line (the command line wins).
-+    bool cli_scale = false, cli_msaa = false, cli_aniso = false, cli_sharpen = false, cli_volume = false, cli_brightness = false, cli_pad_user = false, cli_delay = false;
++    bool cli_scale = false, cli_msaa = false, cli_aniso = false, cli_sharpen = false, cli_volume = false, cli_brightness = false, cli_pad_user = false, cli_delay = false, cli_view = false;
      std::string load_path;
      std::uint64_t run_frames = 0;
 +    ps2::netplay::Config net;
@@ -811,7 +809,7 @@ index 2fdf426..9cf1728 100644
 +        else if (a == "--aniso" && i + 1 < argc) { cli_aniso = true; ps2::g_options.aniso = static_cast<std::uint32_t>(std::strtoul(argv[++i], nullptr, 10)); }
 +        else if (a == "--fxaa") ps2::set_video_options(ps2::video_options() | ps2::kVideoEdgeAA);
 +        else if (a == "--no-sharpen") { cli_sharpen = true; sharpen = false; }
-+        else if (a == "--full-view") ps2::set_view_cut(false);
++        else if (a == "--full-view") { cli_view = true; ps2::set_view_cut(false); }
          else if (a == "--patches" && i + 1 < argc) {
              if (!ps2::load_patches(argv[++i])) return usage();
          }
@@ -913,7 +911,7 @@ index 2fdf426..9cf1728 100644
          else if (a == "--frame-every" && i + 1 < argc) ps2::g_options.frame_every = static_cast<std::uint32_t>(std::strtoul(argv[++i], nullptr, 10));
          else if (a == "--save-state" && i + 1 < argc) {
              const std::string spec = argv[++i];
-@@ -81,9 +213,54 @@ int main(int argc, char **argv) {
+@@ -81,9 +213,55 @@ int main(int argc, char **argv) {
              ps2::g_options.save_state_path = spec.substr(colon + 1);
          }
          else if (a == "--load-state" && i + 1 < argc) load_path = argv[++i];
@@ -939,6 +937,7 @@ index 2fdf426..9cf1728 100644
 +            if (!cli_aniso && local.aniso >= 0) ps2::g_options.aniso = static_cast<std::uint32_t>(local.aniso);
 +            if (!cli_sharpen && local.sharpen >= 0) sharpen = local.sharpen != 0;
 +            if (!cli_brightness && local.brightness > 0) ps2::set_video_brightness(static_cast<std::uint32_t>(local.brightness));
++            if (!cli_view && local.view >= 0) ps2::set_view_cut(local.view == 0);
 +            if (!cli_delay && session.input_delay > 0) {
 +                net.delay = static_cast<std::uint16_t>(session.input_delay);
 +                net.adaptive_delay = false;
@@ -969,7 +968,7 @@ index 2fdf426..9cf1728 100644
  #ifdef PS2_WINDOW
      if (window && !open_window(fullscreen)) return 1;
  #endif
-@@ -96,7 +273,17 @@ int main(int argc, char **argv) {
+@@ -96,7 +274,17 @@ int main(int argc, char **argv) {
              return 1;
          }
          ps2::boot(entry, args);
@@ -1091,46 +1090,24 @@ index 0000000..39548b5
 +void wait_for_next_frame(unsigned hz);
 +
 +}
-diff --git a/host/pads.hpp b/host/pads.hpp
+diff --git a/host/pads.cpp b/host/pads.cpp
 new file mode 100644
-index 0000000..e889078
+index 0000000..a573386
 --- /dev/null
-+++ b/host/pads.hpp
-@@ -0,0 +1,21 @@
-+#pragma once
-+
-+#include "controller.hpp"
-+
-+#include <cstdint>
-+
-+// Physical controllers behind the window's pad ports 0 to ps2::kPadCount - 1. Windows reads XInput (pads_xinput.cpp), the other platforms
-+// SDL game controllers (pads_sdl.cpp).
-+namespace host::pads {
-+
-+// SDL reported a controller added or removed (no effect with XInput, which is polled).
-+void attach(int device);
-+void detach(std::int32_t instance);
-+
-+// Reads the controller on `port`. False when there is none.
-+bool read(int port, Reading &out);
-+
-+// Rumble motors of the controller on `port`, 0 to 65535 each; both 0 stops them.
-+void rumble(int port, std::uint16_t strong, std::uint16_t weak);
-+
-+}
-diff --git a/host/pads_sdl.cpp b/host/pads_sdl.cpp
-new file mode 100644
-index 0000000..f32436b
---- /dev/null
-+++ b/host/pads_sdl.cpp
-@@ -0,0 +1,87 @@
++++ b/host/pads.cpp
+@@ -0,0 +1,144 @@
 +#include "pads.hpp"
 +
 +#include "ps2/pad.hpp"
++#include "virtual_pads.hpp"
 +
 +#include <SDL.h>
 +
 +#include <algorithm>
++#include <cstdio>
++#include <cstdlib>
++#include <cstring>
++#include <string>
 +
 +namespace host::pads {
 +
@@ -1139,12 +1116,16 @@ index 0000000..f32436b
 +constexpr int kTriggerThreshold = 2000;
 +constexpr int kAxisToByteShift = 8;
 +constexpr int kAxisRange = 32768;
++constexpr int kLeftDeadZone = 7849;     // XInput's own stick dead zones: a resting stick reads as centred
++constexpr int kRightDeadZone = 8689;
++constexpr Uint32 kRumbleMs = 200;
 +
 +struct Binding {
 +    SDL_GameControllerButton button;
 +    std::uint16_t mask;
 +};
 +
++// Buttons by position on the pad (A is the bottom face button, the PS2's cross), whatever the pad's own labels say.
 +constexpr Binding kButtons[] = {
 +    {SDL_CONTROLLER_BUTTON_A, kCross},          {SDL_CONTROLLER_BUTTON_B, kCircle},
 +    {SDL_CONTROLLER_BUTTON_X, kSquare},         {SDL_CONTROLLER_BUTTON_Y, kTriangle},
@@ -1155,36 +1136,86 @@ index 0000000..f32436b
 +    {SDL_CONTROLLER_BUTTON_DPAD_LEFT, kLeft},   {SDL_CONTROLLER_BUTTON_DPAD_RIGHT, kRight},
 +};
 +
-+SDL_GameController *g_controllers[ps2::kPadCount] = {};
++// Which physical controller a port belongs to: its GUID (model) and serial (the unit, when the pad reports one).
++struct Identity {
++    SDL_JoystickGUID guid{};
++    std::string serial;
++    bool operator==(const Identity &o) const { return std::memcmp(&guid, &o.guid, sizeof guid) == 0 && serial == o.serial; }
++};
 +
-+std::uint8_t axis(SDL_GameController *pad, SDL_GameControllerAxis a) {
-+    return static_cast<std::uint8_t>(std::clamp((SDL_GameControllerGetAxis(pad, a) + kAxisRange) >> kAxisToByteShift, 0, 255));
++struct Port {
++    SDL_GameController *controller = nullptr;   // null while unplugged
++    Identity owner;                             // the last controller that had this port
++    bool claimed = false;
++};
++
++Port g_ports[ps2::kPadCount];
++
++Identity identity_of(SDL_GameController *controller) {
++    const char *serial = SDL_GameControllerGetSerial(controller);
++    return {SDL_JoystickGetGUID(SDL_GameControllerGetJoystick(controller)), serial ? serial : ""};
 +}
 +
++// The port the controller returns to if it had one, else the first port no controller ever had, else the first free one.
++Port *port_for(const Identity &id) {
++    Port *never_used = nullptr, *free_port = nullptr;
++    for (Port &p : g_ports) {
++        if (p.controller) continue;
++        if (p.claimed && p.owner == id) return &p;
++        if (!p.claimed && !never_used) never_used = &p;
++        if (!free_port) free_port = &p;
++    }
++    return never_used ? never_used : free_port;
 +}
 +
-+// A new controller takes the first free port.
++std::uint8_t stick_byte(SDL_GameController *pad, SDL_GameControllerAxis a, int dead_zone) {
++    const int v = SDL_GameControllerGetAxis(pad, a);
++    if (std::abs(v) < dead_zone) return kAxisCenter;
++    return static_cast<std::uint8_t>(std::clamp((v + kAxisRange) >> kAxisToByteShift, 0, 255));
++}
++
++SDL_GameController *controller_on(int port) { return port >= 0 && port < ps2::kPadCount ? g_ports[port].controller : nullptr; }
++
++}
++
++void prepare() {
++    SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");    // a pad keeps playing while another window has the focus
++    SDL_SetHint(SDL_HINT_GAMECONTROLLER_USE_BUTTON_LABELS, "0");    // Nintendo pads report A for the bottom button like the others
++}
++
 +void attach(int device) {
-+    const SDL_JoystickID id = SDL_JoystickGetDeviceInstanceID(device);
-+    for (SDL_GameController *pad : g_controllers)
-+        if (pad && SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(pad)) == id) return;
-+    for (SDL_GameController *&slot : g_controllers)
-+        if (!slot) {
-+            slot = SDL_GameControllerOpen(device);
-+            return;
-+        }
++    if (!SDL_IsGameController(device) || (virtual_pads_active() && !SDL_JoystickIsVirtual(device))) return;
++    const SDL_JoystickID instance = SDL_JoystickGetDeviceInstanceID(device);
++    for (const Port &p : g_ports)
++        if (p.controller && SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(p.controller)) == instance) return;
++    SDL_GameController *controller = SDL_GameControllerOpen(device);
++    if (!controller) return;
++    const Identity id = identity_of(controller);
++    Port *port = port_for(id);
++    if (!port) {
++        SDL_GameControllerClose(controller);
++        return;
++    }
++    port->controller = controller;
++    port->owner = id;
++    port->claimed = true;
++    char guid[33];
++    SDL_JoystickGetGUIDString(id.guid, guid, sizeof guid);
++    std::fprintf(stderr, "[pads] %s (type %d, guid %s, serial '%s') on pad port %d\n", SDL_GameControllerName(controller), static_cast<int>(SDL_GameControllerGetType(controller)),
++                 guid, id.serial.c_str(), static_cast<int>(port - g_ports) + 1);
 +}
 +
 +void detach(std::int32_t instance) {
-+    for (SDL_GameController *&pad : g_controllers)
-+        if (pad && instance == SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(pad))) {
-+            SDL_GameControllerClose(pad);
-+            pad = nullptr;
++    for (Port &p : g_ports)
++        if (p.controller && instance == SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(p.controller))) {
++            SDL_GameControllerClose(p.controller);
++            p.controller = nullptr;
++            std::fprintf(stderr, "[pads] controller left pad port %d\n", static_cast<int>(&p - g_ports) + 1);
 +        }
 +}
 +
 +bool read(int port, Reading &out) {
-+    SDL_GameController *pad = port >= 0 && port < ps2::kPadCount ? g_controllers[port] : nullptr;
++    SDL_GameController *pad = controller_on(port);
 +    if (!pad) return false;
 +    out = Reading{};
 +    for (const Binding &b : kButtons)
@@ -1197,126 +1228,46 @@ index 0000000..f32436b
 +    };
 +    trigger(SDL_CONTROLLER_AXIS_TRIGGERLEFT, kL2, out.l2);
 +    trigger(SDL_CONTROLLER_AXIS_TRIGGERRIGHT, kR2, out.r2);
-+    out.lx = axis(pad, SDL_CONTROLLER_AXIS_LEFTX);
-+    out.ly = axis(pad, SDL_CONTROLLER_AXIS_LEFTY);
-+    out.rx = axis(pad, SDL_CONTROLLER_AXIS_RIGHTX);
-+    out.ry = axis(pad, SDL_CONTROLLER_AXIS_RIGHTY);
++    out.lx = stick_byte(pad, SDL_CONTROLLER_AXIS_LEFTX, kLeftDeadZone);
++    out.ly = stick_byte(pad, SDL_CONTROLLER_AXIS_LEFTY, kLeftDeadZone);
++    out.rx = stick_byte(pad, SDL_CONTROLLER_AXIS_RIGHTX, kRightDeadZone);
++    out.ry = stick_byte(pad, SDL_CONTROLLER_AXIS_RIGHTY, kRightDeadZone);
 +    return true;
 +}
 +
 +void rumble(int port, std::uint16_t strong, std::uint16_t weak) {
-+    constexpr Uint32 kRumbleMs = 200;
-+    SDL_GameController *pad = port >= 0 && port < ps2::kPadCount ? g_controllers[port] : nullptr;
-+    if (pad) SDL_GameControllerRumble(pad, strong, weak, strong || weak ? kRumbleMs : 0);
++    if (SDL_GameController *pad = controller_on(port)) SDL_GameControllerRumble(pad, strong, weak, strong || weak ? kRumbleMs : 0);
 +}
 +
 +}
-diff --git a/host/pads_xinput.cpp b/host/pads_xinput.cpp
+diff --git a/host/pads.hpp b/host/pads.hpp
 new file mode 100644
-index 0000000..301e9d7
+index 0000000..81bcb94
 --- /dev/null
-+++ b/host/pads_xinput.cpp
-@@ -0,0 +1,102 @@
-+#include "pads.hpp"
++++ b/host/pads.hpp
+@@ -0,0 +1,24 @@
++#pragma once
 +
-+#include <windows.h>
-+#include <xinput.h>
++#include "controller.hpp"
 +
-+#include <algorithm>
-+#include <cstdlib>
++#include <cstdint>
 +
++// Physical controllers behind the window's pad ports 0 to ps2::kPadCount - 1: every SDL game controller (Xbox, PlayStation, Switch Pro, generic), one list for all platforms.
++// A controller takes a pad port when it connects and keeps it while it is unplugged: the same controller returns to the same port.
 +namespace host::pads {
 +
-+namespace {
++// Sets the SDL hints the controllers need; before SDL_Init.
++void prepare();
 +
-+constexpr int kUsers = 4;
-+constexpr int kProbeEveryReads = 60;  // reads between looks at a user that had no controller
-+constexpr int kLeftDeadZone = XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE;
-+constexpr int kRightDeadZone = XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE;
-+constexpr int kStickRange = 32768;
++// SDL reported a controller added or removed.
++void attach(int device);
++void detach(std::int32_t instance);
 +
-+using GetState = DWORD(WINAPI *)(DWORD, XINPUT_STATE *);
-+using SetState = DWORD(WINAPI *)(DWORD, XINPUT_VIBRATION *);
++// Reads the controller on `port`. False when there is none.
++bool read(int port, Reading &out);
 +
-+struct Api {
-+    GetState get = nullptr;
-+    SetState set = nullptr;
-+};
-+
-+const Api &api() {
-+    static const Api loaded = [] {
-+        Api a;
-+        for (const char *name : {"xinput1_4.dll", "xinput1_3.dll", "xinput9_1_0.dll"}) {
-+            if (const HMODULE dll = LoadLibraryA(name)) {
-+                a.get = reinterpret_cast<GetState>(GetProcAddress(dll, "XInputGetState"));
-+                a.set = reinterpret_cast<SetState>(GetProcAddress(dll, "XInputSetState"));
-+                if (a.get) break;
-+            }
-+        }
-+        return a;
-+    }();
-+    return loaded;
-+}
-+
-+struct Binding {
-+    WORD xinput;
-+    std::uint16_t ps2;
-+};
-+
-+constexpr Binding kButtons[] = {
-+    {XINPUT_GAMEPAD_A, kCross},           {XINPUT_GAMEPAD_B, kCircle},          {XINPUT_GAMEPAD_X, kSquare},         {XINPUT_GAMEPAD_Y, kTriangle},
-+    {XINPUT_GAMEPAD_LEFT_SHOULDER, kL1},  {XINPUT_GAMEPAD_RIGHT_SHOULDER, kR1}, {XINPUT_GAMEPAD_LEFT_THUMB, kL3},   {XINPUT_GAMEPAD_RIGHT_THUMB, kR3},
-+    {XINPUT_GAMEPAD_BACK, kSelect},       {XINPUT_GAMEPAD_START, kStart},       {XINPUT_GAMEPAD_DPAD_UP, kUp},       {XINPUT_GAMEPAD_DPAD_DOWN, kDown},
-+    {XINPUT_GAMEPAD_DPAD_LEFT, kLeft},    {XINPUT_GAMEPAD_DPAD_RIGHT, kRight},
-+};
-+
-+// A stick axis as a pad byte; XInput's Y grows upward, the PS2's grows downward.
-+std::uint8_t stick_byte(int value, int dead_zone, bool flip) {
-+    if (std::abs(value) < dead_zone) return kAxisCenter;
-+    const int byte = std::clamp((value + kStickRange) >> 8, 0, 255);
-+    return static_cast<std::uint8_t>(flip ? 255 - byte : byte);
-+}
-+
-+void trigger(BYTE value, std::uint16_t bit, Reading &out, std::uint8_t &pressure) {
-+    if (value <= XINPUT_GAMEPAD_TRIGGER_THRESHOLD || (out.pressed & bit)) return;
-+    out.pressed |= bit;
-+    pressure = std::max<std::uint8_t>(1, value);
-+}
-+
-+}
-+
-+void attach(int) {}
-+void detach(std::int32_t) {}
-+
-+bool read(int user, Reading &out) {
-+    static int idle_reads[kUsers] = {};
-+    const Api &x = api();
-+    if (!x.get || user < 0 || user >= kUsers) return false;
-+    if (idle_reads[user] > 0 && --idle_reads[user] > 0) return false;
-+    XINPUT_STATE state{};
-+    if (x.get(static_cast<DWORD>(user), &state) != ERROR_SUCCESS) {
-+        idle_reads[user] = kProbeEveryReads;
-+        return false;
-+    }
-+    const XINPUT_GAMEPAD &pad = state.Gamepad;
-+    out = Reading{};
-+    for (const Binding &b : kButtons)
-+        if (pad.wButtons & b.xinput) out.pressed |= b.ps2;
-+    trigger(pad.bLeftTrigger, kL2, out, out.l2);
-+    trigger(pad.bRightTrigger, kR2, out, out.r2);
-+    out.lx = stick_byte(pad.sThumbLX, kLeftDeadZone, false);
-+    out.ly = stick_byte(pad.sThumbLY, kLeftDeadZone, true);
-+    out.rx = stick_byte(pad.sThumbRX, kRightDeadZone, false);
-+    out.ry = stick_byte(pad.sThumbRY, kRightDeadZone, true);
-+    return true;
-+}
-+
-+void rumble(int user, std::uint16_t strong, std::uint16_t weak) {
-+    const Api &x = api();
-+    if (!x.set || user < 0 || user >= kUsers) return;
-+    XINPUT_VIBRATION motors{strong, weak};
-+    x.set(static_cast<DWORD>(user), &motors);
-+}
++// Rumble motors of the controller on `port`, 0 to 65535 each; both 0 stops them.
++void rumble(int port, std::uint16_t strong, std::uint16_t weak);
 +
 +}
 diff --git a/host/profile_win.cpp b/host/profile_win.cpp
@@ -1504,11 +1455,198 @@ index 0000000..b177bc3
 +
 +}
 +#endif
+diff --git a/host/virtual_pads.cpp b/host/virtual_pads.cpp
+new file mode 100644
+index 0000000..cec92a0
+--- /dev/null
++++ b/host/virtual_pads.cpp
+@@ -0,0 +1,153 @@
++#include "virtual_pads.hpp"
++
++#include <cstdio>
++#include <cstdlib>
++#include <fstream>
++#include <sstream>
++#include <string>
++#include <vector>
++
++#include <SDL.h>   // after the standard headers: with clang on Windows SDL_endian.h clashes with <intrin.h> when it comes first
++
++namespace host::pads {
++
++namespace {
++
++constexpr const char *kScriptEnv = "PS2_VIRTUAL_PADS";
++constexpr int kMaxPads = 4;
++constexpr int kTriggerRest = -32768;
++constexpr int kButtonCount = SDL_CONTROLLER_BUTTON_DPAD_RIGHT + 1;   // the standard buttons: raw button i is SDL's controller button i
++constexpr int kAxisCount = SDL_CONTROLLER_AXIS_TRIGGERRIGHT + 1;
++
++struct Control {
++    const char *name;
++    int index;   // the joystick button or axis number: the masks below make it equal SDL's controller enum
++};
++
++constexpr Control kButtons[] = {
++    {"a", SDL_CONTROLLER_BUTTON_A},         {"b", SDL_CONTROLLER_BUTTON_B},         {"x", SDL_CONTROLLER_BUTTON_X},          {"y", SDL_CONTROLLER_BUTTON_Y},
++    {"back", SDL_CONTROLLER_BUTTON_BACK},   {"guide", SDL_CONTROLLER_BUTTON_GUIDE}, {"start", SDL_CONTROLLER_BUTTON_START},  {"ls", SDL_CONTROLLER_BUTTON_LEFTSTICK},
++    {"rs", SDL_CONTROLLER_BUTTON_RIGHTSTICK}, {"lb", SDL_CONTROLLER_BUTTON_LEFTSHOULDER}, {"rb", SDL_CONTROLLER_BUTTON_RIGHTSHOULDER}, {"up", SDL_CONTROLLER_BUTTON_DPAD_UP},
++    {"down", SDL_CONTROLLER_BUTTON_DPAD_DOWN}, {"left", SDL_CONTROLLER_BUTTON_DPAD_LEFT}, {"right", SDL_CONTROLLER_BUTTON_DPAD_RIGHT},
++};
++constexpr Control kAxes[] = {
++    {"lx", SDL_CONTROLLER_AXIS_LEFTX}, {"ly", SDL_CONTROLLER_AXIS_LEFTY}, {"rx", SDL_CONTROLLER_AXIS_RIGHTX},
++    {"ry", SDL_CONTROLLER_AXIS_RIGHTY}, {"lt", SDL_CONTROLLER_AXIS_TRIGGERLEFT}, {"rt", SDL_CONTROLLER_AXIS_TRIGGERRIGHT},
++};
++
++struct Kind {
++    const char *name;
++    const char *label;
++    Uint16 vendor, product;
++};
++
++constexpr Kind kKinds[] = {
++    {"xbox", "Xbox 360 Controller", 0x045e, 0x028e},
++    {"ps5", "DualSense Wireless Controller", 0x054c, 0x0ce6},
++    {"switch", "Nintendo Switch Pro Controller", 0x057e, 0x2009},
++};
++
++struct Command {
++    std::uint64_t frame = 0;
++    std::string verb, argument;
++    int pad = 0, value = 0;
++};
++
++SDL_Joystick *g_joysticks[kMaxPads] = {};   // the opened virtual controller of each script pad
++
++std::vector<Command> g_script;
++std::size_t g_next = 0;
++bool g_active = false;
++
++template <std::size_t N> const Control *find(const Control (&table)[N], const std::string &name) {
++    for (const Control &c : table)
++        if (name == c.name) return &c;
++    return nullptr;
++}
++
++void attach(int pad, const std::string &kind_name) {
++    const Kind *kind = nullptr;
++    for (const Kind &k : kKinds)
++        if (kind_name == k.name) kind = &k;
++    if (!kind || g_joysticks[pad]) return;
++    const std::string name = std::string(kind->label) + " " + std::to_string(pad + 1);   // a name of its own: each pad has its own GUID
++    SDL_VirtualJoystickDesc desc;
++    SDL_zero(desc);
++    desc.version = SDL_VIRTUAL_JOYSTICK_DESC_VERSION;
++    desc.type = SDL_JOYSTICK_TYPE_GAMECONTROLLER;
++    desc.naxes = kAxisCount;
++    desc.nbuttons = kButtonCount;
++    desc.vendor_id = kind->vendor;
++    desc.product_id = kind->product;
++    desc.button_mask = (1u << kButtonCount) - 1;
++    desc.axis_mask = (1u << kAxisCount) - 1;
++    desc.name = name.c_str();
++    const int index = SDL_JoystickAttachVirtualEx(&desc);
++    if (index < 0) {
++        std::fprintf(stderr, "[virtual pads] cannot attach: %s\n", SDL_GetError());
++        return;
++    }
++    g_joysticks[pad] = SDL_JoystickOpen(index);
++    SDL_JoystickSetVirtualAxis(g_joysticks[pad], SDL_CONTROLLER_AXIS_TRIGGERLEFT, kTriggerRest);
++    SDL_JoystickSetVirtualAxis(g_joysticks[pad], SDL_CONTROLLER_AXIS_TRIGGERRIGHT, kTriggerRest);
++    std::fprintf(stderr, "[virtual pads] pad %d attached as %s\n", pad + 1, name.c_str());
++}
++
++// The device index of an open joystick: SDL renumbers the devices when one goes, so it is looked up when needed.
++int device_index_of(SDL_Joystick *joystick) {
++    for (int i = 0; i < SDL_NumJoysticks(); ++i)
++        if (SDL_JoystickGetDeviceInstanceID(i) == SDL_JoystickInstanceID(joystick)) return i;
++    return -1;
++}
++
++void detach(int pad) {
++    SDL_Joystick *joystick = g_joysticks[pad];
++    if (!joystick) return;
++    SDL_JoystickDetachVirtual(device_index_of(joystick));
++    SDL_JoystickClose(joystick);
++    g_joysticks[pad] = nullptr;
++    std::fprintf(stderr, "[virtual pads] pad %d detached\n", pad + 1);
++}
++
++void set(int pad, const std::string &control, int value) {
++    SDL_Joystick *joystick = g_joysticks[pad];
++    if (!joystick) return;
++    if (const Control *b = find(kButtons, control)) SDL_JoystickSetVirtualButton(joystick, b->index, static_cast<Uint8>(value != 0));
++    else if (const Control *a = find(kAxes, control)) SDL_JoystickSetVirtualAxis(joystick, a->index, static_cast<Sint16>(value));
++}
++
++}
++
++bool load_virtual_pads() {
++    const char *path = std::getenv(kScriptEnv);
++    if (!path) return false;
++    std::ifstream file(path);
++    if (!file) {
++        std::fprintf(stderr, "[virtual pads] cannot open %s\n", path);
++        return false;
++    }
++    for (std::string line; std::getline(file, line);) {
++        std::istringstream in(line);
++        Command c;
++        if (!(in >> c.frame >> c.verb >> c.pad) || c.pad < 1 || c.pad > kMaxPads) continue;
++        --c.pad;
++        in >> c.argument >> c.value;
++        g_script.push_back(c);
++    }
++    g_active = true;
++    std::fprintf(stderr, "[virtual pads] %zu commands from %s\n", g_script.size(), path);
++    return true;
++}
++
++bool virtual_pads_active() { return g_active; }
++
++void drive_virtual_pads(std::uint64_t frame) {
++    for (; g_next < g_script.size() && g_script[g_next].frame <= frame; ++g_next) {
++        const Command &c = g_script[g_next];
++        if (c.verb == "attach") attach(c.pad, c.argument);
++        else if (c.verb == "detach") detach(c.pad);
++        else if (c.verb == "set") set(c.pad, c.argument, c.value);
++    }
++}
++
++}
+diff --git a/host/virtual_pads.hpp b/host/virtual_pads.hpp
+new file mode 100644
+index 0000000..dbf5611
+--- /dev/null
++++ b/host/virtual_pads.hpp
+@@ -0,0 +1,22 @@
++#pragma once
++
++#include <cstdint>
++
++// Test aid, off unless PS2_VIRTUAL_PADS names a script file: attaches, drives and detaches SDL virtual game controllers, so the pad ports are exercised without hardware by the
++// same path real controllers take (SDL events, pads::attach, pads::read). One command per line, the frame being the emulator's frame count:
++//   <frame> attach <1-4> <xbox|ps5|switch>     a controller of that kind connects
++//   <frame> detach <1-4>                       it is unplugged
++//   <frame> set <1-4> <control> <value>        a button (a b x y back guide start ls rs lb rb up down left right: 0 or 1) or a stick or trigger axis (lx ly rx ry lt rt: raw
++//                                              -32768 to 32767, a trigger at rest is -32768)
++namespace host::pads {
++
++// Reads the script. False when PS2_VIRTUAL_PADS is not set or unreadable.
++bool load_virtual_pads();
++
++// A script was read: only the virtual controllers play, so the pads of the PC the test runs on cannot take a port.
++bool virtual_pads_active();
++
++// Runs every command due at `frame`.
++void drive_virtual_pads(std::uint64_t frame);
++
++}
 diff --git a/host/window.cpp b/host/window.cpp
-index 984d4d6..31c0655 100644
+index 984d4d6..14a6a5b 100644
 --- a/host/window.cpp
 +++ b/host/window.cpp
-@@ -1,11 +1,21 @@
+@@ -1,11 +1,22 @@
  #include "window.hpp"
  
 +#include "audio.hpp"
@@ -1517,6 +1655,7 @@ index 984d4d6..31c0655 100644
 +#include "pads.hpp"
  #include "ps2/system.hpp"
 +#include "ps2/video.hpp"
++#include "virtual_pads.hpp"
  
  #include <SDL.h>
  #include <SDL_syswm.h>
@@ -1530,7 +1669,7 @@ index 984d4d6..31c0655 100644
  #ifdef __APPLE__
  #include <SDL_metal.h>
  #include <mach/mach.h>
-@@ -22,12 +32,7 @@
+@@ -22,12 +33,7 @@
  
  namespace {
  
@@ -1544,7 +1683,7 @@ index 984d4d6..31c0655 100644
  
  struct KeyBinding {
      SDL_Scancode key;
-@@ -42,29 +47,23 @@ constexpr KeyBinding kKeys[] = {
+@@ -42,29 +48,27 @@ constexpr KeyBinding kKeys[] = {
      {SDL_SCANCODE_RETURN, kStart},  {SDL_SCANCODE_BACKSPACE, kSelect},
  };
  
@@ -1562,7 +1701,10 @@ index 984d4d6..31c0655 100644
 -    {SDL_CONTROLLER_BUTTON_DPAD_UP, kUp},       {SDL_CONTROLLER_BUTTON_DPAD_DOWN, kDown},
 -    {SDL_CONTROLLER_BUTTON_DPAD_LEFT, kLeft},   {SDL_CONTROLLER_BUTTON_DPAD_RIGHT, kRight},
 -};
--
++constexpr const char *kGameTitle = "The Warriors";
++constexpr SDL_Scancode kSplitScreenKey = SDL_SCANCODE_F9;   // held: raises the pad stream's request chord (the game switches its split screen setting, the same frame on every machine)
++constexpr SDL_Scancode kOnlineViewKey = SDL_SCANCODE_F10;   // pressed: this window shows its own player's view or the whole layout (display only)
+ 
  SDL_Window *g_window = nullptr;
  SDL_Renderer *g_renderer = nullptr;
  SDL_Texture *g_texture = nullptr;
@@ -1571,7 +1713,7 @@ index 984d4d6..31c0655 100644
 -SDL_GameController *g_pads[2] = {};
 +// the keyboard drives the first pad port along with the first controller; controllers on the other ports are players 2 to 4
 +bool g_present[ps2::kPadCount] = {};   // a controller answered at the last poll
-+int g_pad_user = -1;                   // the controller read as pad 1; -1 until PS2_PAD_USER or set_pad_user decides
++int g_pad_user = -1;                   // the pad port read as pad 1; -1 until PS2_PAD_USER or set_pad_user decides
 +
 +// Pad port 0 (keyboard + this window's controller) is the local player; with several windows on one PC window k reads controller k. The other ports keep controller = port.
 +int controller_for(int port) {
@@ -1587,7 +1729,7 @@ index 984d4d6..31c0655 100644
  std::vector<std::uint32_t> g_pixels;
  bool g_gpu_present = false;
  
-@@ -101,6 +100,13 @@ bool attach_gpu() {
+@@ -101,6 +105,13 @@ bool attach_gpu() {
      }
  #endif
      switch (info.subsystem) {
@@ -1601,7 +1743,7 @@ index 984d4d6..31c0655 100644
  #if defined(SDL_VIDEO_DRIVER_X11)
      case SDL_SYSWM_X11:
          target.kind = ps2::WindowTarget::X11;
-@@ -120,88 +126,70 @@ bool attach_gpu() {
+@@ -120,91 +131,75 @@ bool attach_gpu() {
      return ps2::attach_window(target);
  }
  
@@ -1680,6 +1822,7 @@ index 984d4d6..31c0655 100644
 -        if (keys[SDL_SCANCODE_UP]) ly = 0x00;
 -        if (keys[SDL_SCANCODE_DOWN]) ly = 0xFF;
 +            if (keys[b.key]) r.pressed |= b.button;
++        if (keys[kSplitScreenKey]) r.pressed |= ps2::kRequestChord;
 +        if (keys[SDL_SCANCODE_LEFT]) r.lx = 0x00;
 +        if (keys[SDL_SCANCODE_RIGHT]) r.lx = 0xFF;
 +        if (keys[SDL_SCANCODE_UP]) r.ly = 0x00;
@@ -1736,7 +1879,19 @@ index 984d4d6..31c0655 100644
  }
  
  void poll() {
-@@ -222,23 +210,17 @@ void poll() {
++    pads::drive_virtual_pads(ps2::frame_count());
+     SDL_Event e;
+     while (SDL_PollEvent(&e)) {
+         if (e.type == SDL_QUIT) ps2::halt("window closed");
+@@ -213,6 +208,7 @@ void poll() {
+             SDL_SetWindowFullscreen(g_window, full ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP);
+             SDL_ShowCursor(full ? SDL_ENABLE : SDL_DISABLE);
+         }
++        if (e.type == SDL_KEYDOWN && e.key.keysym.scancode == kOnlineViewKey && !e.key.repeat) ps2::set_view_cut(!ps2::view_cut());
+         if (e.type == SDL_WINDOWEVENT && e.window.event == SDL_WINDOWEVENT_SIZE_CHANGED && g_gpu_present) {
+             int w = 0, h = 0;
+ #ifdef __APPLE__
+@@ -222,23 +218,17 @@ void poll() {
  #endif
              ps2::resize_window(static_cast<std::uint32_t>(w), static_cast<std::uint32_t>(h));
          }
@@ -1764,7 +1919,7 @@ index 984d4d6..31c0655 100644
          g_tex_w = w;
          g_tex_h = h;
      }
-@@ -257,7 +239,9 @@ void present() {
+@@ -257,7 +247,9 @@ void present() {
      if (ps2::display_frame(g_pixels, w, h)) show_pixels(g_pixels.data(), w, h);
  }
  
@@ -1775,7 +1930,7 @@ index 984d4d6..31c0655 100644
  
  std::atomic<double> g_paced_ms{0.0};
  
-@@ -270,42 +254,42 @@ struct PaceTimer {
+@@ -270,45 +262,47 @@ struct PaceTimer {
  };
  
  void pace() {
@@ -1834,7 +1989,12 @@ index 984d4d6..31c0655 100644
  }
  
  void show_speed() {
-@@ -328,16 +312,18 @@ void show_speed() {
++    static const bool stats = std::getenv("PS2_WINDOW_STATS") != nullptr;   // the speed line in the title and the log is a debug aid
++    if (!stats) return;
+     static std::uint64_t start = 0, frames = 0;
+     static double cpu_start = 0.0, gpu_start = 0.0, emu_start = 0.0, vu_start = 0.0, gs_start = 0.0;
+     static std::uint64_t interpreted_start = 0;
+@@ -328,16 +322,17 @@ void show_speed() {
      if (seconds < 1.0) return;
      const double cpu = process_cpu_seconds(), gpu = ps2::gpu_busy_ms(), emu = emu_idle(), vu = ps2::vu_thread_idle_ms(), gs = ps2::thread_waited_ms(2);
      const std::uint64_t interpreted = ps2::vu1_interpreted_calls();
@@ -1852,12 +2012,11 @@ index 984d4d6..31c0655 100644
          std::snprintf(title + used, sizeof title - used, "  vu1 interpreted %.0f/s", static_cast<double>(interpreted - interpreted_start) / seconds);
      }
      SDL_SetWindowTitle(g_window, title);
-+    static const bool log_stats = std::getenv("PS2_WINDOW_STATS") != nullptr;
-+    if (log_stats) std::fprintf(stderr, "[stats] frame %llu %s\n", static_cast<unsigned long long>(ps2::frame_count()), title);
++    std::fprintf(stderr, "[stats] frame %llu %s\n", static_cast<unsigned long long>(ps2::frame_count()), title);
      start = now;
      frames = 0;
      emu_start = emu;
-@@ -355,12 +341,9 @@ void on_vblank() {
+@@ -355,14 +350,12 @@ void on_vblank() {
      pace();
  }
  
@@ -1870,8 +2029,18 @@ index 984d4d6..31c0655 100644
 +void set_pad_user(int user) { g_pad_user = std::clamp(user, 0, ps2::kPadCount - 1); }
  
  bool open_window(bool fullscreen) {
++    pads::prepare();
      if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER) != 0) {
-@@ -379,23 +362,15 @@ bool open_window(bool fullscreen) {
+         std::fprintf(stderr, "SDL: %s\n", SDL_GetError());
+         return false;
+@@ -373,29 +366,22 @@ bool open_window(bool fullscreen) {
+     const Uint32 metal = 0u;
+ #endif
+     const Uint32 flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI | metal | (fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0u);
+-    g_window = SDL_CreateWindow("ps2-web-recomp", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, ps2::g_options.widescreen ? 1280 : 960, 720, flags);
++    g_window = SDL_CreateWindow(kGameTitle, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, ps2::g_options.widescreen ? 1280 : 960, 720, flags);
+     if (!g_window) {
+         std::fprintf(stderr, "SDL: %s\n", SDL_GetError());
          return false;
      }
      SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
@@ -1886,6 +2055,7 @@ index 984d4d6..31c0655 100644
 -        ps2::set_audio_sink(queue_audio);
 -    }
 +    host::audio::open();
++    pads::load_virtual_pads();
      for (int i = 0; i < SDL_NumJoysticks(); ++i)
 -        if (SDL_IsGameController(i)) open_pad(i);
 +        if (SDL_IsGameController(i)) pads::attach(i);
@@ -1898,7 +2068,7 @@ index 984d4d6..31c0655 100644
      ps2::init_graphics();
      g_gpu_present = attach_gpu();
      std::fprintf(stderr, "[window] %s\n", g_gpu_present ? "presenting through WebGPU" : "presenting through SDL");
-@@ -424,7 +399,10 @@ int run_window(const std::function<int()> &emulate) {
+@@ -424,7 +410,10 @@ int run_window(const std::function<int()> &emulate) {
      const std::function<void(const std::uint32_t *, std::uint32_t, std::uint32_t)> copy = show_pixels, none;
      while (!done.load()) {
          poll();
@@ -1911,14 +2081,14 @@ index 984d4d6..31c0655 100644
      emulation.join();
      SDL_Quit();
 diff --git a/host/window.hpp b/host/window.hpp
-index 3174ae9..d8a04d6 100644
+index 3174ae9..06d1ed2 100644
 --- a/host/window.hpp
 +++ b/host/window.hpp
 @@ -4,3 +4,5 @@
  
  bool open_window(bool fullscreen);
  int run_window(const std::function<int()> &emulate);
-+// The controller (XInput user or SDL game controller, 0 to 3) this window reads as its pad 1; PS2_PAD_USER sets it too. Default 0.
++// The controller port (0 to 3, in the order the controllers connected) this window reads as its pad 1; PS2_PAD_USER sets it too. Default 0.
 +void set_pad_user(int user);
 diff --git a/runtime/include/ps2/boot_options.hpp b/runtime/include/ps2/boot_options.hpp
 new file mode 100644
@@ -2037,10 +2207,10 @@ index 6a919d2..b734c32 100644
  
 diff --git a/runtime/include/ps2/pad.hpp b/runtime/include/ps2/pad.hpp
 new file mode 100644
-index 0000000..4117c8c
+index 0000000..a02c008
 --- /dev/null
 +++ b/runtime/include/ps2/pad.hpp
-@@ -0,0 +1,37 @@
+@@ -0,0 +1,41 @@
 +#pragma once
 +
 +#include <array>
@@ -2057,6 +2227,10 @@ index 0000000..4117c8c
 +    frames.fill(UINT64_MAX);
 +    return frames;
 +}
++
++// A request a game takes from the pad stream: SELECT, L3 and R3 held together (buttons bits 0 to 2). It travels with the pad's samples, so every machine sees it at the same
++// frame; the window raises it for the keyboard key that asks for it.
++constexpr std::uint16_t kRequestChord = 0x0007;
 +
 +// Everything one controller reports to the game for one frame; the unit netplay exchanges.
 +struct PadSample {
@@ -2200,10 +2374,10 @@ index f447223..a67e631 100644
  
  }
 diff --git a/runtime/include/ps2/video.hpp b/runtime/include/ps2/video.hpp
-index f3366ad..d783e5a 100644
+index f3366ad..43e7e52 100644
 --- a/runtime/include/ps2/video.hpp
 +++ b/runtime/include/ps2/video.hpp
-@@ -3,7 +3,28 @@
+@@ -3,7 +3,29 @@
  
  namespace ps2 {
  // Display-only options, independent of emulated GS state and save states.
@@ -2230,6 +2404,7 @@ index f3366ad..d783e5a 100644
 +};
 +void set_view_probe(bool (*probe)(ViewRect &view));
 +void set_view_cut(bool on);
++bool view_cut();
 +// False (the whole picture) when there is no probe, it says no, or the cut is off.
 +bool display_view(ViewRect &view);
  }
@@ -5598,7 +5773,7 @@ index 0000000..7ea9d7e
 +}
 diff --git a/runtime/src/netplay/game_flow.cpp b/runtime/src/netplay/game_flow.cpp
 new file mode 100644
-index 0000000..41b0d49
+index 0000000..b957a1d
 --- /dev/null
 +++ b/runtime/src/netplay/game_flow.cpp
 @@ -0,0 +1,30 @@
@@ -5626,15 +5801,15 @@ index 0000000..41b0d49
 +    const std::uint32_t game = ld32(warriors::kGameStatePointer);
 +    if (!game || in_front_end_or_unloaded(game)) return TitleReturn::not_needed;
 +    if (ld32(game + warriors::kLevelFlowRequestOffset) != 0) return TitleReturn::waiting;
-+    call_guest(g_cpu, warriors::kGameStateSetSection, game, warriors::kQuitSection);
-+    call_guest(g_cpu, warriors::kLevelFlowLoadLevelByName, warriors::kMenuLevelNameString);
++    call_guest(g_cpu, warriors::kSessionSetChapter, game, warriors::kQuitSection);
++    call_guest(g_cpu, warriors::kLevelEnterNamed, warriors::kMenuLevelNameString);
 +    return TitleReturn::done;
 +}
 +
 +}
 diff --git a/runtime/src/netplay/game_flow.hpp b/runtime/src/netplay/game_flow.hpp
 new file mode 100644
-index 0000000..de4d9da
+index 0000000..75bd230
 --- /dev/null
 +++ b/runtime/src/netplay/game_flow.hpp
 @@ -0,0 +1,15 @@
@@ -5648,7 +5823,7 @@ index 0000000..de4d9da
 +    done,         // the game was told to leave the level the way the pause menu's Quit does
 +};
 +
-+// Takes the game back to its title through its own quit path (GameState_SetSection, LevelFlow_LoadLevelByName("menu")). Called from the vblank handler
++// Takes the game back to its title through its own quit path (session_set_chapter, level_enter_named("menu")). Called from the vblank handler
 +// like a --call, once the session that tied this machine to others is over.
 +TitleReturn return_to_title();
 +
@@ -6091,10 +6266,10 @@ index 0000000..288f9ff
 +}
 diff --git a/runtime/src/netplay/netplay.cpp b/runtime/src/netplay/netplay.cpp
 new file mode 100644
-index 0000000..95a24de
+index 0000000..52cc195
 --- /dev/null
 +++ b/runtime/src/netplay/netplay.cpp
-@@ -0,0 +1,809 @@
+@@ -0,0 +1,834 @@
 +#include "netplay.hpp"
 +
 +#include "../digest.hpp"
@@ -6207,11 +6382,29 @@ index 0000000..95a24de
 +    }
 +}
 +
-+// The host's friendly fire setting goes into the game's switch word on every machine before the session's first snapshot or hash, so it is part of the state they agree on.
-+void apply_friendly_fire(std::uint8_t value) {
-+    if (value == kLeaveAlone || ld32(warriors::kFriendlyFireSwitch) == value) return;
-+    st32(warriors::kFriendlyFireSwitch, value);
-+    log("friendly fire %s (the host's setting)", value ? "on" : "off");
++// The host's friendly fire and split screen settings go into the game's switch words on every machine before the session's first snapshot or hash, so they are part of
++// the state the machines agree on.
++void apply_host_switches(const Terms &terms) {
++    if (terms.friendly_fire != kLeaveAlone && ld32(warriors::kFriendlyFireSwitch) != terms.friendly_fire) {
++        st32(warriors::kFriendlyFireSwitch, terms.friendly_fire);
++        log("friendly fire %s (the host's setting)", terms.friendly_fire ? "on" : "off");
++    }
++    if (terms.split_screen != kLeaveAlone && ld32(warriors::kSplitScreenSwitch) != terms.split_screen) {
++        st32(warriors::kSplitScreenSwitch, terms.split_screen);
++        log("split screen %s (the host's setting)", terms.split_screen ? "always" : "auto");
++    }
++}
++
++// A local session has no link and no host: its session file's switches go into the game once, at the first frame, and the pad chord or F9 changes them after that.
++void apply_local_switches() {
++    static bool applied = false;
++    const SessionInfo *info = session();
++    if (applied || !info || info->role != SessionRole::local) return;
++    applied = true;
++    Terms terms;
++    terms.friendly_fire = static_cast<std::uint8_t>(info->friendly_fire);
++    terms.split_screen = static_cast<std::uint8_t>(info->split_screen);
++    apply_host_switches(terms);
 +}
 +
 +Hooks make_hooks(int local_port) {
@@ -6566,7 +6759,10 @@ index 0000000..95a24de
 +        g_terms.digest_every = config.digest_every;
 +        g_terms.players = static_cast<std::uint8_t>(g_config.players);
 +        g_terms.auto_join = config.cold_start ? 0 : 1;
-+        if (const SessionInfo *info = session()) g_terms.friendly_fire = static_cast<std::uint8_t>(info->friendly_fire);
++        if (const SessionInfo *info = session()) {
++            g_terms.friendly_fire = static_cast<std::uint8_t>(info->friendly_fire);
++            g_terms.split_screen = static_cast<std::uint8_t>(info->split_screen);
++        }
 +        log("hosting %d players on %s:%u, build %016llx/%016llx/%016llx; %s", g_config.players, config.address.c_str(), config.port,
 +            ull(g_fingerprint.game), ull(g_fingerprint.runtime), ull(g_fingerprint.patches),
 +            config.cold_start ? "every machine starts from boot once all have joined" : "the game runs on until all have joined");
@@ -6581,7 +6777,7 @@ index 0000000..95a24de
 +int local_port() { return locked() && !g_config.host ? g_terms.slot : 0; }
 +
 +void start_cold() {
-+    apply_friendly_fire(g_terms.friendly_fire);
++    apply_host_switches(g_terms);
 +    if (g_config.host && g_config.cold_start && g_state == State::listening) wait_for_roster();
 +}
 +
@@ -6627,7 +6823,7 @@ index 0000000..95a24de
 +}
 +
 +bool joined() {
-+    apply_friendly_fire(g_terms.friendly_fire);
++    apply_host_switches(g_terms);
 +    const Hashes ours = digest::memory_hashes();
 +    const bool ok = ours == g_terms.hashes && frame_count() == g_terms.frame;
 +    Writer w(kMsgReady);
@@ -6727,8 +6923,12 @@ index 0000000..95a24de
 +
 +bool on_vblank(std::uint64_t frame) {
 +    board::tick();
++    if (g_state == State::off) {
++        apply_local_switches();
++        return false;
++    }
 +    if (g_state == State::listening) {
-+        apply_friendly_fire(g_terms.friendly_fire);
++        apply_host_switches(g_terms);
 +        poll_for_joiner(kHostPollMs);
 +        return false;
 +    }
@@ -8093,10 +8293,10 @@ index 0000000..0466a0d
 +}
 diff --git a/runtime/src/netplay/session_file.cpp b/runtime/src/netplay/session_file.cpp
 new file mode 100644
-index 0000000..b4378b7
+index 0000000..f858f55
 --- /dev/null
 +++ b/runtime/src/netplay/session_file.cpp
-@@ -0,0 +1,161 @@
+@@ -0,0 +1,163 @@
 +#include "session_file.hpp"
 +
 +#include "log.hpp"
@@ -8176,6 +8376,7 @@ index 0000000..b4378b7
 +    else if (key == "new_profile_difficulty") info.new_profile_difficulty = to_int(value);
 +    else if (key == "friendly_fire") info.friendly_fire = to_int(value) != 0 ? 1 : 0;
 +    else if (key == "input_delay") info.input_delay = to_int(value);
++    else if (key == "split_screen") info.split_screen = value == "always" ? 1 : 0;
 +    else if (key == "memcard") info.memcard = value;
 +}
 +
@@ -8187,6 +8388,7 @@ index 0000000..b4378b7
 +    else if (key == "volume") local.volume = to_int(value);
 +    else if (key == "brightness") local.brightness = to_int(value);
 +    else if (key == "pad_user") local.pad_user = to_int(value);
++    else if (key == "view") local.view = value == "all" ? 1 : 0;
 +}
 +
 +void set_roster_entry(SessionInfo &info, const std::string &key, const std::string &value) {
@@ -8240,9 +8442,9 @@ index 0000000..b4378b7
 +    log("co-op session: %s, epoch %llu, session %llu, you are slot %d (pad %d) of %d, roster %s%s%s", role, ull(info.epoch), ull(info.session_id), info.local_slot,
 +        info.local_slot + 1, info.max_players, roster.str().c_str(), info.memcard.empty() ? "" : ", card ", info.memcard.c_str());
 +    const LocalOptions &local = info.local;
-+    if (local.scale >= 0 || local.msaa >= 0 || local.aniso >= 0 || local.sharpen >= 0 || local.volume >= 0 || local.brightness >= 0 || local.pad_user >= 0)
-+        log("local options from the session file (this machine only): scale %d, msaa %d, aniso %d, sharpen %d, volume %d, brightness %d, pad_user %d (-1: not set; the command line wins)", local.scale, local.msaa,
-+            local.aniso, local.sharpen, local.volume, local.brightness, local.pad_user);
++    if (local.scale >= 0 || local.msaa >= 0 || local.aniso >= 0 || local.sharpen >= 0 || local.volume >= 0 || local.brightness >= 0 || local.pad_user >= 0 || local.view >= 0)
++        log("local options from the session file (this machine only): scale %d, msaa %d, aniso %d, sharpen %d, volume %d, brightness %d, pad_user %d, view %d (-1: not set; the command line wins)", local.scale, local.msaa,
++            local.aniso, local.sharpen, local.volume, local.brightness, local.pad_user, local.view);
 +}
 +
 +const SessionInfo *session() { return g_session.get(); }
@@ -8260,10 +8462,10 @@ index 0000000..b4378b7
 +}
 diff --git a/runtime/src/netplay/session_file.hpp b/runtime/src/netplay/session_file.hpp
 new file mode 100644
-index 0000000..bdc6de0
+index 0000000..64fc611
 --- /dev/null
 +++ b/runtime/src/netplay/session_file.hpp
-@@ -0,0 +1,56 @@
+@@ -0,0 +1,58 @@
 +#pragma once
 +
 +#include "ps2/pad.hpp"
@@ -8288,6 +8490,7 @@ index 0000000..bdc6de0
 +    int volume = -1;     // --volume 0 to 100
 +    int brightness = -1; // --brightness 25 to 200 (100: as the game draws it)
 +    int pad_user = -1;   // --pad-user 0 to 3
++    int view = -1;       // online view: 0 mine (this machine's player's view full screen), 1 all (the whole layout, like --full-view)
 +};
 +
 +struct SessionInfo {
@@ -8301,6 +8504,7 @@ index 0000000..bdc6de0
 +    int new_profile_difficulty = 1;
 +    int input_delay = 0;                     // the host's setting in frames: 0 follows the measured round trips, 1 to 30 holds that delay
 +    int friendly_fire = 0;                   // the host's setting: 1 lets players hurt each other (guest word 0x02300000, written on every machine at the start of the session); 0 is the original game
++    int split_screen = 0;                    // the host's setting: 0 auto (combined view while the players fit one picture), 1 always split (guest word kSplitScreenSwitch, written on every machine at the start of the session)
 +    std::string status_file;                 // where the game writes what it is doing for the launcher (status_file.hpp); empty: nowhere
 +    std::string memcard;                     // this machine's card (a guest's: the copy of the host's the launcher sent)
 +    std::array<std::string, kPadCount> names;   // by slot, cut to what the game's font draws; empty for an open slot
@@ -8645,10 +8849,10 @@ index 0000000..4aa0792
 +}
 diff --git a/runtime/src/netplay/snapshot.cpp b/runtime/src/netplay/snapshot.cpp
 new file mode 100644
-index 0000000..f8a7d63
+index 0000000..219de8e
 --- /dev/null
 +++ b/runtime/src/netplay/snapshot.cpp
-@@ -0,0 +1,219 @@
+@@ -0,0 +1,220 @@
 +#include "snapshot.hpp"
 +
 +#include "log.hpp"
@@ -8698,7 +8902,7 @@ index 0000000..f8a7d63
 +    refilled_at_ = now;
 +    if (!begin_acknowledged_ && now - begin_sent_ >= kResendMs) {
 +        Writer w(kMsgSnapBegin);
-+        w.u64(terms_.frame).u32(terms_.raw_bytes).u32(static_cast<std::uint32_t>(packed_.size())).u32(chunks_).u16(terms_.delay).u16(terms_.digest_every).u8(terms_.slot).u8(terms_.players).u8(terms_.late).u8(terms_.cold).u8(terms_.auto_join).u8(terms_.plugged).u8(terms_.friendly_fire);
++        w.u64(terms_.frame).u32(terms_.raw_bytes).u32(static_cast<std::uint32_t>(packed_.size())).u32(chunks_).u16(terms_.delay).u16(terms_.digest_every).u8(terms_.slot).u8(terms_.players).u8(terms_.late).u8(terms_.cold).u8(terms_.auto_join).u8(terms_.plugged).u8(terms_.friendly_fire).u8(terms_.split_screen);
 +        put_hashes(w, terms_.hashes);
 +        for (const PadSample &pad : terms_.pads) put_sample(w, pad);
 +        send(link_, w);
@@ -8806,6 +9010,7 @@ index 0000000..f8a7d63
 +        terms.auto_join = r.u8();
 +        terms.plugged = r.u8();
 +        terms.friendly_fire = r.u8();
++        terms.split_screen = r.u8();
 +        terms.hashes = get_hashes(r);
 +        for (PadSample &pad : terms.pads) pad = get_sample(r);
 +        if (!r.ok()) continue;
@@ -8870,10 +9075,10 @@ index 0000000..f8a7d63
 +}
 diff --git a/runtime/src/netplay/snapshot.hpp b/runtime/src/netplay/snapshot.hpp
 new file mode 100644
-index 0000000..8bd432a
+index 0000000..b8547e7
 --- /dev/null
 +++ b/runtime/src/netplay/snapshot.hpp
-@@ -0,0 +1,75 @@
+@@ -0,0 +1,76 @@
 +#pragma once
 +
 +#include "fingerprint.hpp"
@@ -8886,7 +9091,7 @@ index 0000000..8bd432a
 +namespace ps2::netplay {
 +
 +// What the host decides at the snapshot frame and tells the joiner.
-+constexpr std::uint8_t kLeaveAlone = 0xFF;   // Terms::friendly_fire when the host has no setting to give
++constexpr std::uint8_t kLeaveAlone = 0xFF;   // Terms::friendly_fire and Terms::split_screen when the host has no setting to give
 +
 +struct Terms {
 +    std::uint64_t frame = 0;          // frame the snapshot was taken at; lockstep starts at frame + 1
@@ -8899,6 +9104,7 @@ index 0000000..8bd432a
 +    std::uint8_t cold = 0;            // 1 when every machine starts from boot (no snapshot: raw_bytes is 0 and the joiner's own freshly booted machine is the state)
 +    std::uint8_t auto_join = 1;       // 1 when the session presses START on a joiner's pad so the game's second player drops in; 0 when the players do it themselves
 +    std::uint8_t friendly_fire = kLeaveAlone;   // the host's friendly fire setting (0 or 1) every machine writes to the game before the session starts; kLeaveAlone: the host had no session file
++    std::uint8_t split_screen = kLeaveAlone;    // the host's split screen setting (0 auto, 1 always split) every machine writes to the game before the session starts; kLeaveAlone: the host had no session file
 +    std::uint8_t plugged = 0;         // bit p: pad p was plugged in on the host at `frame`; the controllers of pads 2 and 3 are not in the machine state
 +    PadSample pads[2];                // what pads 2 and 3 (the runtime's pads beyond the two SIO2 ports) read at `frame`
 +    Hashes hashes;                    // memory hashes of the machine at `frame`
@@ -9502,10 +9708,10 @@ index 0000000..bea297c
 +}
 diff --git a/runtime/src/netplay/warriors.hpp b/runtime/src/netplay/warriors.hpp
 new file mode 100644
-index 0000000..4e95b42
+index 0000000..20edbe7
 --- /dev/null
 +++ b/runtime/src/netplay/warriors.hpp
-@@ -0,0 +1,29 @@
+@@ -0,0 +1,31 @@
 +#pragma once
 +
 +#include <cstdint>
@@ -9517,20 +9723,22 @@ index 0000000..4e95b42
 +constexpr std::uint32_t kPlayerCountOffset = 0x224;      // number of humans under player control
 +constexpr std::uint32_t kTwoPlayers = 2;
 +// W_GameState + 0x124 holds the name of the level that is loaded ("level100" in the front end, "level99" in mission 1); + 0x14c is the level flow's
-+// request (0 idle, 3 a level change is under way, set by LevelFlow_LoadLevelByName).
++// request (0 idle, 3 a level change is under way, set by level_enter_named).
 +constexpr std::uint32_t kLevelNameOffset = 0x124;
 +constexpr std::uint32_t kLevelFlowRequestOffset = 0x14C;
 +constexpr std::uint32_t kLevelNameBytes = 16;
 +constexpr const char kFrontEndLevel[] = "level100";
-+// The way out of a level that the pause menu's Quit takes: GameState_SetSection(game state, 1), then LevelFlow_LoadLevelByName("menu").
-+constexpr std::uint32_t kGameStateSetSection = 0x0041CEF0;
-+constexpr std::uint32_t kLevelFlowLoadLevelByName = 0x00160D78;
++// The way out of a level that the pause menu's Quit takes: session_set_chapter(game state, 1), then level_enter_named("menu").
++constexpr std::uint32_t kSessionSetChapter = 0x0041CEF0;
++constexpr std::uint32_t kLevelEnterNamed = 0x00160D78;
 +constexpr std::uint32_t kMenuLevelNameString = 0x0054E790;
 +constexpr std::uint32_t kQuitSection = 1;
 +// GameTimer + 0x54: the game's own fixed-step flag (dt exactly 1/30 s). Written at every vblank so the clock cannot depend on cycle accounting.
 +constexpr std::uint32_t kFixedStepFlag = 0x00B8F9D4;
 +// The AI hooks' friendly fire switch (extra RAM, part of the state, digest and snapshot): non-zero lets a player's hit hurt a player. 0 is the original game.
 +constexpr std::uint32_t kFriendlyFireSwitch = 0x02300000;
++// The split screen switch of the camera hooks (extra RAM, part of the state): 0 shows one combined view while every player fits one picture, non-zero always splits.
++constexpr std::uint32_t kSplitScreenSwitch = 0x022001F0;
 +// Debug aid only: a RAM byte near the top of the 32 MB that the game does not use, flipped by --net-desync-test.
 +constexpr std::uint32_t kUnusedRamByte = 0x01FFFFF0;
 +
@@ -10622,7 +10830,7 @@ index 0000000..10d7883
 +
 +}
 diff --git a/runtime/src/system.cpp b/runtime/src/system.cpp
-index 86f8ca9..6bc7d6a 100644
+index 86f8ca9..f655e99 100644
 --- a/runtime/src/system.cpp
 +++ b/runtime/src/system.cpp
 @@ -1,3 +1,4 @@
@@ -10747,7 +10955,7 @@ index 86f8ca9..6bc7d6a 100644
  }
  
  void halt(const std::string &reason) {
-@@ -264,11 +279,25 @@ bool request_state_operation(bool loading, const char *path, void (*complete)(bo
+@@ -264,11 +279,26 @@ bool request_state_operation(bool loading, const char *path, void (*complete)(bo
  
  void set_video_options(std::uint32_t options) { g_video_options.store(options, std::memory_order_relaxed); }
  std::uint32_t video_options() { return g_video_options.load(std::memory_order_relaxed); }
@@ -10756,6 +10964,7 @@ index 86f8ca9..6bc7d6a 100644
 +void set_wide_probe(bool (*probe)()) { g_wide_probe.store(probe, std::memory_order_relaxed); }
 +void set_view_probe(bool (*probe)(ViewRect &)) { g_view_probe.store(probe, std::memory_order_relaxed); }
 +void set_view_cut(bool on) { g_view_cut.store(on, std::memory_order_relaxed); }
++bool view_cut() { return g_view_cut.load(std::memory_order_relaxed); }
 +bool display_view(ViewRect &view) {
 +    const auto probe = g_view_probe.load(std::memory_order_relaxed);
 +    return g_view_cut.load(std::memory_order_relaxed) && probe && probe(view);
@@ -10774,7 +10983,7 @@ index 86f8ca9..6bc7d6a 100644
  
  std::function<void()> event_action(int id, std::uint64_t at) {
      if (id == hw::kEventVblank) return vblank;
-@@ -299,6 +328,15 @@ void machine_state(state::Stream &s) {
+@@ -299,6 +329,15 @@ void machine_state(state::Stream &s) {
      s.pod(g_cpu);
      s.bytes(g_ram, kRamSize);
      s.bytes(g_spr, kScratchpadSize);
@@ -10790,7 +10999,7 @@ index 86f8ca9..6bc7d6a 100644
      s.pod(g_base);
      s.pod(g_given);
      s.pod(g_frames);
-@@ -345,6 +383,7 @@ bool load_state(const std::uint8_t *data, std::size_t size) {
+@@ -345,6 +384,7 @@ bool load_state(const std::uint8_t *data, std::size_t size) {
          state::Reader r(data, size);
          machine_state(r);
          g_resumed = true;
@@ -10798,7 +11007,7 @@ index 86f8ca9..6bc7d6a 100644
          std::fprintf(stderr, "[state] loaded frame %llu\n", static_cast<unsigned long long>(g_frames));
          return true;
      } catch (const std::exception &e) {
-@@ -435,8 +474,10 @@ void boot(std::uint32_t entry, const std::vector<std::string> &args) {
+@@ -435,8 +475,10 @@ void boot(std::uint32_t entry, const std::vector<std::string> &args) {
  }
  
  int run() {
@@ -10809,7 +11018,7 @@ index 86f8ca9..6bc7d6a 100644
      while (!g_halted) {
          if (const int operation = g_state_operation.load(std::memory_order_acquire)) {
              // Request fields stay immutable until completion; never serialize
-@@ -454,6 +495,27 @@ int run() {
+@@ -454,6 +496,27 @@ int run() {
              g_state_request = false;
              save_state(g_options.save_state_path);
          }
@@ -10837,7 +11046,7 @@ index 86f8ca9..6bc7d6a 100644
          c.pc &= ~kUnwind;
          run_due_events();
          kernel::service(c);
-@@ -465,6 +527,7 @@ int run() {
+@@ -465,6 +528,7 @@ int run() {
          if (c.budget <= 0) refill(c);
          dispatch(c, 0, 0);
      }
@@ -10845,7 +11054,7 @@ index 86f8ca9..6bc7d6a 100644
      kernel::dump();
      iop::dump();
      sif::dump();
-@@ -480,6 +543,7 @@ int run() {
+@@ -480,6 +544,7 @@ int run() {
      if (const char *path = std::getenv("PS2_DUMP")) {
          if (std::FILE *f = std::fopen(path, "wb")) {
              std::fwrite(g_ram, 1, kRamSize, f);
@@ -10853,7 +11062,7 @@ index 86f8ca9..6bc7d6a 100644
              std::fwrite(iop::ram_ptr(0), 1, iop::kRamSize, f);
              std::fwrite(iop::spu2::ram(), 2, 1u << 20, f);
              std::fclose(f);
-@@ -512,6 +576,7 @@ double thread_waited_ms(int role) { return gs::queue::waited_ms(static_cast<gs::
+@@ -512,6 +577,7 @@ double thread_waited_ms(int role) { return gs::queue::waited_ms(static_cast<gs::
  std::uint64_t vu1_interpreted_calls() { return vu::interpreted_calls(); }
  
  void run_vu_thread() {
@@ -10861,7 +11070,7 @@ index 86f8ca9..6bc7d6a 100644
      gs::queue::role() = gs::queue::Role::Vu;
      gs::queue::Ring &in = gs::queue::vu();
      for (;;) {
-@@ -553,6 +618,7 @@ Rendered render_pending(bool surface, const std::function<void(const std::uint32
+@@ -553,6 +619,7 @@ Rendered render_pending(bool surface, const std::function<void(const std::uint32
          if (before_present) before_present();
          if (surface) {
              gs::present(regs);
@@ -10869,7 +11078,7 @@ index 86f8ca9..6bc7d6a 100644
              if (!copy) return;
          }
          std::uint32_t width = 0, height = 0;
-@@ -560,45 +626,14 @@ Rendered render_pending(bool surface, const std::function<void(const std::uint32
+@@ -560,45 +627,14 @@ Rendered render_pending(bool surface, const std::function<void(const std::uint32
      }, budget_ms);
  }
  
@@ -10919,7 +11128,7 @@ index 86f8ca9..6bc7d6a 100644
  bool load_patches(const std::string &path) {
      std::FILE *f = std::fopen(path.c_str(), "r");
      if (!f) return false;
-@@ -611,31 +646,6 @@ bool load_patches(const std::string &path) {
+@@ -611,31 +647,6 @@ bool load_patches(const std::string &path) {
      return true;
  }
  
@@ -10951,7 +11160,7 @@ index 86f8ca9..6bc7d6a 100644
  double gpu_busy_ms() { return gs::gpu_busy_ms(); }
  
  #ifdef __EMSCRIPTEN__
-@@ -655,11 +665,6 @@ void browser_yield() {}
+@@ -655,11 +666,6 @@ void browser_yield() {}
  
  std::uint64_t frames_run() { return g_frames; }
  std::uint64_t primitives_drawn() { return gs::primitives_drawn(); }

@@ -26,7 +26,7 @@ float human_distance(std::uint32_t a, std::uint32_t b);
 // True while the human is bound to a scene (cut scene or scripted move).
 bool in_scene(ps2::Cpu &c, std::uint32_t human);
 
-// The object a handle names (Handle_ResolveThunk), 0 when it is gone.
+// The object a handle names (handle_to_object), 0 when it is gone.
 std::uint32_t resolve_handle(ps2::Cpu &c, std::uint32_t handle);
 // The kind of camera view 0 shows (2 is the follow camera; the scenes of a join use others).
 std::uint32_t camera_type(ps2::Cpu &c);

@@ -8,15 +8,15 @@
 #include <cctype>
 #include <string>
 
-// A player leaving or coming back, said the way the game says its own messages: the scroll-in line of the HUD with its cue (HUD_QueueScrollIn, as HUD_SetObjective
+// A player leaving or coming back, said the way the game says its own messages: the scroll-in line of the HUD with its cue (overlay_post_banner_text, as overlay_show_objective
 // queues an objective). It changes the game's state (the HUD's queue), and the runtime calls it at the frame the player's pad is unplugged or plugged in, which is
 // the same frame on every machine, so lockstep holds. Outside a level (the front end, a level change) the runtime shows its own notice instead.
 namespace warriors::ui {
 
 namespace {
 
-constexpr std::uint32_t kQueueScrollIn = 0x001B3918;     // HUD_QueueScrollIn(f12 speed, f13 scale, f14 x, f15 y, hud, prefix, text, -1, cue, 0, 1, 0)
-constexpr std::uint32_t kGetCueTable = 0x00111130;       // AudioManager_GetCueTable(audio, id)
+constexpr std::uint32_t kOverlayPostBannerText = 0x001B3918;     // overlay_post_banner_text(f12 speed, f13 scale, f14 x, f15 y, hud, prefix, text, -1, cue, 0, 1, 0)
+constexpr std::uint32_t kSoundCueTable = 0x00111130;       // sound_cue_table(audio, id)
 constexpr std::uint32_t kScrollPrefix = 0x00556410;      // the prefix string the objectives pass
 constexpr std::uint32_t kScrollX = 0x0050EDE4, kScrollY = 0x0050EDE0;   // where the objective line sits (floats)
 constexpr std::uint32_t kScrollSpeedBits = 0x3D4CCCCD, kScrollScaleBits = 0x3F800000;   // 0.05 and 1.0, as the objectives pass them
@@ -75,9 +75,9 @@ bool announce(int port, std::uint8_t event, const std::string &name) {
     call.a[1] = kScrollPrefix;
     call.a[2] = put_text(kTempText, text);
     call.a[3] = kNoOwner;
-    call.a[4] = guest(c, kGetCueTable, {ps2::ld32(kCueTablePointer), kJoinLeaveCue});
+    call.a[4] = guest(c, kSoundCueTable, {ps2::ld32(kCueTablePointer), kJoinLeaveCue});
     call.a[6] = 1;
-    ps2::call_guest(c, kQueueScrollIn, call);
+    ps2::call_guest(c, kOverlayPostBannerText, call);
     return true;
 }
 

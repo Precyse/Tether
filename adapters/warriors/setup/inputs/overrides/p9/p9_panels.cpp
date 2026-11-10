@@ -1,12 +1,12 @@
 #include "p9_camera.hpp"
 
 #include "p9_game.hpp"
+#include "p9_screen.hpp"
 #include "p9_world.hpp"
 #include "netplay/netplay.hpp"
 #include "ps2/system.hpp"
 
 #include <atomic>
-#include <cstring>
 
 // HUD panels in a split screen. In the shared screen the layout table puts the panels of players 1 and 2 at the top-left and top-right and those of players 3 and 4
 // under them. With the screen split into views (three or more players) a panel belongs in the corner of its player's view instead: the left column of views anchors
@@ -16,16 +16,15 @@ namespace warriors::p9 {
 
 namespace {
 
-constexpr std::uint32_t kPlayerHudPanel = 0x40F4, kPlayerHudBase = 0x40E0;     // PlayerHUD: the panel it draws, and its base position (x, y, z, w floats)
-constexpr std::uint32_t kPanelBases = 0x0050FA10, kPanelBaseStride = 0x10;       // PlayerHUD's layout bases: player 0 top-left, player 1 top-right
-constexpr std::uint32_t kViewViews = 0x0050B198, kViewColumns = 0x0050B1A8, kViewRows = 0x0050B1AA;
-constexpr std::uint32_t kHandleResolve = 0x00390268, kHandleScratch = kCamViewState + 0x48;
+constexpr std::uint32_t kPanelBases = 0x0050FA10, kPanelBaseStride = 0x10;       // PlayerPanel's layout bases: player 0 top-left, player 1 top-right
+constexpr std::uint32_t kHandleToObject = 0x00390268, kHandleScratch = kCamViewState + 0x48;
+constexpr std::uint32_t kLayoutRowStride = 0x240, kBarX = 0x0050FAA0;           // PlayerPanel's layout rows (panel & 1 picks one), and the bar's x offset in the first
 constexpr float kPanelStack = 0.13f;                                            // vertical distance of two panels that share a view (the shared screen's)
 
 std::uint32_t panel_slot(ps2::Cpu &c, std::uint32_t panel) {
     for (std::uint32_t slot = 0; slot < player_count() && slot < kMaxPlayers; ++slot) {
         ps2::st32(kHandleScratch, ps2::ld32(game() + kPlayerHandlesOffset + slot * 4));
-        const std::uint32_t human = ps2::call_guest(c, kHandleResolve, kHandleScratch);
+        const std::uint32_t human = ps2::call_guest(c, kHandleToObject, kHandleScratch);
         if (human && ps2::ld32(human + kPanelOffset) == panel) return slot;
     }
     return kMaxPlayers;
@@ -48,19 +47,6 @@ std::uint32_t human_of_handle(std::uint32_t handle) {
     return 0;
 }
 
-float read_float(std::uint32_t at) {
-    const std::uint32_t bits = ps2::ld32(at);
-    float value;
-    std::memcpy(&value, &bits, sizeof value);
-    return value;
-}
-
-void write_float(std::uint32_t at, float value) {
-    std::uint32_t bits;
-    std::memcpy(&bits, &value, sizeof bits);
-    ps2::st32(at, bits);
-}
-
 }
 
 void split_panel_base(ps2::Cpu &c, std::uint32_t player_hud) {
@@ -70,8 +56,12 @@ void split_panel_base(ps2::Cpu &c, std::uint32_t player_hud) {
     if (!columns || !rows || !view_place(panel_slot(c, ps2::ld32(player_hud + kPlayerHudPanel)), view, stack)) return;
     const std::uint32_t column = view % columns, row = view / columns;
     const std::uint32_t anchor = kPanelBases + (column ? kPanelBaseStride : 0);
-    write_float(player_hud + kPlayerHudBase, read_float(anchor));
-    write_float(player_hud + kPlayerHudBase + 4, read_float(kPanelBases + 4) + static_cast<float>(row) / static_cast<float>(rows) + static_cast<float>(stack) * kPanelStack);
+    // A panel lays its pieces out by the row of its panel number: row 0 is made for the left of the screen, row 1 for the right, and its pieces stand further right by the
+    // difference of the rows' bar offsets. The origin moves by that, so every panel of a column has the left edge of the column's own row.
+    const std::uint32_t own_row = ps2::ld32(player_hud + kPlayerHudPanel) & 1;
+    const float row_shift = read_float(kBarX + kLayoutRowStride) - read_float(kBarX);
+    write_float(player_hud + kPlayerHudBase, read_float(anchor) + (static_cast<float>(column ? 1 : 0) - static_cast<float>(own_row)) * row_shift);
+    write_float(player_hud + kPlayerHudBase + kBaseVertical, read_float(kPanelBases + kBaseVertical) + static_cast<float>(row) / static_cast<float>(rows) + static_cast<float>(stack) * kPanelStack);
 }
 
 void publish_local_view() {

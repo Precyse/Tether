@@ -7,7 +7,7 @@
 #include <cstdio>
 #include <string>
 
-// Cutscene skip as a vote (three or four players; two keep the original rule). SceneTask_Update (0x0039cbf0) lets any player's cross or START skip a skippable scene once its countdown (+0xe0) has run out, so one
+// Cutscene skip as a vote (three or four players; two keep the original rule). cutscene_task_step (0x0039cbf0) lets any player's cross or START skip a skippable scene once its countdown (+0xe0) has run out, so one
 // impatient player would skip the story for the others. In a session the skip logic only sees a skippable scene while every player holds cross or START: the scene's
 // skippable byte (+0xe5) is cleared at the entry of each update that has no unanimous vote and put back by the update that has one, and the countdown the original
 // runs inside that logic goes on here meanwhile. A skip that has started (+0xe4) is never interrupted. The overlay says how many players hold (SKIP 1/2).

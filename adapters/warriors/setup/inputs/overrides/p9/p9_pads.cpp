@@ -8,14 +8,10 @@ namespace warriors::p9 {
 namespace {
 
 constexpr std::uint8_t kCenter = 0x80;
-constexpr std::uint32_t kOriginalRecordStep = 4, kEveryRecord = 1;   // Pads_Update visited records 0 and 4 only (one per port)
+constexpr std::uint32_t kOriginalRecordStep = 4, kEveryRecord = 1;   // pads_frame_step visited records 0 and 4 only (one per port)
 
 // libpad's pressure order: right, left, up, down, triangle, circle, cross, square, L1, R1, L2, R2 (button bits 5, 7, 4, 6, 12 to 15, 10, 11, 8, 9).
 constexpr int kPressureBits[ps2::PadSample::kPressures] = {5, 7, 4, 6, 12, 13, 14, 15, 10, 11, 8, 9};
-
-// The game's raw record holds libpad's two button bytes in wire order (PadPort_ReadAnalog: ~CONCAT11(data[2], data[3])), so SELECT is 0x0100
-// and SQUARE 0x0080: the runtime's pressed mask with its bytes swapped.
-std::uint16_t swap_bytes(std::uint16_t buttons) { return static_cast<std::uint16_t>((buttons << 8) | (buttons >> 8)); }
 
 void fill_record(std::uint32_t record, const ps2::PadSample &s) {
     ps2::st32(record + kPortReadyOffset, 1);
@@ -23,7 +19,7 @@ void fill_record(std::uint32_t record, const ps2::PadSample &s) {
     ps2::st8(record + kPortLeftXOffset + 1, s.axes[3]);
     ps2::st8(record + kPortLeftXOffset + 2, s.axes[0]);
     ps2::st8(record + kPortLeftXOffset + 3, s.axes[1]);
-    ps2::st16(record + kPortButtonsOffset, swap_bytes(s.buttons));
+    ps2::st16(record + kPortButtonsOffset, swap_button_bytes(s.buttons));
     for (int i = 0; i < ps2::PadSample::kPressures; ++i)
         ps2::st8(record + kPortPressureOffset + static_cast<std::uint32_t>(i), s.pressure[static_cast<std::size_t>(kPressureBits[i] - ps2::PadSample::kFirstPressureBit)]);
 }
@@ -44,8 +40,8 @@ bool extra_pad_plugged() {
 
 }
 
-// PadPort_Step: a record on a multitap slot comes from the runtime's pads 3 and 4 (libpad has no port for them); slot 0 records go through libpad as before.
-bool pad_port_step(ps2::Cpu &c) {
+// pad_port_poll: a record on a multitap slot comes from the runtime's pads 3 and 4 (libpad has no port for them); slot 0 records go through libpad as before.
+bool pad_port_poll(ps2::Cpu &c) {
     const std::uint32_t record = c.r[4].w[0];
     if (ps2::ld32(record + kPortSlotOffset) == 0) return false;
     const std::uint32_t index = (record - kPortRecords) / kPortRecordStride;
@@ -64,7 +60,7 @@ bool pad_port_step(ps2::Cpu &c) {
     return true;
 }
 
-// Pads_Update's loop moves on by this many records: 4 as in the original (records 0 and 4 only) until pads beyond the two are plugged.
+// pads_frame_step's loop moves on by this many records: 4 as in the original (records 0 and 4 only) until pads beyond the two are plugged.
 std::uint32_t pad_loop_step() { return extra_pad_plugged() ? kEveryRecord : kOriginalRecordStep; }
 
 }

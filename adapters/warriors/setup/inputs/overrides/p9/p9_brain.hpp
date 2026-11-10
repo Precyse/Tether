@@ -13,7 +13,7 @@ constexpr std::uint32_t kSeenBytes = 0, kStickyBytes = 1;
 
 // The address of the byte of `kind` (kSeenBytes or kStickyBytes) for `panel` of the brain at `brain`.
 std::uint32_t spot_addr(std::uint32_t brain, std::uint32_t kind, std::uint32_t panel);
-// GameState_ResetForLevel: a new level starts with nobody seen.
+// session_level_reset: a new level starts with nobody seen.
 bool clear_spot_bytes(ps2::Cpu &c);
 
 }

@@ -14,7 +14,7 @@ namespace {
 
 constexpr std::uint32_t kMugCallbackOffset = 0x5A4;
 constexpr std::uint32_t kSecondPlayer = 1;
-constexpr std::uint32_t kStatsObject = 0x006FE490, kStatsGetScore = 0x00422998;   // Stats_GetScore(stats, human): the running score of the human's record (p9_stats.cpp serves panels 2 and 3)
+constexpr std::uint32_t kStatsObject = 0x006FE490, kScoreValueOf = 0x00422998;   // score_value_of(stats, human): the running score of the human's record (p9_stats.cpp serves panels 2 and 3)
 
 std::uint32_t player_human(ps2::Cpu &c, std::uint32_t slot) {
     return p9::resolve_handle(c, ps2::ld32(p9::game() + p9::kPlayerHandlesOffset + slot * 4));
@@ -38,7 +38,7 @@ bool stat_score(ps2::Cpu &c) {
     if (!asked || s8(asked + kSlotOffset) != static_cast<std::int32_t>(kSecondPlayer)) return false;
     std::int32_t sum = 0;
     for (std::uint32_t slot = kSecondPlayer; slot < static_cast<std::uint32_t>(players()); ++slot)
-        if (const std::uint32_t human = player_human(c, slot)) sum += static_cast<std::int32_t>(ps2::call_guest(c, kStatsGetScore, kStatsObject, human));
+        if (const std::uint32_t human = player_human(c, slot)) sum += static_cast<std::int32_t>(ps2::call_guest(c, kScoreValueOf, kStatsObject, human));
     AI_TRACE("rank sum for player 2: %d (%d players)", sum, players());
     c.r[2].sd[0] = sum;
     c.pc = c.r[31].w[0];

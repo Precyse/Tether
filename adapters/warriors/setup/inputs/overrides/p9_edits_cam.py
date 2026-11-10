@@ -81,10 +81,10 @@ def relocation_edits():
 # Each hook is put right after the function's label, so the last one listed runs first: a snapshot or a fresh game takes over the arrays (ensure_cameras) before
 # any code of these functions, hooks included, reads them.
 ENTRY_HOOKS = [
-    (0x0011EAF0, P9 + "cameras_add_player(c);"),                         # Cameras_AddPlayer
-    (0x0011E440, "if (%srelease_blocked(c)) return;" % P9),             # Camera_Release
-    (0x00121888, "if (%sdecide_views(c)) return;" % P9),                # Cameras_DecideViews
-    (0x001282A0, "if (%sgather_targets(c)) return;" % P9),              # Cam_Follow_GatherTargets
+    (0x0011EAF0, P9 + "views_attach_player(c);"),                         # views_attach_player
+    (0x0011E440, "if (%srelease_blocked(c)) return;" % P9),             # view_camera_drop
+    (0x00121888, "if (%sdecide_views(c)) return;" % P9),                # views_choose_sharing
+    (0x001282A0, "if (%sgather_targets(c)) return;" % P9),              # follow_cam_collect_targets
 ] + [(function, P9 + "ensure_cameras(c);") for function in RELOCATED]
 
 FUNC_EDITS = relocation_edits()
@@ -96,12 +96,12 @@ def edit(address, old, new, count=1):
 
 # --- Loops over the two entries of the arrays: they run over every slot a player has used (two unless players 3 or 4 joined), so a two player game is unchanged. ---
 LAST_SLOT = P9 + "cam_last_slot()"
-edit(0x0011E9C0, "set32(c.r[10], 0u + 1u);", "set32(c.r[10], %srelease_cam_slots() - 1u);" % P9)                      # Cameras_ClearSlots: clears every slot, then only two are in use
-edit(0x00122B80, "set32(c.r[5], 0u + 1u);", "set32(c.r[5], %s);" % LAST_SLOT)                                          # Cameras_ResetLevel: three switch arrays back to 1
+edit(0x0011E9C0, "set32(c.r[10], 0u + 1u);", "set32(c.r[10], %srelease_cam_slots() - 1u);" % P9)                      # views_wipe_slots: clears every slot, then only two are in use
+edit(0x00122B80, "set32(c.r[5], 0u + 1u);", "set32(c.r[5], %s);" % LAST_SLOT)                                          # views_reset_for_level: three switch arrays back to 1
 ZOOM_SWITCH = CAM + (CAMERA_ARRAY_COUNT + 2) * ARRAY_BYTES
 edit(0x0011DE58, "set32(c.r[3], 0u + 1u);\n    set32(c.r[2], 0x%08Xu);\n    set32(c.r[2], c.r[2].w[0] + 4u);" % ZOOM_SWITCH,
      "set32(c.r[3], %s);\n    set32(c.r[2], 0x%08Xu + 4u * %s);" % (LAST_SLOT, ZOOM_SWITCH, LAST_SLOT))   # CamEnable(switch 0, all players): from the last slot down
-# Camera_Release ends by clearing the base and view entries of the two players that held the camera: the further players' too.
+# view_camera_drop ends by clearing the base and view entries of the two players that held the camera: the further players' too.
 edit(0x0011E440, "L_0011E84C:\n    c.r[4].d[0] = c.r[17].d[0] + 0ull;",
      "L_0011E84C:\n    %srelease_extra_slots(c.r[17].w[0]);\n    c.r[4].d[0] = c.r[17].d[0] + 0ull;" % P9)
 
@@ -111,16 +111,12 @@ ENTRY_HOOKS += audio.ENTRY_HOOKS
 FUNC_EDITS += audio.FUNC_EDITS
 EDITS = list(audio.EDITS) if hasattr(audio, "EDITS") else []
 
-# --- HUD panels in a split screen: PlayerHUD_Update copies the panel's base position from the layout table, then lays its parts out from it. -----------------------
+# --- HUD panels in a split screen: player_panel_layout copies the panel's base position from the layout table, then lays its parts out from it. -----------------------
 edit(0x00214138, "L_002141F8:\n    set32(c.r[2], ld32((c.r[19].w[0] + 16632u)));", "L_002141F8:\n    %ssplit_panel_base(c, c.r[19].w[0]);\n    set32(c.r[2], ld32((c.r[19].w[0] + 16632u)));" % P9)
 
 # --- The light manager keeps two per-view contexts (resources 7 and 8, at manager +0xb0): the third and fourth view use the first two again. ---------------------
 edit(0x0017D880, "set32(c.r[2], c.r[5].w[0] << 2);\n    st128((c.r[29].w[0] + 240u) & ~15u, c.r[18]);", "set32(c.r[2], (c.r[5].w[0] & 1u) << 2);\n    st128((c.r[29].w[0] + 240u) & ~15u, c.r[18]);")
 
-# --- Cam_Follow_Update eases the field of view at most 7.5 degrees a second; the framing of several players needs more (the same with up to two players). ---------
-edit(0x0012AE58, "c.r[1].sd[0] = static_cast<std::int32_t>(0x40F00000u);\n    c.f[1] = c.r[1].w[0];\n    c.f[21] = fp::min(c.f[2], c.f[1]);",
-     "c.r[1].sd[0] = static_cast<std::int32_t>(%sfov_rate_cap());\n    c.f[1] = c.r[1].w[0];\n    c.f[21] = fp::min(c.f[2], c.f[1]);" % P9)
-
-# --- Cam_Follow_LookAt averages its (two) targets: with a cluster in view the look-at point is the cluster's centre instead (after the two target special case, before
+# --- follow_cam_aim_point averages its (two) targets: with a cluster in view the look-at point is the cluster's centre instead (after the two target special case, before
 # the look-at height is added and the point's move is limited). ---------------------------------------------------------------------------------------------
 edit(0x00127D88, "L_001280D4:\n    c.f[0] = ld32((c.r[17].w[0] + 520u));", "L_001280D4:\n    %scluster_look_at(c.r[17].w[0]);\n    c.f[0] = ld32((c.r[17].w[0] + 520u));" % P9)

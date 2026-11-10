@@ -12,10 +12,10 @@
 // The art of players 3 and 4 from the texture pack. The pack (assets\tools\build_texture_pack.py, built from the player's disc) holds, for each new thing,
 // the bytes of a disc resource it stands in for with the new texels in it. The game's own loaders do the rest: this file only lets them find the new names.
 //
-//   * Wad_Open: a table of its own in extra RAM gets an entry for each new resource name that points at the file whose place it takes; DVDWadIndex_Find
+//   * archive_open: a table of its own in extra RAM gets an entry for each new resource name that points at the file whose place it takes; archive_index_lookup
 //     consults it only when the game's own index misses, so a request for the new name reads that file from the disc. This is the only thing done at boot.
-//   * ResourceMgr_OnFileLoaded: the file just read is replaced, in the loader's buffer, by the pack's version of it (new texels and palette, same size).
-//   * ObjectList_OnLoaded, Cfg_AddObjectType, ChunkLoaded_ParticlePageHeader and ChunkLoaded_ParticlePage: the object list, the object type table, the sprite
+//   * on_file_read: the file just read is replaced, in the loader's buffer, by the pack's version of it (new texels and palette, same size).
+//   * on_object_list_read, object_type_register, on_sprite_sheet_table_read and on_sprite_page_read: the object list, the object type table, the sprite
 //     sheet table and part_page0's rectangles are copied to extra RAM with the pack's records added (dyn_play_three/four, hud_namep3/4, radar sprites).
 // A copy is made again each time the game loads the table it extends. Nothing is read from the pack after the game has loaded a resource; the guest state
 // only holds the pack's hash (kTexPackHash), so a netplay digest sees a peer whose pack differs.
@@ -41,25 +41,25 @@ constexpr std::uint32_t kPageCount = 4, kPageRects = 0xC, kRectBytes = 16;     /
 constexpr std::uint32_t kTypeRecord = 0x90, kTypeName = 0x28, kTypeNameBytes = 0x1B, kTypeIndex = 0x60, kTypeHash = 0x8C, kTypeCount = 0x34BC0;
 constexpr std::uint32_t kTypeCapacity = 1500;                                        // 0x34bc0 bytes of 0x90 byte records
 
-constexpr std::uint32_t kObjTypeListAdd = 0x00391340, kObjTypeListGrow = 0x00391378;
-constexpr std::uint32_t kHandleResolve = 0x00390268;                                  // Handle_ResolveThunk(address of a handle)
-constexpr std::uint32_t kHasOverheadIconType = 0x00227428;
-constexpr std::uint32_t kAttachSpinningIcon = 0x00238A88, kRemoveSpinningIcon = 0x00238AE0, kSetSpinningIconColor = 0x00238B18;
-constexpr std::uint32_t kIsArmiesLevel = 0x0041D110;
-constexpr std::uint32_t kWorldPointer = 0x005147A4;                                   // the World object whose first word is the WAD index (Wad_Open)
+constexpr std::uint32_t kTypeListAppend = 0x00391340, kTypeListExtend = 0x00391378;
+constexpr std::uint32_t kHandleToObject = 0x00390268;                                  // handle_to_object(address of a handle)
+constexpr std::uint32_t kOverheadMarkerPresent = 0x00227428;
+constexpr std::uint32_t kMarkerAttachSpinning = 0x00238A88, kMarkerDetachSpinning = 0x00238AE0, kMarkerSpinningTint = 0x00238B18;
+constexpr std::uint32_t kSessionIsArmiesLevel = 0x0041D110;
+constexpr std::uint32_t kWorldPointer = 0x005147A4;                                   // the World object whose first word is the WAD index (archive_open)
 constexpr std::uint32_t kGameEuroOffset = 0x120;                                      // W_GameState: set for the European language variants
 constexpr std::uint32_t kPlayerHandle0 = 0x228;
 
-// Names (the hash of dyn_play_one.. is the object type's model hash, the key DynIcon_Init tests).
+// Names (the hash of dyn_play_one.. is the object type's model hash, the key floating_marker_setup tests).
 constexpr std::uint32_t kPlayerOneName = 0x0055CE88, kPlayerTwoName = 0x0055CE98;     // "dyn_p_one", "dyn_p_two" in the game's data
 constexpr std::uint32_t kMarkerHash[2][2] = {{0x071ece52, 0x6f1f7813}, {0x4fada1d6, 0xb7840c50}};   // dyn_play_three/four, the _euro variant
 constexpr std::uint32_t kMarkerOneHash[2] = {0x7644ee5d, 0x1a72a32d};                // dyn_play_one, dyn_play_one_euro
 constexpr const char *kNames[] = {"dyn_p_three", "dyn_p_four", "dyn_play_three", "dyn_play_four", "dyn_play_three_euro", "dyn_play_four_euro"};
 constexpr std::uint32_t kRequestNames = 0, kTypeNames = 2, kEuroTypeNames = 4;        // indices into kNames
-constexpr std::uint32_t kIconFadeStory = 0x50, kIconFadeArmies = 0xA0;               // Reticules_UpdateTarget's fade argument
+constexpr std::uint32_t kIconFadeStory = 0x50, kIconFadeArmies = 0xA0;               // rings_target_step's fade argument
 constexpr std::uint32_t kIconColourFade = 0xFFFFFF00;
 
-// Name banner records (PlayerHUD_SetBanner): PLAYER 1 0x25..0x29, PLAYER 2 0x2a..0x2e, one record per language each.
+// Name banner records (player_panel_set_title): PLAYER 1 0x25..0x29, PLAYER 2 0x2a..0x2e, one record per language each.
 constexpr std::uint32_t kBannerFirst = 0x25, kBannerLast = 0x2E, kBannerLanguages = 5, kBannerShift = 16;
 
 // Radar sprites (part_page0 rectangles): arrows, "nP" tags and bare numbers by player.
@@ -201,7 +201,7 @@ void start(const Pack &p) {
 
 // The new names are not added to the game's own index: a longer index changes how long the game's linear search takes for every name it looks up and does not find,
 // and a 1 or 2 player game must not notice the pack. They are entries {offset, size, hash} of a table of their own in extra RAM, which the search consults only when
-// it misses (wad_alias_entry, called from DVDWadIndex_Find's miss exit).
+// it misses (wad_alias_entry, called from archive_index_lookup's miss exit).
 void add_wad_aliases(const Pack &p, std::uint32_t index) {
     if (ps2::ld32(kWadAliasCount)) return;
     const std::uint32_t count = ps2::ld32(index), entries = ps2::ld32(index + 4);
@@ -327,13 +327,13 @@ void type_added(ps2::Cpu &c, std::uint32_t record) {
     const std::uint32_t db = ps2::ld32(kObjectTypeDbPointer);
     for (const TypeClone &clone : p.clones) {
         if (name != clone.base || ps2::ld32(db + kTypeCount) >= kTypeCapacity) continue;
-        const std::uint32_t made = ps2::call_guest(c, kObjTypeListAdd, db);
+        const std::uint32_t made = ps2::call_guest(c, kTypeListAppend, db);
         const std::uint32_t index = ps2::ld16(made + kTypeIndex);
         copy_words(made, record, kTypeRecord);
         ps2::st16(made + kTypeIndex, static_cast<std::uint16_t>(index));
         for (std::uint32_t k = 0; k < kTypeNameBytes; ++k) ps2::st8(made + kTypeName + k, static_cast<std::uint8_t>(k < std::strlen(clone.name) ? clone.name[k] : 0));
         ps2::st32(made + kTypeHash, clone.hash);
-        ps2::call_guest(c, kObjTypeListGrow, db, made);
+        ps2::call_guest(c, kTypeListExtend, db, made);
         P9_TRACE("[p9] object type %s added as %s (index %u)", clone.base, clone.name, index);
     }
 }
@@ -379,13 +379,13 @@ std::uint32_t overhead_icon_name(std::uint32_t slot) {
     return kTexNames + (kRequestNames + slot - kOriginalPlayers) * kNameBytes;
 }
 
-// PlayerList_Add: a third or fourth player is about to be added, so the HUD, the banners and the markers must find the pack's records already in place.
+// session_add_player: a third or fourth player is about to be added, so the HUD, the banners and the markers must find the pack's records already in place.
 void extra_player_joining(ps2::Cpu &c) {
     const std::uint32_t slot = ps2::ld16(c.r[4].w[0] + kPlayerCountOffset);
     if (slot >= kOriginalPlayers && slot < kMaxPlayers) retrofit_art(c);
 }
 
-// Human_ShowOverheadIcon maps dyn_p_one/two to the marker types (the European ones when the game says so); the same for dyn_p_three/four.
+// overhead_marker_show maps dyn_p_one/two to the marker types (the European ones when the game says so); the same for dyn_p_three/four.
 void overhead_icon_request(ps2::Cpu &c) {
     if (!pack_in_state()) return;
     const std::string name = guest_string(c.r[5].w[0], kNameBytes);
@@ -396,27 +396,27 @@ void overhead_icon_request(ps2::Cpu &c) {
     }
 }
 
-// The markers of players 3 and 4 follow player 1's (Reticules_UpdateTarget attaches and removes the first two): shown while his is, with the same fade.
+// The markers of players 3 and 4 follow player 1's (rings_target_step attaches and removes the first two): shown while his is, with the same fade.
 void sync_extra_markers(ps2::Cpu &c) {
     const std::uint32_t g = game();
     if (!g || player_count() <= kOriginalPlayers) return;
     retrofit_art(c);
     if (!pack_in_state()) return;
     const std::uint32_t variant = euro() ? 1 : 0;
-    const std::uint32_t first = ps2::call_guest(c, kHandleResolve, g + kPlayerHandle0);
-    const bool wanted = first && ps2::call_guest(c, kHasOverheadIconType, first, kMarkerOneHash[variant]) != 0;
+    const std::uint32_t first = ps2::call_guest(c, kHandleToObject, g + kPlayerHandle0);
+    const bool wanted = first && ps2::call_guest(c, kOverheadMarkerPresent, first, kMarkerOneHash[variant]) != 0;
     for (std::uint32_t slot = kOriginalPlayers; slot < player_count() && slot < kMaxPlayers; ++slot) {
         const std::uint32_t handle_at = g + kPlayerHandle0 + slot * 4;
-        const std::uint32_t human = ps2::call_guest(c, kHandleResolve, handle_at);
+        const std::uint32_t human = ps2::call_guest(c, kHandleToObject, handle_at);
         if (!human) continue;
-        const bool shown = ps2::call_guest(c, kHasOverheadIconType, human, kMarkerHash[slot - kOriginalPlayers][variant]) != 0;
+        const bool shown = ps2::call_guest(c, kOverheadMarkerPresent, human, kMarkerHash[slot - kOriginalPlayers][variant]) != 0;
         const std::uint32_t handle = ps2::ld32(handle_at);
         if (wanted && !shown) {
-            ps2::call_guest(c, kAttachSpinningIcon, handle, overhead_icon_name(slot), 0);
-            const bool armies = ps2::call_guest(c, kIsArmiesLevel, g) != 0;
-            ps2::call_guest(c, kSetSpinningIconColor, handle, armies ? kIconFadeArmies : kIconFadeStory, kIconColourFade);
+            ps2::call_guest(c, kMarkerAttachSpinning, handle, overhead_icon_name(slot), 0);
+            const bool armies = ps2::call_guest(c, kSessionIsArmiesLevel, g) != 0;
+            ps2::call_guest(c, kMarkerSpinningTint, handle, armies ? kIconFadeArmies : kIconFadeStory, kIconColourFade);
         } else if (!wanted && shown) {
-            ps2::call_guest(c, kRemoveSpinningIcon, handle);
+            ps2::call_guest(c, kMarkerDetachSpinning, handle);
         }
     }
 }

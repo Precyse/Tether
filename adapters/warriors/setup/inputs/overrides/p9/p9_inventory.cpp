@@ -8,8 +8,8 @@
 
 // The game's inventory holds two live blocks and two checkpoint copies, sized for two players, with the callback names right behind them. Slots 2 and 3
 // keep their blocks in the phase 9 area (p9_game.hpp) and follow the same rules, written out from the decompile of the original functions:
-// Inventory_GetCount 0x0041e420, Inv_HasItem 0x0041e3d8, Inventory_AddItem 0x0041e5b0, Inventory_SetCount 0x0041e9d8, Inventory_ClearPlayerChecked
-// 0x0041ec60, the checkpoint pair 0x0041e0b8 / 0x0041e168, Inventory_Reset 0x0041e040, Inventory_Construct 0x0041df40, Inventory_SetItem 0x0041e250.
+// loadout_amount 0x0041e420, loadout_has_item 0x0041e3d8, loadout_give_item 0x0041e5b0, loadout_set_amount 0x0041e9d8, loadout_clear_for_player
+// 0x0041ec60, the checkpoint pair 0x0041e0b8 / 0x0041e168, loadout_empty 0x0041e040, loadout_init 0x0041df40, loadout_set_item 0x0041e250.
 // Slots 0 and 1 never reach the accessors' code here: a hook that does not own the slot returns false and the original function runs untouched.
 namespace warriors::p9 {
 
@@ -17,13 +17,13 @@ namespace {
 
 constexpr std::uint32_t kItemFlash = 1, kItemMoney = 2, kItemSprayPaint = 3;
 constexpr std::uint32_t kLimitTable = 0x0058B300;                 // per item: minimum, maximum (8 bytes)
-constexpr std::uint32_t kUnlocksIsDataUnlocked = 0x00424130, kUnlockManager = 0x006FE998;
+constexpr std::uint32_t kUnlockIsSet = 0x00424130, kUnlockManager = 0x006FE998;
 constexpr std::uint32_t kUpgradeGroup = 6, kUpgradeFlashRaised = 7;
 constexpr std::uint32_t kFlashCountAt = 0x50;                     // the flash entry's count, from the block start
 constexpr std::int32_t kFlashRaisedCap = 4;
 constexpr std::uint32_t kEntryCountAt = 0x20;
 constexpr std::uint64_t kHintSprayFirst = 0x100000000ull, kHintSprayQueued = 0x200000000ull, kHintSprayWithdrawn = 0x400200000ull;   // game state flags at +0
-constexpr std::uint32_t kWithdrawGameHint = 0x001CE718, kHintBox = 0x609250, kSprayHint = 0x11;
+constexpr std::uint32_t kHintBoxRetract = 0x001CE718, kHintBox = 0x609250, kSprayHint = 0x11;
 constexpr std::uint32_t kCallbackMoney = 0x1034, kCallbackItem = 0xFD4, kCallbackHuman = 0xFF4;   // callback names, from the inventory object
 constexpr std::uint32_t kLuaObjectPointer = 0x00512B04;
 constexpr std::uint32_t kLuaExists = 0x48, kLuaPush = 0x68, kLuaCall = 0x88;   // vtable slot pairs: this adjustment (s16) at +n, function at +n+4
@@ -58,11 +58,11 @@ void call_callback(ps2::Cpu &c, std::uint32_t name, std::uint32_t first, std::ui
     lua_call_slot(c, kLuaCall, second == kNoArgument ? 1 : 2, 0);
 }
 
-// What the limits table and the flash upgrade make of a count after it changed (the tail Inventory_AddItem and Inventory_SetCount share).
+// What the limits table and the flash upgrade make of a count after it changed (the tail loadout_give_item and loadout_set_amount share).
 void clamp_count(ps2::Cpu &c, std::uint32_t block, std::uint32_t item) {
     const std::uint32_t at = count_at(block, item);
     if (sld(at) < 0) ps2::st32(at, 0);
-    const bool upgraded = ps2::call_guest(c, kUnlocksIsDataUnlocked, kUnlockManager, kUpgradeGroup, kUpgradeFlashRaised) != 0;
+    const bool upgraded = ps2::call_guest(c, kUnlockIsSet, kUnlockManager, kUpgradeGroup, kUpgradeFlashRaised) != 0;
     const std::int32_t minimum = sld(kLimitTable + item * 8), maximum = sld(kLimitTable + item * 8 + 4);
     std::int32_t result;
     if (!upgraded || item != kItemFlash) {
@@ -84,7 +84,7 @@ void spray_paint_hints(ps2::Cpu &c) {
     if (!(value & kHintSprayFirst)) {
         ps2::st64(flags, value | kHintSprayFirst);
     } else if (value & kHintSprayQueued) {
-        ps2::call_guest(c, kWithdrawGameHint, kHintBox, kSprayHint);
+        ps2::call_guest(c, kHintBoxRetract, kHintBox, kSprayHint);
         ps2::st64(flags, ps2::ld64(flags) | kHintSprayWithdrawn);
     }
 }
@@ -100,21 +100,21 @@ void inventory_init_slot(std::uint32_t slot) {
     for (std::uint32_t i = 0; i < kInvBlockSize; i += 4) ps2::st32(checkpoint_block(slot) + i, ps2::ld32(live_block(slot) + i));
 }
 
-bool inv_get_count(ps2::Cpu &c) {
+bool loadout_amount(ps2::Cpu &c) {
     const std::uint32_t slot = c.r[5].w[0], item = c.r[6].w[0];
     if (!extra_slot(slot)) return false;
     ret(c, item < kInvItems ? ps2::ld32(count_at(live_block(slot), item)) : 0);
     return true;
 }
 
-bool inv_has_item(ps2::Cpu &c) {
+bool loadout_has_item(ps2::Cpu &c) {
     const std::uint32_t slot = c.r[5].w[0], item = c.r[6].w[0];
     if (!extra_slot(slot)) return false;
     ret(c, item < kInvItems && sld(count_at(live_block(slot), item)) > 0);
     return true;
 }
 
-bool inv_add_item(ps2::Cpu &c) {
+bool loadout_give_item(ps2::Cpu &c) {
     const std::uint32_t inventory = c.r[4].w[0], slot = c.r[5].w[0], item = c.r[6].w[0];
     const std::int32_t amount = static_cast<std::int32_t>(c.r[7].w[0]);
     const bool notify = c.r[8].sd[0] == 1;
@@ -133,7 +133,7 @@ bool inv_add_item(ps2::Cpu &c) {
     return true;
 }
 
-bool inv_set_count(ps2::Cpu &c) {
+bool loadout_set_amount(ps2::Cpu &c) {
     const std::uint32_t slot = c.r[5].w[0], item = c.r[6].w[0];
     const std::int32_t value = static_cast<std::int32_t>(c.r[7].w[0]);
     if (!extra_slot(slot)) return false;
@@ -146,7 +146,7 @@ bool inv_set_count(ps2::Cpu &c) {
     return true;
 }
 
-bool inv_clear_player_checked(ps2::Cpu &c) {
+bool loadout_clear_for_player(ps2::Cpu &c) {
     const std::uint32_t slot = c.r[5].w[0];
     if (!extra_slot(slot)) return false;
     for (std::uint32_t item = 0; item < kInvItems; ++item) {
@@ -158,19 +158,19 @@ bool inv_clear_player_checked(ps2::Cpu &c) {
 }
 
 // The checkpoint pair and the reset keep the extra blocks in step (only once a third player exists: until then the extra RAM stays untouched).
-bool inv_save_checkpoint(ps2::Cpu &) {
+bool loadout_snapshot_store(ps2::Cpu &) {
     for (std::uint32_t slot = kOriginalPlayers; slot < player_count(); ++slot)
         for (std::uint32_t i = 0; i < kInvBlockSize; i += 4) ps2::st32(checkpoint_block(slot) + i, ps2::ld32(live_block(slot) + i));
     return false;
 }
 
-bool inv_restore_checkpoint(ps2::Cpu &) {
+bool loadout_snapshot_load(ps2::Cpu &) {
     for (std::uint32_t slot = kOriginalPlayers; slot < player_count(); ++slot)
         for (std::uint32_t i = 0; i < kInvBlockSize; i += 4) ps2::st32(live_block(slot) + i, ps2::ld32(checkpoint_block(slot) + i));
     return false;
 }
 
-bool inv_reset(ps2::Cpu &c) {
+bool loadout_empty(ps2::Cpu &c) {
     if (c.r[5].w[0] == 0) return false;
     for (std::uint32_t slot = kOriginalPlayers; slot < player_count(); ++slot)
         for (std::uint32_t item = 0; item < kInvItems; ++item) ps2::st32(count_at(live_block(slot), item), 0);

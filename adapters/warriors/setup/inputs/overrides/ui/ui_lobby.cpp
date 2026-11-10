@@ -3,6 +3,7 @@
 #include "netplay/netplay.hpp"
 #include "netplay/session_file.hpp"
 #include "ps2/pad.hpp"
+#include "p9_game.hpp"
 #include "ui_game.hpp"
 
 #include <algorithm>
@@ -57,7 +58,7 @@ constexpr std::uint32_t kLine = 0x100;                         // the "line" the
 
 enum class Seat { open, host, claimable, member };
 
-bool g_call_original = false;   // PM_Continue_OnCommand is hooked: while this is set a call goes through to the game's own code
+bool g_call_original = false;   // continue_page_command is hooked: while this is set a call goes through to the game's own code
 
 float screen_x(float pixel) { return (pixel - kPixelsLeft) / kPixelsX; }
 float text_y(float cap_top, float size) { return (cap_top - (kSafeTop - kCapShiftPerSize * (size - 1.0f))) / kSafeHeight; }
@@ -77,35 +78,44 @@ bool pad_buttons(int slot, std::uint16_t &buttons) {
     return true;
 }
 
+// A local session has every player on this PC: no host, a seat for each connected pad.
+bool local_session() {
+    const ps2::netplay::SessionInfo *session = ps2::netplay::session();
+    return session && session->role == ps2::netplay::SessionRole::local;
+}
+
 Seat seat_of(int slot) {
-    if (slot == static_cast<int>(kHostSlot)) return Seat::host;
+    if (slot == static_cast<int>(kHostSlot) && !local_session()) return Seat::host;
     if (!ps2::netplay::roster_name(slot).empty()) return Seat::member;
     std::uint16_t buttons;
     if (!pad_buttons(slot, buttons)) return Seat::open;
     return (ps2::ld32(kClaimedMask) >> slot) & 1u ? Seat::member : Seat::claimable;
 }
 
-std::string name_of(int slot, Seat seat) { return seat == Seat::open ? "OPEN" : upper(ps2::netplay::player_name(slot)); }
+std::string name_of(int slot, Seat seat) {
+    if (seat == Seat::open) return local_session() ? "NO CONTROLLER" : "OPEN";
+    return upper(ps2::netplay::player_name(slot));
+}
 
 std::uint32_t widget(int index) { return ps2::ld32(kWidgetTable + 4u * static_cast<std::uint32_t>(index)); }
 
 std::uint32_t make_text(ps2::Cpu &c, float x, float cap_top, float size, std::uint32_t colour, std::uint32_t flags, const std::string &text) {
     const std::uint32_t w = allocate(c, kTextWidgetSize, kLine);
-    guest(c, kTextConstruct, {w});
+    guest(c, kLabelInit, {w});
     ps2::st32(kTempPos, float_bits(x));
     ps2::st32(kTempPos + 4, 0);
     ps2::st32(kTempPos + 8, float_bits(text_y(cap_top, size)));
     ps2::st32(kTempPos + 12, float_bits(1.0f));
-    guest(c, kFontSize, {kTempSize}, float_bits(size));
+    guest(c, kTextMeasure, {kTempSize}, float_bits(size));
     vcall(c, w, 0x6C, {kTempPos, kTempSize, colour, 1, 1, 0, flags}, {kFrontEndFont});
-    guest(c, kTextSetText, {w, put_text(kTempText, text)});
+    guest(c, kLabelTextSet, {w, put_text(kTempText, text)});
     return w;
 }
 
 void set_text(ps2::Cpu &c, std::uint32_t w, const std::string &text, std::uint32_t colour) {
-    guest(c, kTextSetText, {w, put_text(kTempText, text)});
+    guest(c, kLabelTextSet, {w, put_text(kTempText, text)});
     ps2::st32(kTempPos, colour);
-    guest(c, kTextSetColour, {w, kTempPos});
+    guest(c, kLabelTint, {w, kTempPos});
 }
 
 // What a row says on the right, and its colour.
@@ -151,20 +161,29 @@ bool everyone_ready() {
     return true;
 }
 
+// The players 3 and 4 of the lobby are seated from the start of play: their pad records go into the carry-over mask, so the game's own join (as for a player who was in
+// before a level change, p9_flow.cpp) brings them in once play begins, with no START in the mission. begin() runs at the same frame on every machine and a seat is the roster
+// or a claim made with lockstep pad input, so the mask is the same everywhere; a pad that is not plugged by then drops out of the mask (carry_players), and its player joins by START.
+void seat_lobby_players() {
+    for (int slot = p9::kFirstExtraPad; slot < kSlots; ++slot)
+        if (seat_of(slot) == Seat::member) ps2::st32(p9::kCarryMask, ps2::ld32(p9::kCarryMask) | 1u << (slot - p9::kFirstExtraPad + 1));
+}
+
 // The host starts: the game's own flow takes over. CONTINUE goes straight into the profile the launcher chose, or to the profile screens when it chose
 // none; NEW GAME to the profile creation. With two or more players the game starts as its own two-player mode.
 void begin(ps2::Cpu &c, std::uint32_t screen) {
     ps2::st32(kBegun, 1);
-    guest(c, kSetTwoPlayerActive, {ps2::ld32(kGameStatePointer), occupied() >= 2 ? 1u : 0u});
-    const bool continue_game = guest(c, kGridSelected, {ps2::ld32(screen + kScreenGrid)}) == 0;
+    seat_lobby_players();
+    guest(c, kSessionSetTwoPlayer, {ps2::ld32(kGameStatePointer), occupied() >= 2 ? 1u : 0u});
+    const bool continue_game = guest(c, kOptionListSelected, {ps2::ld32(screen + kScreenGrid)}) == 0;
     const ps2::netplay::SessionInfo *session = ps2::netplay::session();
     if (!continue_game) {
         ps2::st32(screen + kScreenResult, 2);
         play_cue(c, kCueAccept);
     } else if (session && session->profile_slot >= 0) {
-        guest(c, kSetProfileSlot, {static_cast<std::uint32_t>(session->profile_slot)});
+        guest(c, kProfileSlotSelect, {static_cast<std::uint32_t>(session->profile_slot)});
         g_call_original = true;
-        guest(c, kContinueOnCommand, {screen, 4});
+        guest(c, kContinuePageCommand, {screen, 4});
         g_call_original = false;
     } else {
         ps2::st32(screen + kScreenResult, 0);
@@ -182,7 +201,7 @@ bool lobby_init(ps2::Cpu &c) {
         const std::uint32_t grey = ps2::ld32(kColourGrey), red = ps2::ld32(kColourRed), dim = ps2::ld32(kColourDim);
         const std::string host = upper(ps2::netplay::player_name(static_cast<int>(kHostSlot)));
         ps2::st32(kWidgetTable + 4u * kTitle, make_text(c, 0.0f, kTitleCapTop, kTitleSize, red, kTextLeft, "CO-OP"));
-        ps2::st32(screen + kScreenText, make_text(c, 0.0f, kSubtitleCapTop, kSubtitleSize, grey, kTextLeft, host + "'S GAME"));
+        ps2::st32(screen + kScreenText, make_text(c, 0.0f, kSubtitleCapTop, kSubtitleSize, grey, kTextLeft, local_session() ? "" : host + "'S GAME"));
         for (int slot = 0; slot < kSlots; ++slot) {
             const float top = kRowCapTop + kRowStep * static_cast<float>(slot);
             ps2::st32(kWidgetTable + 4u * static_cast<std::uint32_t>(kTags + slot), make_text(c, 0.0f, top, kRowSize, kPlayerColours[slot], kTextLeft, std::to_string(slot + 1) + "P"));
@@ -190,27 +209,27 @@ bool lobby_init(ps2::Cpu &c) {
             ps2::st32(kWidgetTable + 4u * static_cast<std::uint32_t>(kStates + slot), make_text(c, screen_x(kStatePx), top, kRowSize, dim, kTextRight, "-"));
         }
         const std::uint32_t grid = allocate(c, kTextWidgetSize, kLine);
-        guest(c, kGridConstruct, {grid});
+        guest(c, kOptionListInit, {grid});
         for (std::uint32_t i = 0; i < 4; ++i) ps2::st32(kTempSize + 4 * i, i == 0 ? 2 : 0);
-        guest(c, kGridSetup, {grid, kTempSize, 1, screen + kScreenPad}, float_bits(text_y(kGridCapTop, kGridSize)));
+        guest(c, kOptionListConfigure, {grid, kTempSize, 1, screen + kScreenPad}, float_bits(text_y(kGridCapTop, kGridSize)));
         ps2::st32(grid + 0x8C, ps2::ld32(kLayoutFloats));
         ps2::st32(grid + 0x88, 1);
         ps2::st32(grid + 0x94, 5);
         const auto add = [&](std::uint32_t text, std::uint32_t colon_after, std::uint32_t code) {
-            guest(c, kGridAddItem, {grid, text, colon_after, code, 4, 1, red, 6}, float_bits(kGridSize), {1});
+            guest(c, kOptionListAddRow, {grid, text, colon_after, code, 4, 1, red, 6}, float_bits(kGridSize), {1});
         };
-        add(guest(c, kGlobalStringGet, {kStringContinue}), 1, 0);
+        add(guest(c, kLocalizedTextGet, {kStringContinue}), 1, 0);
         add(put_text(kTempText, "NEW GAME"), 0, 2);
         vcall(c, grid, 0x94);
         ps2::st32(screen + kScreenGrid, grid);
         const std::uint32_t usage = allocate(c, 0x2D0, kLine);
-        guest(c, kUsageConstruct, {usage});
+        guest(c, kHintRowInit, {usage});
         ps2::st32(kTempPos, ps2::ld32(kLayoutFloats));
         ps2::st32(kTempPos + 4, 0);
         ps2::st32(kTempPos + 8, float_bits(text_y(kUsageCapTop + kUsageShift, 1.0f)));
         ps2::st32(kTempPos + 12, float_bits(1.0f));
-        guest(c, kUsageSetup, {usage, kTempPos, 1});
-        guest(c, kUsageSetText, {usage, put_text(kTempText, "<COLOR B2B2B2FF><SIZE 0.9><X> <COLOR AA2B2BFF><SIZE 1.0>ready<CR>START begin<CR><COLOR B2B2B2FF><SIZE 0.9><T> <COLOR AA2B2BFF><SIZE 1.0>back")});
+        guest(c, kHintRowConfigure, {usage, kTempPos, 1});
+        guest(c, kHintRowText, {usage, put_text(kTempText, "<COLOR B2B2B2FF><SIZE 0.9><X> <COLOR AA2B2BFF><SIZE 1.0>ready<CR>START begin<CR><COLOR B2B2B2FF><SIZE 0.9><T> <COLOR AA2B2BFF><SIZE 1.0>back")});
         ps2::st32(screen + kScreenUsage, usage);
         ps2::st32(screen + kScreenCreated, 1);
         ps2::st32(screen + 0x10, 0);
@@ -227,8 +246,8 @@ void lobby_shutdown(ps2::Cpu &c) {
     for (int i = 0; i < kWidgets; ++i) {
         const std::uint32_t w = widget(i);
         if (!w) continue;
-        guest(c, kTextRelease, {w});
-        guest(c, kDeleteText, {w, kTagFile, kLine});
+        guest(c, kLabelFree, {w});
+        guest(c, kDeleteChecked, {w, kTagFile, kLine});
         ps2::st32(kWidgetTable + 4u * static_cast<std::uint32_t>(i), 0);
     }
 }
@@ -247,6 +266,7 @@ void lobby_update(ps2::Cpu &c) {
     ps2::netplay::report_lobby(occupied());
     ps2::st32(kFrames, ps2::ld32(kFrames) + 1);
     std::uint16_t host_buttons = 0;
+    bool member_start = false;   // a local session begins on START from a player who is already in
     for (int slot = 0; slot < kSlots; ++slot) {
         std::uint16_t buttons;
         pad_buttons(slot, buttons);
@@ -261,12 +281,17 @@ void lobby_update(ps2::Cpu &c) {
         } else if (seat == Seat::claimable && (pressed & kStartBit)) {
             ps2::st32(kClaimedMask, ps2::ld32(kClaimedMask) | (1u << slot));
             play_cue(c, kCueAccept);
+        } else if (seat == Seat::member && (pressed & kStartBit) && local_session()) {
+            member_start = true;
         }
     }
     if (shown_key() != ps2::ld32(kShown)) refresh_rows(c);
     const std::uint32_t phase = ps2::ld32(kFrames) % kBlinkPeriod;
-    for (int slot = 0; slot < kSlots; ++slot) guest(c, kTextSetVisible, {widget(kStates + slot), seat_of(slot) == Seat::claimable && phase >= kBlinkPeriod / 2 ? 0u : 1u});
-    if (host_buttons & kStartBit) {
+    for (int slot = 0; slot < kSlots; ++slot) guest(c, kLabelShow, {widget(kStates + slot), seat_of(slot) == Seat::claimable && phase >= kBlinkPeriod / 2 ? 0u : 1u});
+    if (local_session()) {
+        if (member_start && everyone_ready()) begin(c, screen);
+        else if (member_start) play_cue(c, kCueRefused);
+    } else if (host_buttons & kStartBit) {
         const std::uint32_t held = ps2::ld32(kStartHeld) + 1;
         ps2::st32(kStartHeld, held);
         if (everyone_ready() || held >= kForceStartFrames) begin(c, screen);

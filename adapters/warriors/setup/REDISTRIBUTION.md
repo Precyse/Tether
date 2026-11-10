@@ -44,19 +44,17 @@ tool's licence text.
 
 ## Open points (decide before publishing)
 
-1. **Function names in the hook sources.** `coop_game.hpp` and the other hooks name decompiled functions and structures (`Human_MakePlayer`, `W_GameState`, ...). Those
-   names come from `decomp\names.tsv`, which was built from Coney's research notes. Names and addresses are facts about the executable, but a GPL-3 project's
-   curated name table is the one place a claim could be made. Options: confirm the names were re-derived by our own analysis, or rename to neutral `fn_00419C68` style
-   before release. I did not change anything.
-2. **Quoted generated text in `apply_p10.py` and its edit tables.** The edit tables find their place by exact matches of lines of generated C++ (short strings such as
-   `set32(c.r[20], c.r[20].w[0] + 4u);`). These are our recompiler's rendering of single instructions, not the game's bytes, and the file is useless without the
-   executable, but they are quotes of generated output. A cleaner route is an address-keyed hook list consumed by the recompiler or the setup (insert a call at
-   function entry `0xADDR`); the two loop-step edits inside `Pads_Update` would still need an instruction-level hook.
+1. **Function names in the hook sources.** Resolved: the hook sources address the game by address, and the names in their comments and identifiers are our own, one
+   table (`inputs/overrides/names_ours.tsv`: address, our name, one-line purpose). None of them is taken from another project's name table (checked against
+   `decomp
+ames.tsv` source=coney, minus the game's own strings: no hit).
+2. **Decided 2026-11-09: quoted generated lines in `apply_p10.py` and its edit tables are accepted.** The edit tables find their place by exact matches of
+   short lines of generated C++ (about 210 fragments such as `set32(c.r[20], c.r[20].w[0] + 4u);`): our recompiler's rendering of single instructions, no game
+   bytes, useless without the executable, and nowhere near the whole program. The generated tree itself stays never shippable.
 3. **`ghidra_entries.txt` provenance.** It is the address column of the Ghidra export of the analysed executable (names from Coney were applied on top of
    Ghidra's own analysis). Addresses of function starts are facts, but re-exporting from a Ghidra run without name import and diffing the list would settle it.
-5. **The 16-byte window check (2026-11-09) finds 23 files.** Every hit is text, never code or data: the game's own script-binding
-   names that our hooks call by name (`GetProfileDifficulty`, `HuTeleportNearHuman`, `SetRadarZoomScale`, `StationaryShooter...`), its text
-   colour tag `<COLOR B2B2B2FF>`, `GetFileAttribute` (a Win32 name) and plain English (" does not reach "). The names are the game's own
-   identifiers, so they are not taken from Coney's table, but they are strings of the executable. Decide: accept identifier and phrase hits
-   (the check then skips printable ASCII), or rename them in our sources. Nothing is published until this is decided.
+5. **Decided 2026-11-09: text hits of the 16-byte window check are accepted.** The check finds 23 files, and every hit is text, never code
+   or data: the game's own script-binding names that our hooks call by name (`GetProfileDifficulty`, `HuTeleportNearHuman`,
+   `SetRadarZoomScale`, `StationaryShooter...`), its text colour tag `<COLOR B2B2B2FF>`, `GetFileAttribute` (a Win32 name) and plain English
+   (" does not reach "). The check skips windows that are all printable ASCII; any other hit still blocks a release.
 4. **ps2-web-recomp has no tags and its repo may change or vanish**; keep a mirrored copy of `e026b97` with its LICENSE for our releases.
