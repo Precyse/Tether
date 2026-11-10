@@ -85,6 +85,7 @@ ENTRY_HOOKS = [
     (0x0011E440, "if (%srelease_blocked(c)) return;" % P9),             # view_camera_drop
     (0x00121888, "if (%sdecide_views(c)) return;" % P9),                # views_choose_sharing
     (0x001282A0, "if (%sgather_targets(c)) return;" % P9),              # follow_cam_collect_targets
+    (0x0011F9B0, "if (%sview_camera_for_slot(c)) return;" % P9),         # view_camera_lookup (listed before the ensure_cameras hooks, which run first)
 ] + [(function, P9 + "ensure_cameras(c);") for function in RELOCATED]
 
 FUNC_EDITS = relocation_edits()

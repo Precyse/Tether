@@ -1,6 +1,7 @@
 #include "p9_camera.hpp"
 
 #include "p9_game.hpp"
+#include "p9_screen.hpp"
 #include "ps2/system.hpp"
 
 // The camera manager's per-player arrays for four players (p9_edits_cam.py moves the generated code's references to the four-entry copy in extra RAM): taking over a
@@ -59,6 +60,18 @@ void views_attach_player(ps2::Cpu &c) {
     ps2::st8(kCamAutoAdjust + slot, ps2::ld8(kCamAutoAdjust + last));
     ps2::st8(kCamAutoFollow + slot, ps2::ld8(kCamAutoFollow + last));
     ps2::st32(kCamViewEnable + slot * kWord, 1);
+}
+
+bool view_camera_for_slot(ps2::Cpu &c) {
+    const std::uint32_t slot = c.r[4].w[0];
+    if (player_count() <= kOriginalPlayers || slot < ps2::ld32(kViewViews) || slot >= kMaxPlayers) return false;
+    std::uint32_t view = 0, stack;
+    if (!view_place(slot, view, stack)) view = 0;
+    const std::uint32_t camera = player_view_camera(view);
+    if (!camera) return false;
+    c.r[2].sd[0] = static_cast<std::int32_t>(camera);
+    c.pc = c.r[31].w[0];
+    return true;
 }
 
 std::uint32_t player_view_camera(std::uint32_t view) { return view < kMaxPlayers ? ps2::ld32(kCamViews + view * kWord) : 0; }

@@ -271,6 +271,7 @@ bool decide(ps2::Cpu &c, std::uint32_t count) {
     ps2::st32(kBusyAt, 1);
     const Players players = read_players(c);
     const bool handled = ps2::ld32(kSwitchViewsByCount) <= 1 && players.joined && all_on_follow_cameras(c, count);
+    if (handled != (ps2::ld32(kHandledAt) != 0)) P9_TRACE("[p9] normal play: frame %llu %s", static_cast<unsigned long long>(ps2::frame_count()), handled ? "on" : "off");
     if (handled) {
         poll_split_request();
         note_combat(c, players);
@@ -328,6 +329,8 @@ bool gather_targets(ps2::Cpu &c) {
     c.pc = c.r[31].w[0];
     return true;
 }
+
+bool views_handled() { return ps2::ld32(kHandledAt) != 0; }
 
 // The view a player's HUD panel belongs to (views in slot order of their owners) and the place of the panel among the players who share that view.
 bool view_place(std::uint32_t slot, std::uint32_t &view, std::uint32_t &stack) {

@@ -1,3 +1,4 @@
+#include "p9_flow.hpp"
 #include "p9_game.hpp"
 #include "p9_hooks.hpp"
 #include "ps2/pad.hpp"
@@ -8,6 +9,7 @@ namespace warriors::p9 {
 namespace {
 
 constexpr std::uint8_t kCenter = 0x80;
+constexpr std::uint16_t kStartButton = 0x0008;   // the runtime's pressed mask: SELECT, L3, R3, START
 constexpr std::uint32_t kOriginalRecordStep = 4, kEveryRecord = 1;   // pads_frame_step visited records 0 and 4 only (one per port)
 
 // libpad's pressure order: right, left, up, down, triangle, circle, cross, square, L1, R1, L2, R2 (button bits 5, 7, 4, 6, 12 to 15, 10, 11, 8, 9).
@@ -49,6 +51,7 @@ bool pad_port_poll(ps2::Cpu &c) {
     const int pad = kFirstExtraPad + static_cast<int>(index) - 1;
     std::uint16_t motors = 0;
     if (index >= 1 && index <= static_cast<std::uint32_t>(kExtraPadRecords) && ps2::read_pad_sample(pad, sample)) {
+        if (join_press_due(c, index)) sample.buttons |= kStartButton;
         fill_record(record, sample);
         motors = static_cast<std::uint16_t>((ps2::ld8(record + kPortSmallMotorOffset) ? 1u : 0u) | ps2::ld8(record + kPortLargeMotorOffset) << 8);
     } else {

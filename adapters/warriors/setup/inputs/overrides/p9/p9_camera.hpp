@@ -17,6 +17,10 @@ void ensure_cameras(ps2::Cpu &c);
 void views_attach_player(ps2::Cpu &c);
 // The camera shown in view `view` (view_camera_lookup), 0 when there is none.
 std::uint32_t player_view_camera(std::uint32_t view);
+// view_camera_lookup(index) for an index the view list does not have (the game's code that treats a player's slot as a view index, such as the ground rings, asks for the
+// camera of player slot 2 or 3 while the screen shows fewer views): answers with the camera of the view that shows that player (the lead view in COMBINED, his own in SPLIT),
+// the game's first view where the views are the game's own (scripted cameras). True when answered; an index the list has is left to the original.
+bool view_camera_for_slot(ps2::Cpu &c);
 // How many slots the manager's two-entry loops cover, as the last index: 1 until a third player has a camera.
 std::uint32_t cam_last_slot();
 // views_wipe_slots: the slot count its loop clears; afterwards only the original two slots are in use.
@@ -36,6 +40,8 @@ bool gather_targets(ps2::Cpu &c);
 bool split_always();
 void poll_split_request();
 
+// Whether the view code made the decision for this frame: three or more players in normal play on follow cameras.
+bool views_handled();
 // The view (in view order) that player `slot` is shown in and his place among the players sharing it. False outside normal play with three or more players.
 bool view_place(std::uint32_t slot, std::uint32_t &view, std::uint32_t &stack);
 // player_panel_layout: with the screen split, a panel sits at the corner of its player's view (p9_panels.cpp).

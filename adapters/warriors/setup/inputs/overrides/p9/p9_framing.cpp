@@ -21,7 +21,6 @@ constexpr std::uint32_t kWantedNear = 0x34C, kDefaultNear = 0x344;
 constexpr std::uint32_t kBandNear = 0x32C, kBlockedNow = 0x45B, kBlockedSticky = 0x45C, kAim = 0x240, kDistance = 0x440;   // the band's near edge, the collision step's blocked flags, the point the camera faces, the distance to the look-at point
 constexpr float kLookAtHeight = 1.4f;        // the look-at point's height above the targets' feet
 constexpr float kFrameMargin = 1.25f;        // the combined camera keeps the players inside 1 / kFrameMargin of the half picture
-constexpr float kBandWidth = 0.5f;           // metres between the band's near and far edge
 constexpr float kLookAtDeadZone = 0.7f;      // metres the cluster's centre moves before the look-at point follows (the part beyond is followed)
 constexpr float kMinDirection = 0.5f;        // below this distance between camera and look-at point the view direction is not known
 constexpr std::uint32_t kFramedAt = kCamViewState + 0x70, kCentreAt = kCamViewState + 0xA0, kHeldAt = kCamViewState + 0xD0;

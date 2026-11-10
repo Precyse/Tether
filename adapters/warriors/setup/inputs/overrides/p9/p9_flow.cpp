@@ -1,5 +1,6 @@
 #include "p9_flow.hpp"
 
+#include "p9_camera.hpp"
 #include "p9_game.hpp"
 #include "p9_hooks.hpp"
 #include "p9_world.hpp"
@@ -21,6 +22,8 @@ constexpr std::uint32_t kFlowStateOffset = 0x14C, kFlowRunning = 0, kFlowFailed 
 constexpr std::uint32_t kPreviousFlow = kFlow + 0x10;     // the flow state of the last frame
 constexpr std::uint32_t kFullHealth = 1;                  // restore_health's second argument
 constexpr std::uint32_t kFirstExtraRecord = 1;            // pad record indexes 1 and 2 are the runtime's pads 3 and 4
+constexpr std::uint64_t kJoinPressPeriod = 120, kJoinPressFrames = 6;   // join_press_due
+constexpr std::uint32_t kSeatedHold = 60;                 // frames all four players are seated and in normal play before PS2_P9_JOIN_ASSIST=stop ends the run
 constexpr float kFollowDistance = 8.0f;                   // an extra player closer than this to player 1 or 2 stays where he is when one of them is moved
 
 bool g_following = false;   // the teleport the hook runs itself is not hooked again
@@ -89,6 +92,11 @@ void revive_extras(ps2::Cpu &c) {
     P9_TRACE("[p9] %llu chapter restarted in place: players 3 and 4 stand up", static_cast<unsigned long long>(ps2::frame_count()));
 }
 
+bool join_assist_on() {
+    static const bool on = std::getenv("PS2_P9_JOIN_ASSIST") != nullptr;
+    return on;
+}
+
 // After a level change, a checkpoint reload or a restart the game builds a new player list. Players 3 and 4 who were in come back by the game's own join, session_match_player_count on their
 // pad (what their START would do), one per frame, once the second player is in, the section allows joining and the game's own join gate is open (plain play or a rail section): the join and its scene are the game's.
 void carry_players(ps2::Cpu &c) {
@@ -107,6 +115,13 @@ void carry_players(ps2::Cpu &c) {
 
 }
 
+bool join_press_due(ps2::Cpu &c, std::uint32_t record) {
+    const std::uint32_t seated = player_count();
+    if (!join_assist_on() || seated < kOriginalPlayers || seated >= kMaxPlayers || record != seated - kOriginalPlayers + kFirstExtraRecord) return false;
+    if (!join_allowed() || !join_gate_open(c) || pad_is_player(c, record)) return false;
+    return ps2::frame_count() % kJoinPressPeriod < kJoinPressFrames;
+}
+
 bool warp_object(ps2::Cpu &c) { return follow_teleport(c, kWarpObject); }
 bool warp_object_to_marker(ps2::Cpu &c) { return follow_teleport(c, kWarpObjectToMarker); }
 bool warp_person_beside(ps2::Cpu &c) { return follow_teleport(c, kWarpPersonBeside); }
@@ -121,6 +136,13 @@ void flow_frame(ps2::Cpu &c) {
         if (restarted_in_place) revive_extras(c);
     }
     carry_players(c);
+    static std::uint32_t seated_frames = 0;
+    const bool stop = join_assist_on() && std::strcmp(std::getenv("PS2_P9_JOIN_ASSIST"), "stop") == 0;
+    seated_frames = stop && player_count() == kMaxPlayers && views_handled() ? seated_frames + 1 : 0;
+    if (seated_frames == kSeatedHold) {
+        P9_TRACE("[p9] all four players seated, in normal play: frame %llu", static_cast<unsigned long long>(ps2::frame_count()));
+        ps2::halt("all four players seated (PS2_P9_JOIN_ASSIST=stop)");
+    }
 }
 
 }
